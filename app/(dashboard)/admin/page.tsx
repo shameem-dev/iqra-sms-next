@@ -1,8 +1,11 @@
 import React from 'react'
+import SchoolSidebar from './componetns/sidebar'
 
 function page() {
   return (
-    <div>Admin dashboard</div>
+    <div>
+      <SchoolSidebar />
+    </div>
   )
 }
 
