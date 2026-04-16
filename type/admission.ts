@@ -14,3 +14,4 @@ export type AdmissionRecord = {
   created_at?: string
   user_id?: string
 }
+

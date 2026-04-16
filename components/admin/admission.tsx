@@ -8,6 +8,7 @@ import {
   updateAdmission,
   deleteAdmission,
 } from '@/utils/actions/admissions'
+import { SquarePen , Trash, Printer } from 'lucide-react';
 
 const STANDARDS = ['LKG', 'UKG', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10']
 const VEHICLE_POINTS = ['Point 1', 'Point 2', 'Point 3', 'Point 4', 'Point 5', 'Own Transport', 'Walking']
@@ -134,23 +135,27 @@ export default function AdmissionRegisterPage() {
 
   // ── Save (Add or Edit) — calls actions ─────────────────
   async function handleSave() {
-    if (!validate()) return
-    setSaving(true)
-    setError('')
-    try {
-      if (editId) {
-        await updateAdmission(editId, form)   // ← actions/admissions.ts
-      } else {
-        await addAdmission(form)              // ← actions/admissions.ts
-      }
-      closeForm()
-      loadRecords()
-    } catch (err: any) {
-      setError(err.message)
-    } finally {
-      setSaving(false)
+  if (!validate()) return
+
+  setSaving(true)
+  setError('')
+
+  try {
+    if (editId) {
+      const { id, ...safeForm } = form
+      await updateAdmission(editId, safeForm)
+    } else {
+      await addAdmission(form)
     }
+
+    closeForm()
+    await loadRecords()
+  } catch (err: any) {
+    setError(err.message)
+  } finally {
+    setSaving(false)
   }
+}
 
   // ── Delete — calls actions ─────────────────────────────
   async function handleDelete(id: number) {
@@ -301,21 +306,22 @@ export default function AdmissionRegisterPage() {
                       <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs">{r.vehicle_point || '—'}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1">
+                          
                           <button
                             onClick={() => openEdit(r)}
                             className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
                             title="Edit"
-                          >✏️</button>
+                          ><SquarePen size={20} strokeWidth={1} /></button>
                           <button
                             onClick={() => handlePrint(r)}
                             className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
                             title="Print Extract"
-                          >🖨️</button>
+                          ><Printer size={20} strokeWidth={1} /></button>
                           <button
                             onClick={() => setDeleteConfirm(r.id!)}
                             className="p-1.5 rounded hover:bg-red-50 dark:hover:bg-red-950 text-gray-500 hover:text-red-600 transition-colors"
                             title="Delete"
-                          >🗑️</button>
+                          ><Trash size={20} strokeWidth={1} /></button>
                         </div>
                       </td>
                     </tr>
