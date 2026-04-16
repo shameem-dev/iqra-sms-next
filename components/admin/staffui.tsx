@@ -7,7 +7,7 @@ import {
   ChevronUp, ChevronDown, AlertCircle, X, RefreshCw
 } from 'lucide-react';
 import { Staff } from '@/type/staff';
-import { deleteStaff, getAllStaff } from '@/utils/supabase/staff-actions';
+import { deleteStaff, getAllStaff } from '@/utils/actions/staff-actions';
 import { StaffModal } from './StaffModal';
 import { StaffDetailDrawer } from './Staffdetaildrawer';
 

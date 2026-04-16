@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 
 import { X, Plus, Trash2, Save, Loader2 } from 'lucide-react';
 import { CERTIFICATE_OPTIONS, DEPARTMENTS, DESIGNATIONS, Staff, StaffFormData, StaffFormData } from '@/type/staff';
-import { createStaff, updateStaff } from '@/utils/supabase/staff-actions';
+import { createStaff, updateStaff } from '@/utils/actions/staff-actions';
 
 interface Props {
   staff: Staff | null;

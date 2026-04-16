@@ -1,5 +1,5 @@
 
-import { createClient } from './client';
+import { createClient } from '../supabase/client';
 const supabase = createClient();
 import type { Staff, StaffFormData, LeaveType } from '@/type/staff';
 
