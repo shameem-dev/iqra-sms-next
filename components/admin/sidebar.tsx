@@ -9,7 +9,7 @@ import {
   Upload,
   LogOut,
   PanelLeftClose,
-  Book,
+  ClipboardPlus,
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -26,7 +26,7 @@ const SIDEBAR_ITEMS = [
   { id: "attendance", label: "Student Attendance", icon: Clock, badge: null },
   { id: "leave", label: "Leave Requests", icon: FileText, badge: "NEW" },
   { id: "reports", label: "Reports", icon: BarChart3, badge: null },
-  { id: "subjects", label: "Subjects", icon: Book, badge: null },
+  { id: "admission-register", label: "Admission", icon: ClipboardPlus, badge: null },
   { id: "staff", label: "Staff Data", icon: Users, badge: null },
 ];
 
