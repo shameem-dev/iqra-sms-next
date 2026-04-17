@@ -26,7 +26,7 @@ const EMPTY_FORM: AdmissionRecord = {
 }
 
 const inputCls =
-  'w-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400'
+  'w-full border border-gray-200  bg-white  text-gray-900  rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 placeholder-gray-400'
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -180,7 +180,7 @@ export default function AdmissionRegisterPage() {
 
   // ── Render ─────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-4 md:p-8">
+    <div className="min-h-screen bg-gray-50  ">
 
       {/* ── Print Extract (only visible on print) ── */}
       {printRecord && (
@@ -225,7 +225,7 @@ export default function AdmissionRegisterPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
+            <h1 className="text-2xl text-gray-700 font-semibold  ">
               Admission Register
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
@@ -234,7 +234,7 @@ export default function AdmissionRegisterPage() {
           </div>
           <button
             onClick={openAdd}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
           >
             <span className="text-lg leading-none">+</span> Add Student
           </button>
@@ -247,12 +247,12 @@ export default function AdmissionRegisterPage() {
             placeholder="Search by name, admission no, mobile..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="flex-1 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 border border-gray-200  bg-white focus:outline-teal-500 hover:border-teal-500 rounded-lg px-3 py-2 text-sm text-gray-500 placeholder-gray-400 "
           />
           <select
             value={filterStd}
             onChange={e => setFilterStd(e.target.value)}
-            className="border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="border border-gray-200  bg-white  rounded-lg px-3 py-2 text-sm text-gray-900  focus:outline-none focus:ring-2 focus:ring-teal-400"
           >
             <option value="">All Standards</option>
             {STANDARDS.map(s => (
@@ -270,7 +270,7 @@ export default function AdmissionRegisterPage() {
         </div>
 
         {/* Table */}
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+        <div className="bg-white  rounded-xl border border-gray-200 overflow-hidden">
           {loading ? (
             <div className="py-16 text-center text-gray-400 text-sm">Loading...</div>
           ) : filtered.length === 0 ? (
@@ -279,47 +279,47 @@ export default function AdmissionRegisterPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-950">
+                  <tr className="border-b border-gray-300  bg-gray-100 ">
                     {['Adm. No', 'Name', 'Std', 'D.O.B', 'Parent / Guardian', 'Mobile', 'Vehicle Point', 'Actions'].map(h => (
                       <th
                         key={h}
-                        className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap"
+                        className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap"
                       >
                         {h}
                       </th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
+                <tbody className="divide-y divide-gray-50 ">
                   {filtered.map(r => (
-                    <tr key={r.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                      <td className="px-4 py-3 font-mono text-xs text-blue-600 dark:text-blue-400 font-semibold">{r.admission_no}</td>
-                      <td className="px-4 py-3 font-medium text-gray-900 dark:text-white whitespace-nowrap">{r.name}</td>
+                    <tr key={r.id} className="hover:bg-gray-50  transition-colors">
+                      <td className="px-4 py-3 font-mono text-xs text-teal-600  font-semibold">{r.admission_no}</td>
+                      <td className="px-4 py-3 font-medium text-gray-500  whitespace-nowrap">{r.name}</td>
                       <td className="px-4 py-3">
-                        <span className="bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 text-xs font-medium px-2 py-0.5 rounded">
+                        <span className="bg-teal-50  text-teal-700 text-xs font-medium px-2 py-0.5 rounded">
                           Std {r.standard}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-gray-600 dark:text-gray-400 whitespace-nowrap">{r.date_of_birth}</td>
-                      <td className="px-4 py-3 text-gray-700 dark:text-gray-300 whitespace-nowrap">{r.parent_guardian}</td>
-                      <td className="px-4 py-3 text-gray-600 dark:text-gray-400 font-mono text-xs">{r.mobile_no}</td>
-                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs">{r.vehicle_point || '—'}</td>
+                      <td className="px-4 py-3 text-gray-600  whitespace-nowrap">{r.date_of_birth}</td>
+                      <td className="px-4 py-3 text-gray-600  whitespace-nowrap">{r.parent_guardian}</td>
+                      <td className="px-4 py-3 text-gray-600  font-mono text-xs">{r.mobile_no}</td>
+                      <td className="px-4 py-3 text-gray-600  text-xs">{r.vehicle_point || '—'}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1">
                           
                           <button
                             onClick={() => openEdit(r)}
-                            className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+                            className="p-1.5 rounded hover:bg-gray-100  text-gray-500 hover:text-teal-800  transition-colors"
                             title="Edit"
                           ><SquarePen size={20} strokeWidth={1} /></button>
                           <button
                             onClick={() => handlePrint(r)}
-                            className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+                            className="p-1.5 rounded hover:bg-teal-50  text-gray-500 hover:text-teal-800  transition-colors"
                             title="Print Extract"
                           ><Printer size={20} strokeWidth={1} /></button>
                           <button
                             onClick={() => setDeleteConfirm(r.id!)}
-                            className="p-1.5 rounded hover:bg-red-50 dark:hover:bg-red-950 text-gray-500 hover:text-red-600 transition-colors"
+                            className="p-1.5 rounded hover:bg-red-50  text-gray-500 hover:text-red-600 transition-colors"
                             title="Delete"
                           ><Trash size={20} strokeWidth={1} /></button>
                         </div>
@@ -342,21 +342,17 @@ export default function AdmissionRegisterPage() {
       {/* ── Add / Edit Modal ── */}
       {showForm && (
         <div className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm print:hidden">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-white  rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
 
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 ">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                 {editId ? 'Edit Student' : 'New Admission'}
               </h2>
-              <button onClick={closeForm} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xl leading-none">✕</button>
+              <button onClick={closeForm} className="text-gray-400 hover:text-gray-600  text-xl leading-none">✕</button>
             </div>
 
             <div className="p-6 space-y-5">
-              {error && (
-                <div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-sm rounded-lg px-4 py-3">
-                  {error}
-                </div>
-              )}
+              
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Field label="Admission No. *">
@@ -422,15 +418,20 @@ export default function AdmissionRegisterPage() {
                   </Field>
                 </div>
               </div>
+              {error && (
+                <div className="bg-red-50  border border-red-200  text-red-700  text-sm rounded-lg px-4 py-3">
+                  {error}
+                </div>
+              )}
             </div>
 
             <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-800">
               <button onClick={closeForm}
-                className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                className="px-4 py-2 text-sm text-gray-600  hover:bg-gray-100 cursor-pointer rounded-lg transition-colors">
                 Cancel
               </button>
               <button onClick={handleSave} disabled={saving}
-                className="px-5 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg transition-colors">
+                className="px-5 py-2 text-sm font-medium bg-teal-600 hover:bg-teal-700 cursor-pointer disabled:bg-teal-400 text-white rounded-lg transition-colors">
                 {saving ? 'Saving...' : editId ? 'Update' : 'Add Student'}
               </button>
             </div>
@@ -440,19 +441,19 @@ export default function AdmissionRegisterPage() {
 
       {/* ── Delete Confirm Modal ── */}
       {deleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm print:hidden">
-          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl p-6 w-full max-w-sm">
-            <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-2">Delete Record?</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm print:hidden ">
+          <div className="bg-white  rounded-xl shadow-xl p-6 w-full max-w-sm ">
+            <h3 className="text-base font-semibold text-gray-900  mb-2">Delete Record?</h3>
+            <p className="text-sm text-gray-500  mb-5">
               This action cannot be undone. The admission record will be permanently removed.
             </p>
             <div className="flex gap-3 justify-end">
               <button onClick={() => setDeleteConfirm(null)}
-                className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                className="px-4 py-2 text-sm text-gray-600  hover:bg-gray-100 cursor-pointer rounded-lg transition-colors">
                 Cancel
               </button>
               <button onClick={() => handleDelete(deleteConfirm)}
-                className="px-4 py-2 text-sm font-medium bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors">
+                className="px-4 py-2 text-sm font-medium bg-red-600 hover:bg-red-700 cursor-pointer text-white rounded-lg transition-colors">
                 Delete
               </button>
             </div>
