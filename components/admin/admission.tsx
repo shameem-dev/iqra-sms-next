@@ -225,9 +225,7 @@ export default function AdmissionRegisterPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl text-gray-700 font-semibold  ">
-              Admission Register
-            </h1>
+        
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
               {records.length} student{records.length !== 1 ? 's' : ''} enrolled
             </p>
