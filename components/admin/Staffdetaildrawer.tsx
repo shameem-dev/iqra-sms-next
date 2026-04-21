@@ -123,17 +123,17 @@ export function StaffDetailDrawer({ staff, onClose, onEdit }: Props) {
           </Section>
 
           <Section icon={Briefcase} title="Financial Details">
-            <Row label="Basic Salary" value={`rs ${Number(staff.basic_salary).toLocaleString()}`} />
-            <Row label="TA"           value={`rs ${Number(staff.ta).toLocaleString()}`} />
+            <Row label="Basic Salary" value={`₹ ${Number(staff.basic_salary).toLocaleString()}`} />
+            <Row label="TA"           value={`₹ ${Number(staff.ta).toLocaleString()}`} />
             <Row
               label="Total Salary"
-              value={<span className="text-teal-700 font-bold">rupees {Number(staff.total_salary).toLocaleString()}</span>}
+              value={<span className="text-teal-700 font-bold">₹ {Number(staff.total_salary).toLocaleString()}</span>}
             />
           </Section>
 
           <Section icon={Heart} title="Medical Reimbursement">
-            <Row label="Used"      value={`rs ${Number(staff.medical_used).toLocaleString()}`} />
-            <Row label="Remaining" value={`rs ${Number(staff.medical_remaining).toLocaleString()}`} />
+            <Row label="Used"      value={`₹ ${Number(staff.medical_used).toLocaleString()}`} />
+            <Row label="Remaining" value={`₹ ${Number(staff.medical_remaining).toLocaleString()}`} />
           </Section>
 
           <Section icon={GraduationCap} title="Education">
