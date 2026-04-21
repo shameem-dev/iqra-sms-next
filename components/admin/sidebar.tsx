@@ -1,7 +1,7 @@
 "use client";
 import {
   Users,
-  Calendar,
+  FileSpreadsheet,
   Clock,
   FileText,
   BarChart3,
@@ -17,9 +17,9 @@ import { useRouter } from "next/navigation";
 const SIDEBAR_ITEMS = [
   { id: "users", label: "User Management", icon: Users, badge: null },
   {
-    id: "timetable",
-    label: "Timetable Generator",
-    icon: Calendar,
+    id: "Accounts",
+    label: "Accounts",
+    icon: FileSpreadsheet,
     badge: null,
   },
   { id: "import", label: "Import Students", icon: Upload, badge: null },

@@ -5,23 +5,23 @@ import { useState } from "react"
 
 const SECTIONS: Record<string, string> = {
   users: "User Management",
-  timetable: "Timetable Generator",
+  Accounts: "Accounts",
   import: "Import Students",
   attendance: "Student Attendance",
   leave: "Leave Requests",
   reports: "Reports",
-  subjects: "Subjects",
+  admission: "Admission",
   staff: "Staff Data",
 }
 
 const descriptions: Record<string, string> = {
   users: "Manage teachers, students, and parents",
-  timetable: "Set up sessions → configure periods → set teacher availability → generate daily timetable",
+  Accounts: "Manage financial records and transactions",
   import: "Import student data from CSV or Excel files",
   attendance: "Track student attendance and generate reports",
   leave: "Approve and manage leave requests",
   reports: "Generate reports and analytics",
-  subjects: "Manage subjects and batch configurations",
+  admission: "Manage admission and batch configurations",
   staff: "Manage staff members and their details",
 }
 
