@@ -8,12 +8,11 @@ export async function getAdmissions() {
   const supabase = await createClient()
 
   const { data, error } = await supabase
-    .from('admission_register')
+    .from('students_list')
     .select('*')
     .order('admission_no', { ascending: true })
 
   if (error) throw new Error(error.message)
-
   return data as AdmissionRecord[]
 }
 
@@ -21,7 +20,7 @@ export async function addAdmission(record: AdmissionRecord) {
   const supabase = await createClient()
 
   const { data, error } = await supabase
-    .from('admission_register')
+    .from('students_list')
     .insert([record])
     .select()
     .single()
@@ -42,7 +41,7 @@ export async function updateAdmission(
   const { id: _, ...safeRecord } = record
 
   const { data, error } = await supabase
-    .from('admission_register')
+    .from('students_list')
     .update(safeRecord)
     .eq('id', id)
     .select()
@@ -58,7 +57,7 @@ export async function deleteAdmission(id: number) {
   const supabase = await createClient()
 
   const { error } = await supabase
-    .from('admission_register')
+    .from('students_list')
     .delete()
     .eq('id', id)
 

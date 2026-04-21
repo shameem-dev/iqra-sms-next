@@ -5,6 +5,7 @@ import TopBar from "./topbar"
 
 import StaffUI from "./staffui"
 import AdmissionRegisterPage from "./admission"
+import FeesDashboard from "./fees/FeesDashboard"
 
 
 const SECTIONS: Record<string, { label: string }> = {
@@ -31,8 +32,8 @@ export default function AdminLayout() {
     //     return <StudentsImportSection />
     //   case "subjects":
     //     return <BatchSubjectSection />
-    //   case "timetable":
-    //    return <TimetableGenerator />
+    case "fees":
+       return <FeesDashboard />
     case "staff":
         return <StaffUI />
     case "admission-register":
