@@ -5,6 +5,7 @@ import TopBar from "./topbar"
 
 import StaffUI from "./staffui"
 import AdmissionRegisterPage from "./admission"
+import FeesDashboard from "./fees/FeesDashboard"
 import AccountsUI from "./accounts"
 
 
@@ -32,6 +33,8 @@ export default function AdminLayout() {
     //     return <StudentsImportSection />
     //   case "subjects":
     //     return <BatchSubjectSection />
+    case "fees":
+       return <FeesDashboard />
       case "Accounts":
 return <AccountsUI/>;
     case "staff":
