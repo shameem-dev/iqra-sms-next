@@ -33,7 +33,7 @@ export default function FeesDashboard() {
           fee_type: ft.key,
           total_amount: row?.total_amount ?? 0,
           paid_amount: row?.paid_amount ?? 0,
-          academic_year: row?.academic_year ?? '2024-25',
+          academic_year: row?.academic_year ?? '2026-2027',
           label: ft.label,
           balance: (row?.total_amount ?? 0) - (row?.paid_amount ?? 0),
           payNow: 0,

@@ -13,5 +13,6 @@ export type AdmissionRecord = {
   vehicle_point?: string
   created_at?: string
   user_id?: string
+  gender: string  
 }
 

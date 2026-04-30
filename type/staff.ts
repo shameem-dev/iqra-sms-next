@@ -23,6 +23,8 @@ export interface Staff {
   trainings?: StaffTraining[];
   projects?: StaffProject[];
   leaves?: StaffLeave[];
+  auth_user_id?: string | null
+  email?: string | null
 }
 
 export interface StaffTraining {
@@ -102,15 +104,8 @@ export const DEPARTMENTS = [
 ] as const;
 
 export const DESIGNATIONS = [
-  'Principal',
-  'Vice Principal',
-  'Senior Teacher',
   'Teacher',
-  'Administrator',
-  'IT Coordinator',
-  'Accountant',
-  'HR Officer',
-  'Office Assistant',
+  'Non Teacher Staff',
   'Other',
 ] as const;
 
