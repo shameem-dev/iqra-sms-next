@@ -34,7 +34,7 @@ export default function FeeTable({ rows, onChange }: Props) {
                   min={0}
                   value={row.total_amount || ''}
                   onChange={e => onChange(row.id, 'total_amount', parseFloat(e.target.value) || 0)}
-                  className="w-full text-right border border-gray-200 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
+                  className="w-full text-right border border-gray-200 rounded-md px-2 py-1 text-sm focus:outline-none text-gray-500  focus:ring-1 focus:ring-blue-400"
                 />
               </td>
               <td className="py-2.5 text-right">
@@ -55,7 +55,7 @@ export default function FeeTable({ rows, onChange }: Props) {
                   value={row.payNow || ''}
                   onChange={e => onChange(row.id, 'payNow', parseFloat(e.target.value) || 0)}
                   placeholder="0"
-                  className="w-[80%] text-right border border-gray-200 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400 focus:border-blue-400"
+                  className="w-[80%] text-right border border-gray-200 text-gray-500 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400 focus:border-blue-400"
                 />
               </td>
             </tr>

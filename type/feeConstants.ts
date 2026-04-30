@@ -2,6 +2,9 @@ import type { AdmissionRecord } from '@/type/admission'
 
 export type Student = AdmissionRecord
 
+// ============================================
+// STUDENT FEES
+// ============================================
 export interface FeeRow {
   id: number
   student_id: number
@@ -17,6 +20,9 @@ export interface FeeRowUI extends FeeRow {
   payNow: number
 }
 
+// ============================================
+// PAYMENTS
+// ============================================
 export interface PaymentDetail {
   fee_type: string
   label: string
@@ -33,6 +39,9 @@ export interface FeePayment {
   academic_year: string
 }
 
+// ============================================
+// FEE TYPES / CONSTANTS
+// ============================================
 export interface FeeType {
   key: string
   label: string
@@ -47,6 +56,9 @@ export interface FeeDefault {
   amount: number
 }
 
+// ============================================
+// ACCOUNT ENTRIES (Income table)
+// ============================================
 export interface AccountEntry {
   id: string
   type: 'income' | 'expenditure'
@@ -65,6 +77,9 @@ export interface AccountEntry {
   updated_at: string
 }
 
+// ============================================
+// FEE TRACKER (display)
+// ============================================
 export interface StudentFeeStatus {
   student_id: number
   name: string

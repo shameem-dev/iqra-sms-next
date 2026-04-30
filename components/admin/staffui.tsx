@@ -107,7 +107,7 @@ export default function StaffUI() {
       <div className="flex items-center justify-between gap-3 flex-wrap">
 
         {/* Search */}
-        <div className="relative flex-1 min-w-[200px] max-w-sm">
+        <div className="relative flex-1 min-w-50 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
           <input
             type="text"
