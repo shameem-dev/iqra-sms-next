@@ -9,6 +9,7 @@ import AccountsUI from "./accounts"
 import MarksEntryPage from "../marks/entry"
 import FeeTrackerPage from "./fees/tracker/FeeTracker"
 import PaymentPage from "./fees/payment/PaymentMain"
+import DocumentGenerator from "./certifictes"
 
 interface PreselectedStudent {
   id: number
@@ -47,6 +48,8 @@ export default function AdminLayout() {
         return <AccountsUI />
       case "staff":
         return <StaffUI />
+        case "cerificates & reports":
+        return <DocumentGenerator />
       case "admission-register":
         return <AdmissionRegisterPage />
     }

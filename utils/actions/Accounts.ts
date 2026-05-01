@@ -1,144 +1,134 @@
-import { createClient } from '../supabase/client';
-import { 
-  AccountEntry, 
-  NewEntry, 
-  EntryType, 
-  FetchOptions, 
-  MonthlySummary, 
-  CategorySummary 
-} from '@/type/accounts';
+'use server'
 
-const supabase = createClient();
+import { createClient } from '@/utils/supabase/server'
+import { revalidatePath } from 'next/cache'
+import { AccountEntry, NewEntry, EntryType, MonthlySummary, CategorySummary } from '@/type/accounts'
 
-// ── Fetch entries ────────────────────────────────────────
-export async function fetchEntries(opts: { type?: EntryType; month?: string; limit?: number; offset?: number } = {}): Promise<AccountEntry[]> {
+// ── Fetch entries ─────────────────────────────────────────
+export async function fetchEntries(
+  opts: { type?: EntryType; month?: string; limit?: number; offset?: number } = {}
+): Promise<AccountEntry[]> {
+  const supabase = await createClient()
+
   let q = supabase
     .from('account_entries')
     .select('*')
     .eq('is_deleted', false)
     .order('date', { ascending: false })
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
 
-  if (opts.type)   q = q.eq('type', opts.type);
-  if (opts.month)  q = q.gte('date', `${opts.month}-01`).lte('date', `${opts.month}-31`);
-  if (opts.limit)  q = q.limit(opts.limit);
-  if (opts.offset) q = q.range(opts.offset, opts.offset + (opts.limit ?? 50) - 1);
+  if (opts.type)   q = q.eq('type', opts.type)
+  if (opts.month)  q = q.gte('date', `${opts.month}-01`).lte('date', `${opts.month}-31`)
+  if (opts.limit)  q = q.limit(opts.limit)
+  if (opts.offset) q = q.range(opts.offset, opts.offset + (opts.limit ?? 50) - 1)
 
-  const { data, error } = await q;
-  if (error) throw new Error(`fetchEntries: ${error.message}`);
-  return (data ?? []) as AccountEntry[];
+  const { data, error } = await q
+  if (error) throw new Error(`fetchEntries: ${error.message}`)
+  return (data ?? []) as AccountEntry[]
 }
 
-// ── Create entry ─────────────────────────────────────────
+// ── Create entry ──────────────────────────────────────────
 export async function createEntry(entry: NewEntry): Promise<AccountEntry> {
-  const payload: Partial<NewEntry> = { ...entry };
+  const supabase = await createClient()
+
+  const payload: Partial<NewEntry> = { ...entry }
 
   if (entry.type === 'income') {
-    delete (payload as any).expenditure_category;
-    delete (payload as any).staff_name;
-    delete (payload as any).vehicle_no;
+    delete (payload as any).expenditure_category
+    delete (payload as any).staff_name
+    delete (payload as any).vehicle_no
   } else {
-    delete (payload as any).income_category;
-    delete (payload as any).book_no;
-    delete (payload as any).receipt_no;
+    delete (payload as any).income_category
+    delete (payload as any).book_no
+    delete (payload as any).receipt_no
   }
 
   const { data, error } = await supabase
     .from('account_entries')
     .insert([payload])
     .select()
-    .single();
+    .single()
 
-  if (error) throw new Error(`createEntry: ${error.message}`);
-  return data as AccountEntry;
+  if (error) throw new Error(`createEntry: ${error.message}`)
+
+  revalidatePath('/admin/accounts')
+  return data as AccountEntry
 }
 
-// ── Update entry ─────────────────────────────────────────
+// ── Update entry ──────────────────────────────────────────
 export async function updateEntry(id: string, patch: Partial<NewEntry>): Promise<AccountEntry> {
+  const supabase = await createClient()
+
   const { data, error } = await supabase
     .from('account_entries')
     .update(patch)
     .eq('id', id)
     .select()
-    .single();
+    .single()
 
-  if (error) throw new Error(`updateEntry: ${error.message}`);
-  return data as AccountEntry;
+  if (error) throw new Error(`updateEntry: ${error.message}`)
+
+  revalidatePath('/admin/accounts')
+  return data as AccountEntry
 }
 
 // ── Soft-delete entry ─────────────────────────────────────
 export async function deleteEntry(id: string): Promise<void> {
+  const supabase = await createClient()
+
   const { error } = await supabase
     .from('account_entries')
     .update({ is_deleted: true })
-    .eq('id', id);
+    .eq('id', id)
 
-  if (error) throw new Error(`deleteEntry: ${error.message}`);
-}
+  if (error) throw new Error(`deleteEntry: ${error.message}`)
 
-// ── Monthly summary ───────────────────────────────────────
-export async function fetchMonthlySummary(limit = 12): Promise<MonthlySummary[]> {
-  const { data, error } = await supabase
-    .from('monthly_summary')
-    .select('*')
-    .limit(limit);
-
-  if (error) throw new Error(`fetchMonthlySummary: ${error.message}`);
-  return (data ?? []) as MonthlySummary[];
-}
-
-// ── Category summary ──────────────────────────────────────
-export async function fetchCategorySummary(): Promise<CategorySummary[]> {
-  const { data, error } = await supabase
-    .from('category_summary')
-    .select('*');
-
-  if (error) throw new Error(`fetchCategorySummary: ${error.message}`);
-  return (data ?? []) as CategorySummary[];
+  revalidatePath('/admin/accounts')
 }
 
 // ── Overall totals ────────────────────────────────────────
 export async function fetchTotals(): Promise<{ income: number; expenditure: number; balance: number }> {
+  const supabase = await createClient()
+
   const { data, error } = await supabase
     .from('account_entries')
     .select('type, amount')
-    .eq('is_deleted', false);
+    .eq('is_deleted', false)
 
-  if (error) throw new Error(`fetchTotals: ${error.message}`);
+  if (error) throw new Error(`fetchTotals: ${error.message}`)
 
-  const income = (data ?? []).filter(r => r.type === 'income').reduce((s: number, r: any) => s + Number(r.amount), 0);
-  const expenditure = (data ?? []).filter(r => r.type === 'expenditure').reduce((s: number, r: any) => s + Number(r.amount), 0);
+  const income = (data ?? [])
+    .filter(r => r.type === 'income')
+    .reduce((s: number, r: any) => s + Number(r.amount), 0)
 
-  return { income, expenditure, balance: income - expenditure };
+  const expenditure = (data ?? [])
+    .filter(r => r.type === 'expenditure')
+    .reduce((s: number, r: any) => s + Number(r.amount), 0)
+
+  return { income, expenditure, balance: income - expenditure }
 }
 
-// ── Realtime subscription ─────────────────────────────────
-export function subscribeToEntries(onUpdate: () => void) {
-  const channel = supabase
-    .channel('account_entries_changes')
-    .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'account_entries' },
-      onUpdate
-    )
-    .subscribe();
+// ── Monthly summary ───────────────────────────────────────
+export async function fetchMonthlySummary(limit = 12): Promise<MonthlySummary[]> {
+  const supabase = await createClient()
 
-  return () => { supabase.removeChannel(channel); };
+  const { data, error } = await supabase
+    .from('monthly_summary')
+    .select('*')
+    .limit(limit)
+
+  if (error) throw new Error(`fetchMonthlySummary: ${error.message}`)
+  return (data ?? []) as MonthlySummary[]
 }
 
-// ── Auth helpers ──────────────────────────────────────────
-export async function signIn(email: string, password: string) {
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) throw new Error(error.message);
-  return data;
-}
+// ── Category summary ──────────────────────────────────────
+export async function fetchCategorySummary(): Promise<CategorySummary[]> {
+  const supabase = await createClient()
 
-export async function signOut() {
-  const { error } = await supabase.auth.signOut();
-  if (error) throw new Error(error.message);
-}
+  const { data, error } = await supabase
+    .from('category_summary')
+    .select('*')
 
-export async function getSession() {
-  const { data } = await supabase.auth.getSession();
-  return data.session;
+  if (error) throw new Error(`fetchCategorySummary: ${error.message}`)
+  return (data ?? []) as CategorySummary[]
 }

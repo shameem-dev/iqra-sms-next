@@ -28,6 +28,9 @@ const SIDEBAR_ITEMS = [
   { id: "fees", label: "Fees", icon: BarChart3, badge: null },
   { id: "admission-register", label: "Admission", icon: ClipboardPlus, badge: null },
   { id: "staff", label: "Staff Data", icon: Users, badge: null },
+  { id: "cerificates & reports", label: "Certificates & Reports", icon: BarChart3, badge: null },
+
+
 ];
 
 interface SidebarProps {
