@@ -1,8 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
-import { X, Plus, Trash2, Save, Loader2, KeyRound, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import {
+  X, Plus, Trash2, Save, Loader2, KeyRound, ShieldCheck,
+  CheckCircle2, School, BookOpen, Pencil
+} from 'lucide-react';
 import { CERTIFICATE_OPTIONS, DEPARTMENTS, DESIGNATIONS, Staff, StaffFormData } from '@/type/staff';
 import { createStaff, updateStaff } from '@/utils/actions/staff-actions';
 
@@ -74,15 +77,15 @@ const LEAVE_TYPES: [string, string][] = [
 interface Subject { id: number; name: string; standard: string }
 
 interface SubjectAssignment {
-  standard: string        // which class
-  subjectIds: number[]    // which subjects in that class
+  standard: string
+  subjectIds: number[]
 }
 
 export function StaffModal({ staff, onClose, onSaved }: Props) {
-  const supabase = createBrowserClient(
+  const supabase = useMemo(() => createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!
-  )
+  ), [])
 
   const [form, setForm]           = useState<StaffFormData>(EMPTY_FORM);
   const [activeTab, setActiveTab] = useState(0);
@@ -90,19 +93,21 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
   const [error, setError]         = useState<string | null>(null);
 
   // ── Login tab state ───────────────────────────────────────────────────────
-  const [loginEmail, setLoginEmail]       = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
-  const [loginLoading, setLoginLoading]   = useState(false);
-  const [loginSuccess, setLoginSuccess]   = useState('');
-  const [loginError, setLoginError]       = useState('');
+  const [loginEmail, setLoginEmail]           = useState('');
+  const [loginPassword, setLoginPassword]     = useState('');
+  const [loginLoading, setLoginLoading]       = useState(false);
+  const [loginSuccess, setLoginSuccess]       = useState('');
+  const [loginError, setLoginError]           = useState('');
+  const [editingAssignments, setEditingAssignments] = useState(false);
+  const [assignSaving, setAssignSaving]       = useState(false);
 
-  // Class teacher assignment — ONE class for attendance
+  // Class teacher assignment
   const [classTeacherStandard, setClassTeacherStandard] = useState('');
 
-  // Subject teacher assignment — multiple (class + subjects) pairs
+  // Subject teacher assignments
   const [subjectAssignments, setSubjectAssignments] = useState<SubjectAssignment[]>([
     { standard: '', subjectIds: [] }
-  ])
+  ]);
 
   // Subjects + standards from DB
   const [subjects, setSubjects]   = useState<Subject[]>([]);
@@ -111,10 +116,9 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
   // Existing assignments loaded from DB
   const [existingAssignments, setExistingAssignments] = useState<any[]>([]);
 
-  const hasLogin    = !!staff?.auth_user_id;
-  // Show Login tab only if designation is Teacher
-  const isTeacher   = (staff?.designation || form.designation) === 'Teacher';
-  const TABS        = isTeacher
+  const hasLogin  = !!staff?.auth_user_id;
+  const isTeacher = (staff?.designation || form.designation) === 'Teacher';
+  const TABS      = isTeacher
     ? ['Personal', 'Financial', 'Education', 'Trainings', 'Leaves', 'Remarks', 'Login']
     : ['Personal', 'Financial', 'Education', 'Trainings', 'Leaves', 'Remarks'];
 
@@ -129,9 +133,7 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
         setStandards([...new Set(data.map((s: Subject) => s.standard))])
       }
     })()
-  }, [])
-
-  // ── Load existing assignments when Login tab opens ────────────────────────
+  }, [supabase])
   useEffect(() => {
     if (!staff?.id || activeTab !== 6) return
     ;(async () => {
@@ -143,11 +145,9 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
       if (data) {
         setExistingAssignments(data)
 
-        // Pre-fill class teacher
         const classTa = data.find((d: any) => d.type === 'class_teacher')
         if (classTa) setClassTeacherStandard(classTa.standard)
 
-        // Pre-fill subject assignments grouped by standard
         const subjectTa = data.filter((d: any) => d.type === 'subject_teacher')
         if (subjectTa.length > 0) {
           const grouped: Record<string, number[]> = {}
@@ -161,13 +161,14 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
         }
       }
     })()
-  }, [staff, activeTab])
+  }, [staff, activeTab, supabase])
 
-  // ── Reset login state when staff changes ──────────────────────────────────
+  // ── Reset state when staff changes ───────────────────────────────────────
   useEffect(() => {
     if (!staff) { setForm(EMPTY_FORM); return; }
     setLoginEmail(staff.email || '')
     setLoginPassword(''); setLoginSuccess(''); setLoginError('')
+    setEditingAssignments(false)
     setClassTeacherStandard('')
     setSubjectAssignments([{ standard: '', subjectIds: [] }])
 
@@ -260,15 +261,10 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
       setLoginError('Password must be at least 6 characters'); return
     }
 
-    // Build assignments array
     const assignments: { type: string; standard: string; subject_id: number | null }[] = []
-
-    // Class teacher assignment
     if (classTeacherStandard) {
       assignments.push({ type: 'class_teacher', standard: classTeacherStandard, subject_id: null })
     }
-
-    // Subject teacher assignments
     subjectAssignments.forEach(row => {
       if (row.standard && row.subjectIds.length > 0) {
         row.subjectIds.forEach(subjectId => {
@@ -323,6 +319,123 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
     else { setLoginSuccess('Password updated successfully!'); setLoginPassword('') }
     setLoginLoading(false)
   }
+
+  // ── Save edited assignments ───────────────────────────────────────────────
+  async function handleSaveAssignments() {
+    if (!staff) return
+    setAssignSaving(true); setLoginError(''); setLoginSuccess('')
+
+    const assignments: { type: string; standard: string; subject_id: number | null }[] = []
+    if (classTeacherStandard) {
+      assignments.push({ type: 'class_teacher', standard: classTeacherStandard, subject_id: null })
+    }
+    subjectAssignments.forEach(row => {
+      if (row.standard && row.subjectIds.length > 0) {
+        row.subjectIds.forEach(subjectId => {
+          assignments.push({ type: 'subject_teacher', standard: row.standard, subject_id: subjectId })
+        })
+      }
+    })
+
+    // Delete old assignments then insert new
+    const { error: delError } = await supabase
+      .from('teacher_assignments')
+      .delete()
+      .eq('staff_id', staff.id)
+
+    if (delError) { setLoginError(delError.message); setAssignSaving(false); return }
+
+    if (assignments.length > 0) {
+      const { error: insError } = await supabase
+        .from('teacher_assignments')
+        .insert(assignments.map(a => ({ ...a, staff_id: staff.id })))
+      if (insError) { setLoginError(insError.message); setAssignSaving(false); return }
+    }
+
+    // Reload assignments into banner
+    const { data } = await supabase
+      .from('teacher_assignments')
+      .select('id, type, standard, subject_id, subjects(name)')
+      .eq('staff_id', staff.id)
+    if (data) setExistingAssignments(data)
+
+    setLoginSuccess('Assignments updated successfully!')
+    setEditingAssignments(false)
+    setAssignSaving(false)
+    onSaved()
+  }
+
+  // ── Shared assignment form JSX (inline, not a component — avoids remount issues) ──
+  const assignmentFormJSX = (
+    <div className="space-y-3">
+      {/* Class Teacher */}
+      <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl space-y-2">
+        <div className="flex items-center gap-2">
+          <School className="w-3.5 h-3.5 text-blue-700" />
+          <p className="text-xs font-bold text-blue-800 uppercase tracking-wide">Class Teacher</p>
+        </div>
+        <p className="text-xs text-blue-600">Gives attendance access for this class</p>
+        <select value={classTeacherStandard}
+          onChange={e => setClassTeacherStandard(e.target.value)}
+          className={selectCls}>
+          <option value="">— None (not a class teacher) —</option>
+          {standards.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
+      </div>
+
+      {/* Subject Teacher */}
+      <div className="p-3 bg-violet-50 border border-violet-200 rounded-xl space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <BookOpen className="w-3.5 h-3.5 text-violet-700" />
+            <p className="text-xs font-bold text-violet-800 uppercase tracking-wide">Subject Teacher</p>
+          </div>
+          <button onClick={addSubjectRow}
+            className="flex items-center gap-1 text-xs text-violet-700 hover:text-violet-900 font-medium">
+            <Plus className="w-3.5 h-3.5" /> Add Row
+          </button>
+        </div>
+        <p className="text-xs text-violet-600">Gives marks entry access per subject</p>
+
+        {subjectAssignments.map((row, idx) => (
+          <div key={idx} className="bg-white rounded-lg border border-violet-200 p-2 space-y-2">
+            <div className="flex items-center gap-2">
+              <select value={row.standard}
+                onChange={e => updateSubjectRowStandard(idx, e.target.value)}
+                className={`flex-1 ${selectCls}`}>
+                <option value="">Select class…</option>
+                {standards.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+              {subjectAssignments.length > 1 && (
+                <button onClick={() => removeSubjectRow(idx)}
+                  className="p-1.5 text-slate-400 hover:text-red-500 transition-colors">
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+            {row.standard && (
+              <div className="flex flex-wrap gap-1.5">
+                {subjects.filter(s => s.standard === row.standard).map(s => (
+                  <button key={s.id}
+                    onClick={() => toggleSubjectInRow(idx, s.id)}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-all ${
+                      row.subjectIds.includes(s.id)
+                        ? 'bg-violet-600 text-white border-violet-600'
+                        : 'bg-white text-slate-600 border-slate-200 hover:border-violet-300'
+                    }`}>
+                    {s.name}
+                  </button>
+                ))}
+                {subjects.filter(s => s.standard === row.standard).length === 0 && (
+                  <p className="text-xs text-slate-400">No subjects for this class</p>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -502,26 +615,62 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
                 </div>
               ) : (
                 <>
-                  {/* Status banner */}
+                  {/* ── Status banner ── */}
                   {hasLogin ? (
-                    <div className="flex items-start gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
-                      <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-                      <div className="space-y-1">
-                        <p className="text-sm font-semibold text-emerald-800">Login Active</p>
-                        <p className="text-xs text-emerald-600">
-                          {staff.name} signs in with <strong>{staff.email}</strong>
-                        </p>
-                        {existingAssignments.filter(a => a.type === 'class_teacher').map(a => (
-                          <p key={a.id} className="text-xs text-emerald-700">
-                            🏫 Class Teacher of <strong>{a.standard}</strong>
-                          </p>
-                        ))}
-                        {existingAssignments.filter(a => a.type === 'subject_teacher').map(a => (
-                          <p key={a.id} className="text-xs text-emerald-700">
-                            📚 {a.subjects?.name} in <strong>{a.standard}</strong>
-                          </p>
-                        ))}
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 space-y-3">
+
+                      {/* Top row: info + edit button */}
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-3">
+                          <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                          <div className="space-y-1.5">
+                            <p className="text-sm font-semibold text-emerald-800">Login Active</p>
+                            <p className="text-xs text-emerald-600">
+                              {staff.name} signs in with <strong>{staff.email}</strong>
+                            </p>
+                            {existingAssignments.filter(a => a.type === 'class_teacher').map(a => (
+                              <div key={a.id} className="flex items-center gap-1.5 text-xs text-emerald-700">
+                                <School className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                                Class Teacher of <strong>{a.standard}</strong>
+                              </div>
+                            ))}
+                            {existingAssignments.filter(a => a.type === 'subject_teacher').map(a => (
+                              <div key={a.id} className="flex items-center gap-1.5 text-xs text-emerald-700">
+                                <BookOpen className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                                {a.subjects?.name} in <strong>{a.standard}</strong>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Edit Assignments toggle */}
+                        <button
+                          onClick={() => setEditingAssignments(e => !e)}
+                          className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                            editingAssignments
+                              ? 'bg-slate-100 text-slate-600 border-slate-300 hover:bg-slate-200'
+                              : 'bg-white text-emerald-700 border-emerald-300 hover:bg-emerald-100'
+                          }`}
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                          {editingAssignments ? 'Cancel' : 'Edit Assignments'}
+                        </button>
                       </div>
+
+                      {/* Inline edit form */}
+                      {editingAssignments && (
+                        <div className="pt-3 border-t border-emerald-200 space-y-3">
+                          {assignmentFormJSX}
+                          <button
+                            onClick={handleSaveAssignments}
+                            disabled={assignSaving}
+                            className="w-full h-9 flex items-center justify-center gap-2 text-sm font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-60 transition-colors"
+                          >
+                            {assignSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                            {assignSaving ? 'Saving…' : 'Save Assignments'}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div className="flex items-center gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl">
@@ -533,6 +682,7 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
                     </div>
                   )}
 
+                  {/* Success / Error messages */}
                   {loginSuccess && (
                     <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">
                       <CheckCircle2 className="w-4 h-4 shrink-0" />{loginSuccess}
@@ -544,79 +694,10 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
                     </div>
                   )}
 
-                  {/* ── Assignments (only when creating) ── */}
-                  {!hasLogin && (
-                    <div className="space-y-4">
+                  {/* ── Assignment form (only when creating) ── */}
+                  {!hasLogin && assignmentFormJSX}
 
-                      {/* Section 1: Class Teacher */}
-                      <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl space-y-3">
-                        <div>
-                          <p className="text-xs font-bold text-blue-800 uppercase tracking-wide">🏫 Class Teacher Assignment</p>
-                          <p className="text-xs text-blue-600 mt-0.5">Gives attendance access for this class</p>
-                        </div>
-                        <select value={classTeacherStandard}
-                          onChange={e => setClassTeacherStandard(e.target.value)}
-                          className={selectCls}>
-                          <option value="">— None (not a class teacher) —</option>
-                          {standards.map(s => <option key={s} value={s}>{s}</option>)}
-                        </select>
-                      </div>
-
-                      {/* Section 2: Subject Teacher */}
-                      <div className="p-4 bg-violet-50 border border-violet-200 rounded-xl space-y-3">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-xs font-bold text-violet-800 uppercase tracking-wide">📚 Subject Teacher Assignment</p>
-                            <p className="text-xs text-violet-600 mt-0.5">Gives marks entry access per subject</p>
-                          </div>
-                          <button onClick={addSubjectRow}
-                            className="flex items-center gap-1 text-xs text-violet-700 hover:text-violet-900 font-medium">
-                            <Plus className="w-3.5 h-3.5" /> Add Row
-                          </button>
-                        </div>
-
-                        {subjectAssignments.map((row, idx) => (
-                          <div key={idx} className="bg-white rounded-lg border border-violet-200 p-3 space-y-2">
-                            <div className="flex items-center gap-2">
-                              <select value={row.standard}
-                                onChange={e => updateSubjectRowStandard(idx, e.target.value)}
-                                className={`flex-1 ${selectCls}`}>
-                                <option value="">Select class…</option>
-                                {standards.map(s => <option key={s} value={s}>{s}</option>)}
-                              </select>
-                              {subjectAssignments.length > 1 && (
-                                <button onClick={() => removeSubjectRow(idx)}
-                                  className="p-1.5 text-slate-400 hover:text-red-500 transition-colors">
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              )}
-                            </div>
-
-                            {row.standard && (
-                              <div className="flex flex-wrap gap-1.5">
-                                {subjects.filter(s => s.standard === row.standard).map(s => (
-                                  <button key={s.id}
-                                    onClick={() => toggleSubjectInRow(idx, s.id)}
-                                    className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-all ${
-                                      row.subjectIds.includes(s.id)
-                                        ? 'bg-violet-600 text-white border-violet-600'
-                                        : 'bg-white text-slate-600 border-slate-200 hover:border-violet-300'
-                                    }`}>
-                                    {s.name}
-                                  </button>
-                                ))}
-                                {subjects.filter(s => s.standard === row.standard).length === 0 && (
-                                  <p className="text-xs text-slate-400">No subjects for this class</p>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Email + Password */}
+                  {/* ── Email + Password ── */}
                   <div className="space-y-3">
                     <div>
                       <label className="block text-xs font-medium text-slate-600 mb-1">
