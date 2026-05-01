@@ -8,11 +8,11 @@ import {
 } from 'lucide-react';
 import {
   fetchEntries, createEntry, updateEntry, deleteEntry,
-  fetchTotals, subscribeToEntries,
+  fetchTotals,
   type AccountEntry, type NewEntry, type EntryType,
   type IncomeCategory, type ExpenditureCategory
 } from '@/utils/actions/Accounts';
-
+import { useAccountsRealtime } from '@/hooks/useAccountsRealtime';
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 export const INCOME_CATEGORIES: { value: IncomeCategory; label: string }[] = [
@@ -449,24 +449,26 @@ export default function AccountsUI({ staffList = [] }: AccountsUIProps) {
   const [deleteTarget, setDeleteTarget]   = useState<string | null>(null);
   const [toast, setToast]                 = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
-  // ── Load ALL entries ──────────────────────────────────
-  const loadData = useCallback(async () => {
-    try {
-      setLoading(true);
-      const [data, t] = await Promise.all([fetchEntries({}), fetchTotals()]);
-      setEntries(data);
-      setTotals(t);
-    } catch (e: any) {
-      setToast({ message: e.message ?? 'Failed to load entries', type: 'error' });
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { loadData(); }, [loadData]);
-  useEffect(() => { const unsub = subscribeToEntries(loadData); return unsub; }, [loadData]);
-
-  // ── When month filter changes, sync date range ────────
+  
+// ✅ Correct order — define first, use after
+const loadData = useCallback(async () => {
+  try {
+    setLoading(true);
+    console.log('Loading data...', new Date().toISOString()); // ADD THIS
+    const [data, t] = await Promise.all([
+      fetchEntries({}),
+      fetchTotals()
+    ]);
+    console.log('Data loaded:', data.length, t); // ADD THIS
+    setEntries(data);
+    setTotals(t);
+  } catch (e: any) {
+    console.error('Load error:', e); // ADD THIS
+    setToast({ message: e.message ?? 'Failed to load entries', type: 'error' });
+  } finally {
+    setLoading(false);
+  }
+}, []);
   useEffect(() => {
     if (filterMonth) {
       const [y, m] = filterMonth.split('-').map(Number);
