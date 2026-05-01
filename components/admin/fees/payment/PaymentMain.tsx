@@ -4,13 +4,14 @@ import { useState, useEffect } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 import {
   ALL_STANDARDS, getDefaultAmount,
-  ACADEMIC_YEAR, generateReceiptNo, FIXED_FEE_TYPES, VEHICLE_FEE_TYPES,
+  ACADEMIC_YEAR, generateReceiptNo, FIXED_FEE_TYPES,
 } from '@/utils/actions/feeConstants'
 import { FeeRowUI, PaymentDetail } from '@/type/fees'
 import StudentSearch from '@/components/admin/fees/payment/StudentSearch'
 import StudentFeeSummary from '@/components/admin/fees/payment/StudentFeeSummary'
 import PaymentForm from '@/components/admin/fees/payment/PaymentForm'
 import PaymentReceipt from '@/components/admin/fees/payment/PaymentReceipt'
+import BulkFeeAssignment from '@/components/admin/fees/payment/BulkFeeAssignment'
 
 interface Student {
   id: number
@@ -30,6 +31,8 @@ interface Props {
   onBack?: () => void
 }
 
+type ActiveTab = 'individual' | 'bulk'
+
 export default function PaymentPage({ preselectedStudent, onBack }: Props) {
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -37,6 +40,9 @@ export default function PaymentPage({ preselectedStudent, onBack }: Props) {
   )
 
   const hasPreselected = !!preselectedStudent?.id
+
+  // ── Tab state — always 'individual' if preselected ────────────────────
+  const [activeTab, setActiveTab] = useState<ActiveTab>('individual')
 
   const [selectedStandard, setSelectedStandard] = useState('')
   const [students, setStudents]                 = useState<StudentWithStatus[]>([])
@@ -68,7 +74,6 @@ export default function PaymentPage({ preselectedStudent, onBack }: Props) {
         total_amount: getDefaultAmount('Tuition Fee 1', student.standard),
         paid_amount: 0, academic_year: ACADEMIC_YEAR,
       }
-      // Vehicle fees are NOT auto-initialized — added manually per student
     ]
     const { data, error } = await supabase.from('student_fees').insert(feeRows).select()
     if (error) { setError(error.message); return }
@@ -271,7 +276,7 @@ export default function PaymentPage({ preselectedStudent, onBack }: Props) {
   const vehicleFees = fees.filter(f => f.fee_type.startsWith('Vehicle Fee'))
   const unpaidFees  = fees.filter(f => f.balance > 0)
 
-  // ── 5. Shared fee detail JSX (const, not a component function) ────────
+  // ── 5. Shared fee detail JSX ──────────────────────────────────────────
 
   const feeDetailJSX = (
     <>
@@ -280,7 +285,6 @@ export default function PaymentPage({ preselectedStudent, onBack }: Props) {
           Loading fee details...
         </div>
       )}
-
       {!loadingFees && selectedStudent && (
         <>
           <StudentFeeSummary
@@ -343,17 +347,49 @@ export default function PaymentPage({ preselectedStudent, onBack }: Props) {
         )}
       </div>
 
+      {/* ── Tabs — hidden when preselected ── */}
+      {!hasPreselected && (
+        <div className="flex gap-1 bg-gray-100 p-1 rounded-xl mb-6">
+          <button
+            onClick={() => {
+              setActiveTab('individual')
+              setSelectedStudent(null)
+              setFees([])
+              setShowPaymentForm(false)
+              setReceiptData(null)
+              setError('')
+            }}
+            className={`flex-1 py-2 px-4 rounded-lg text-sm font-semibold transition-all
+              ${activeTab === 'individual'
+                ? 'bg-white text-teal-600 shadow-sm border border-gray-200'
+                : 'text-gray-500 hover:text-gray-700'}`}>
+            💳 Individual Payment
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab('bulk')
+              setError('')
+            }}
+            className={`flex-1 py-2 px-4 rounded-lg text-sm font-semibold transition-all
+              ${activeTab === 'bulk'
+                ? 'bg-white text-teal-600 shadow-sm border border-gray-200'
+                : 'text-gray-500 hover:text-gray-700'}`}>
+            📋 Bulk Assign Fees
+          </button>
+        </div>
+      )}
+
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-lg mb-4">
           {error}
         </div>
       )}
 
-      {/* ── CASE A: Preselected — fee detail only ── */}
+      {/* ── CASE A: Preselected — fee detail only, no tabs ── */}
       {hasPreselected && feeDetailJSX}
 
-      {/* ── CASE B: No preselected — search only ── */}
-      {!hasPreselected && (
+      {/* ── CASE B: Individual tab ── */}
+      {!hasPreselected && activeTab === 'individual' && (
         <>
           {!selectedStudent && (
             <StudentSearch
@@ -371,7 +407,6 @@ export default function PaymentPage({ preselectedStudent, onBack }: Props) {
               standards={ALL_STANDARDS}
             />
           )}
-
           {selectedStudent && !loadingFees && (
             <button
               onClick={() => {
@@ -384,9 +419,13 @@ export default function PaymentPage({ preselectedStudent, onBack }: Props) {
               ← Back to student list
             </button>
           )}
-
           {selectedStudent && feeDetailJSX}
         </>
+      )}
+
+      {/* ── CASE C: Bulk Assign tab ── */}
+      {!hasPreselected && activeTab === 'bulk' && (
+        <BulkFeeAssignment />
       )}
     </div>
   )

@@ -419,9 +419,10 @@ export default function StaffUI() {
       {/* ── Modals ── */}
       {modalOpen && (
         <StaffModal
-          staff={editingStaff}
-          onClose={() => { setModalOpen(false); setEditingStaff(null); }}
-          onSaved={fetchStaff}
+            key={editingStaff?.id ?? 'new'}
+            staff={editingStaff}
+            onClose={() => { setModalOpen(false); setEditingStaff(null); }}
+            onSaved={fetchStaff}
         />
       )}
       {viewingStaff && (
