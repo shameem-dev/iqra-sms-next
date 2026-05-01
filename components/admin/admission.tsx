@@ -8,7 +8,7 @@ import {
   updateAdmission,
   deleteAdmission,
 } from '@/utils/actions/admissions'
-import { SquarePen, Trash, Printer, RefreshCw, AlertTriangle, Download } from 'lucide-react';
+import { SquarePen, Trash, Printer, RefreshCw, AlertTriangle, Download, KeyRound } from 'lucide-react'
 
 const STANDARDS = [
   "FS1 A", "FS1 B", "FS2 A", "FS2 B",
@@ -17,22 +17,14 @@ const STANDARDS = [
 const VEHICLE_POINTS = ['Point 1', 'Point 2', 'Point 3', 'Point 4', 'Point 5', 'Own Transport', 'Walking']
 const GENDERS = ['Male', 'Female']
 
-// Gender sort order: Male → Female → anything else
 const GENDER_ORDER: Record<string, number> = { Male: 0, Female: 1 }
 const genderSort = (a: AdmissionRecord, b: AdmissionRecord) =>
   (GENDER_ORDER[a.gender] ?? 2) - (GENDER_ORDER[b.gender] ?? 2)
 
 const EMPTY_FORM: AdmissionRecord = {
-  admission_no: '',
-  name: '',
-  standard: '',
-  date_of_birth: '',
-  aadhar_no: '',
-  parent_guardian: '',
-  address: '',
-  mobile_no: '',
-  vehicle_point: '',
-  gender: '',
+  admission_no: '', name: '', standard: '', date_of_birth: '',
+  aadhar_no: '', parent_guardian: '', address: '', mobile_no: '',
+  vehicle_point: '', gender: '',
 }
 
 const inputCls =
@@ -41,15 +33,12 @@ const inputCls =
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-        {label}
-      </label>
+      <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{label}</label>
       {children}
     </div>
   )
 }
 
-// ── Excel Export (CSV) ─────────────────────────────────────
 function exportToExcel(data: AdmissionRecord[], filename = 'admissions.csv') {
   const headers = [
     'Admission No', 'Student Name', 'Standard', 'Gender',
@@ -57,73 +46,63 @@ function exportToExcel(data: AdmissionRecord[], filename = 'admissions.csv') {
     'Mobile No', 'Vehicle Point', 'Address',
   ]
   const rows = data.map(r => [
-    r.admission_no,
-    r.name,
-    r.standard,
-    r.gender,
-    r.date_of_birth,
-    r.aadhar_no,
-    r.parent_guardian,
-    r.mobile_no,
-    r.vehicle_point || '',
+    r.admission_no, r.name, r.standard, r.gender, r.date_of_birth,
+    r.aadhar_no, r.parent_guardian, r.mobile_no, r.vehicle_point || '',
     `"${r.address.replace(/"/g, '""')}"`,
   ])
-
   const csvContent = [headers, ...rows].map(row => row.join(',')).join('\n')
   const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' })
   const url  = URL.createObjectURL(blob)
   const link = document.createElement('a')
-  link.href = url
-  link.download = filename
-  link.click()
+  link.href = url; link.download = filename; link.click()
   URL.revokeObjectURL(url)
 }
 
 export default function AdmissionRegisterPage() {
-  const printRef = useRef<HTMLDivElement>(null)
+  const printRef     = useRef<HTMLDivElement>(null)
+  const loginCardRef = useRef<HTMLDivElement>(null)
 
-  // ── State ──────────────────────────────────────────────
-  const [records, setRecords]               = useState<AdmissionRecord[]>([])
-  const [filtered, setFiltered]             = useState<AdmissionRecord[]>([])
-  const [search, setSearch]                 = useState('')
-  const [filterStd, setFilterStd]           = useState('')
-  const [filterGender, setFilterGender]     = useState('')
-  const [showForm, setShowForm]             = useState(false)
-  const [editId, setEditId]                 = useState<number | null>(null)
-  const [form, setForm]                     = useState<AdmissionRecord>(EMPTY_FORM)
-  const [loading, setLoading]               = useState(false)
-  const [saving, setSaving]                 = useState(false)
-  const [error, setError]                   = useState('')
-  const [printRecord, setPrintRecord]       = useState<AdmissionRecord | null>(null)
-  const [deleteConfirm, setDeleteConfirm]   = useState<AdmissionRecord | null>(null)
+  const [records, setRecords]                   = useState<AdmissionRecord[]>([])
+  const [filtered, setFiltered]                 = useState<AdmissionRecord[]>([])
+  const [search, setSearch]                     = useState('')
+  const [filterStd, setFilterStd]               = useState('')
+  const [filterGender, setFilterGender]         = useState('')
+  const [showForm, setShowForm]                 = useState(false)
+  const [editId, setEditId]                     = useState<number | null>(null)
+  const [form, setForm]                         = useState<AdmissionRecord>(EMPTY_FORM)
+  const [loading, setLoading]                   = useState(false)
+  const [saving, setSaving]                     = useState(false)
+  const [error, setError]                       = useState('')
+  const [printRecord, setPrintRecord]           = useState<AdmissionRecord | null>(null)
+  const [deleteConfirm, setDeleteConfirm]       = useState<AdmissionRecord | null>(null)
   const [deleteConfirmName, setDeleteConfirmName] = useState('')
 
-  // ── Load ───────────────────────────────────────────────
+  // ── Parent login state ────────────────────────────────────────────────────
+  const [generatingLogins, setGeneratingLogins] = useState(false)
+  const [genResult, setGenResult]               = useState<{ created: number; failed: number } | null>(null)
+  const [showLoginCards, setShowLoginCards]     = useState(false)
+
+  // ── Load ──────────────────────────────────────────────────────────────────
   async function loadRecords() {
     setLoading(true)
     try {
       const data = await getAdmissions()
       setRecords(data)
       setFiltered([...data].sort(genderSort))
-    } catch (err: any) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
-    }
+    } catch (err: any) { setError(err.message) }
+    finally { setLoading(false) }
   }
 
   useEffect(() => { loadRecords() }, [])
 
-  // ── Filter + Sort (Male → Female → Other, always) ──────
   useEffect(() => {
     let result = [...records]
     if (search) {
       const q = search.toLowerCase()
-      result = result.filter(
-        r =>
-          r.name.toLowerCase().includes(q) ||
-          r.admission_no.toLowerCase().includes(q) ||
-          r.mobile_no.includes(q)
+      result = result.filter(r =>
+        r.name.toLowerCase().includes(q) ||
+        r.admission_no.toLowerCase().includes(q) ||
+        r.mobile_no.includes(q)
       )
     }
     if (filterStd)    result = result.filter(r => r.standard === filterStd)
@@ -132,18 +111,15 @@ export default function AdmissionRegisterPage() {
     setFiltered(result)
   }, [search, filterStd, filterGender, records])
 
-  // ── Gender summary counts ──────────────────────────────
   const maleCount   = filtered.filter(r => r.gender === 'Male').length
   const femaleCount = filtered.filter(r => r.gender === 'Female').length
 
-  // ── Form helpers ───────────────────────────────────────
   function openAdd() { setForm(EMPTY_FORM); setEditId(null); setShowForm(true); setError('') }
   function openEdit(record: AdmissionRecord) {
     setForm({ ...record }); setEditId(record.id ?? null); setShowForm(true); setError('')
   }
   function closeForm() { setShowForm(false); setForm(EMPTY_FORM); setEditId(null); setError('') }
 
-  // ── Validation ─────────────────────────────────────────
   function validate(): boolean {
     const required: (keyof AdmissionRecord)[] = [
       'admission_no', 'name', 'standard', 'date_of_birth',
@@ -157,7 +133,7 @@ export default function AdmissionRegisterPage() {
     return true
   }
 
-  // ── Save ──────────────────────────────────────────────
+  // ── Save — auto-creates parent login for new students ─────────────────────
   async function handleSave() {
     if (!validate()) return
     setSaving(true); setError('')
@@ -167,54 +143,117 @@ export default function AdmissionRegisterPage() {
         await updateAdmission(editId, safeForm)
       } else {
         await addAdmission(form)
+        // ✅ No fetch needed — parent login is auto-created inside addAdmission now
       }
       closeForm()
       await loadRecords()
-    } catch (err: any) {
-      setError(err.message)
-    } finally {
-      setSaving(false)
-    }
+    } catch (err: any) { setError(err.message) }
+    finally { setSaving(false) }
   }
 
-  // ── Delete ────────────────────────────────────────────
   async function handleDelete(id: number) {
     try {
       await deleteAdmission(id)
       loadRecords()
-    } catch (err: any) {
-      setError(err.message)
-    } finally {
-      setDeleteConfirm(null); setDeleteConfirmName('')
-    }
+    } catch (err: any) { setError(err.message) }
+    finally { setDeleteConfirm(null); setDeleteConfirmName('') }
   }
   function openDeleteConfirm(record: AdmissionRecord) { setDeleteConfirm(record); setDeleteConfirmName('') }
   function closeDeleteConfirm() { setDeleteConfirm(null); setDeleteConfirmName('') }
 
-  // ── Print ─────────────────────────────────────────────
   function handlePrint(record: AdmissionRecord) {
     setPrintRecord(record)
     setTimeout(() => { window.print(); setPrintRecord(null) }, 300)
   }
 
-  // ── Excel Download ────────────────────────────────────
   function handleExcelDownload() {
     const parts = [filterGender, filterStd].filter(Boolean).join('_').replace(/\s/g, '_')
-    const filename = parts ? `admissions_${parts}.csv` : 'admissions_all.csv'
-    exportToExcel(filtered, filename)
+    exportToExcel(filtered, parts ? `admissions_${parts}.csv` : 'admissions_all.csv')
   }
 
-  // ── Render ────────────────────────────────────────────
+  // ── Generate ALL missing parent logins at once ────────────────────────────
+  async function handleGenerateAllLogins() {
+    setGeneratingLogins(true); setGenResult(null)
+    const res  = await fetch('/api/admin/create-parent-bulk', { method: 'POST' })
+    const json = await res.json()
+    setGenResult({ created: json.created ?? 0, failed: json.failed ?? 0 })
+    await loadRecords()
+    setGeneratingLogins(false)
+  }
+
+  // ── Print all login cards ─────────────────────────────────────────────────
+  function handlePrintLoginCards() {
+    const cards = records.map(r => `
+      <div class="card">
+        <div class="school">🏫 IQRA SCHOOL — Parent Login Card</div>
+        <div class="name">${r.name}</div>
+        <div class="meta">Admission No: <strong>${r.admission_no}</strong> &nbsp;|&nbsp; Class: <strong>${r.standard}</strong></div>
+        <div class="cred-box">
+          <div class="cred-title">Login Credentials</div>
+          <div class="cred-row">
+            <span class="label">Email</span>
+            <span class="value">${r.admission_no}@iqra.school</span>
+          </div>
+          <div class="cred-row">
+            <span class="label">Password</span>
+            <span class="value">${r.admission_no}</span>
+          </div>
+        </div>
+        <div class="note">Login at: <strong>your-school-url.com/login</strong></div>
+      </div>
+    `).join('')
+
+    const win = window.open('', '_blank')
+    if (!win) return
+    win.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Parent Login Cards — Iqra School</title>
+          <style>
+            * { margin:0; padding:0; box-sizing:border-box; }
+            body { font-family: Arial, sans-serif; background: white; padding: 12px; }
+            .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+            .card {
+              border: 1.5px solid #0d9488; border-radius: 10px;
+              padding: 12px 14px; page-break-inside: avoid;
+              background: white;
+            }
+            .school { font-size: 9px; font-weight: bold; color: #0d9488; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+            .name { font-size: 15px; font-weight: bold; color: #1e293b; margin-bottom: 2px; }
+            .meta { font-size: 10px; color: #64748b; margin-bottom: 8px; }
+            .cred-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 8px 10px; margin-bottom: 6px; }
+            .cred-title { font-size: 9px; font-weight: bold; color: #166534; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
+            .cred-row { display: flex; justify-content: space-between; margin-bottom: 3px; }
+            .label { font-size: 10px; color: #475569; }
+            .value { font-size: 11px; font-weight: bold; color: #1e293b; font-family: monospace; }
+            .note { font-size: 9px; color: #94a3b8; }
+            @media print {
+              body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+              @page { margin: 8mm; size: A4; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="grid">${cards}</div>
+          <script>window.onload = () => { window.print(); window.close(); }<\/script>
+        </body>
+      </html>
+    `)
+    win.document.close()
+  }
+
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-gray-50">
 
-      {/* ── Print Extract ── */}
+      {/* ── Print Extract (single student) ── */}
       {printRecord && (
         <div ref={printRef} className="hidden print:block fixed inset-0 bg-white p-10 text-black z-50">
           <div className="border-2 border-gray-800 p-8 max-w-2xl mx-auto">
             <div className="text-center mb-6 border-b pb-4 border-gray-400">
               <h1 className="text-2xl font-bold tracking-wide">ADMISSION EXTRACT</h1>
-              <p className="text-sm text-gray-600 mt-1">School Management System</p>
+              <p className="text-sm text-gray-600 mt-1">Iqra School Management System</p>
             </div>
             <div className="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
               {([
@@ -263,65 +302,61 @@ export default function AdmissionRegisterPage() {
               </div>
             )}
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleExcelDownload}
-              disabled={filtered.length === 0}
-              className="flex items-center gap-1.5 h-9 px-3 rounded-lg border border-green-200 bg-green-50 text-green-700 hover:bg-green-100 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium transition-colors"
-              title="Download filtered data as CSV (opens in Excel)"
-            >
-              <Download className="w-3.5 h-3.5" />
-              Export Excel
+          <div className="flex items-center gap-2 flex-wrap">
+            <button onClick={handleExcelDownload} disabled={filtered.length === 0}
+              className="flex items-center gap-1.5 h-9 px-3 rounded-lg border border-green-200 bg-green-50 text-green-700 hover:bg-green-100 disabled:opacity-40 text-xs font-medium transition-colors">
+              <Download className="w-3.5 h-3.5" /> Export Excel
             </button>
-            <button
-              onClick={loadRecords}
-              className="h-9 w-9 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:text-teal-600 hover:border-teal-300 transition-colors"
-              title="Refresh"
-            >
+            {/* ── Generate missing logins ── */}
+            <button onClick={handleGenerateAllLogins} disabled={generatingLogins}
+              className="flex items-center gap-1.5 h-9 px-3 rounded-lg border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 disabled:opacity-50 text-xs font-medium transition-colors">
+              <KeyRound className="w-3.5 h-3.5" />
+              {generatingLogins ? 'Generating…' : 'Generate Logins'}
+            </button>
+            {/* ── Print all login cards ── */}
+            <button onClick={handlePrintLoginCards}
+              className="flex items-center gap-1.5 h-9 px-3 rounded-lg border border-teal-200 bg-teal-50 text-teal-700 hover:bg-teal-100 text-xs font-medium transition-colors">
+              <Printer className="w-3.5 h-3.5" /> Print Login Cards
+            </button>
+            <button onClick={loadRecords}
+              className="h-9 w-9 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:text-teal-600 hover:border-teal-300 transition-colors">
               <RefreshCw className="w-4 h-4" />
             </button>
-            <button
-              onClick={openAdd}
-              className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-            >
+            <button onClick={openAdd}
+              className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
               <span className="text-lg leading-none">+</span> Add Student
             </button>
           </div>
         </div>
 
+        {/* Generate result banner */}
+        {genResult && (
+          <div className="mb-4 flex items-center gap-3 px-4 py-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
+            ✅ Created {genResult.created} parent logins
+            {genResult.failed > 0 && <span className="text-red-600 ml-1">({genResult.failed} failed)</span>}
+            <button onClick={() => setGenResult(null)} className="ml-auto text-green-400 hover:text-green-600">✕</button>
+          </div>
+        )}
+
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-3 mb-5">
-          <input
-            type="text"
-            placeholder="Search by name, admission no, mobile..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="flex-1 border border-gray-200 bg-white focus:outline-teal-500 hover:border-teal-500 rounded-lg px-3 py-2 text-sm text-gray-500 placeholder-gray-400"
-          />
-          <select
-            value={filterStd}
-            onChange={e => setFilterStd(e.target.value)}
-            className="border border-gray-200 bg-white rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-400"
-          >
+          <input type="text" placeholder="Search by name, admission no, mobile..."
+            value={search} onChange={e => setSearch(e.target.value)}
+            className="flex-1 border border-gray-200 bg-white focus:outline-teal-500 hover:border-teal-500 rounded-lg px-3 py-2 text-sm text-gray-500 placeholder-gray-400" />
+          <select value={filterStd} onChange={e => setFilterStd(e.target.value)}
+            className="border border-gray-200 bg-white rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-400">
             <option value="">All Standards</option>
             {STANDARDS.map(s => <option key={s} value={s}>Standard {s}</option>)}
           </select>
-          <select
-            value={filterGender}
-            onChange={e => setFilterGender(e.target.value)}
-            className="border border-gray-200 bg-white rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-400"
-          >
+          <select value={filterGender} onChange={e => setFilterGender(e.target.value)}
+            className="border border-gray-200 bg-white rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-400">
             <option value="">All Genders</option>
             <option value="Male">Male</option>
             <option value="Female">Female</option>
           </select>
           {(search || filterStd || filterGender) && (
-            <button
-              onClick={() => { setSearch(''); setFilterStd(''); setFilterGender('') }}
-              className="text-sm text-gray-500 hover:text-gray-700 px-3"
-            >
-              Clear
-            </button>
+            <button onClick={() => { setSearch(''); setFilterStd(''); setFilterGender('') }}
+              className="text-sm text-gray-500 hover:text-gray-700 px-3">Clear</button>
           )}
         </div>
 
@@ -336,11 +371,8 @@ export default function AdmissionRegisterPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-300 bg-gray-100">
-                    {['Adm. No', 'Name', 'Std', 'Gender ↑', 'D.O.B', 'Parent / Guardian', 'Mobile', 'Vehicle Point', 'Actions'].map(h => (
-                      <th
-                        key={h}
-                        className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap"
-                      >
+                    {['Adm. No', 'Name', 'Std', 'Gender ↑', 'D.O.B', 'Parent / Guardian', 'Mobile', 'Vehicle Point', 'Login', 'Actions'].map(h => (
+                      <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">
                         {h}
                       </th>
                     ))}
@@ -348,28 +380,23 @@ export default function AdmissionRegisterPage() {
                 </thead>
                 <tbody>
                   {filtered.map((r, idx) => {
-                    const prevGender  = idx > 0 ? filtered[idx - 1].gender : null
-                    const isNewGroup  = idx > 0 && r.gender !== prevGender
-                    const isFirstRow  = idx === 0
+                    const prevGender = idx > 0 ? filtered[idx - 1].gender : null
+                    const isNewGroup = idx > 0 && r.gender !== prevGender
+                    const isFirstRow = idx === 0
 
                     return (
                       <>
-                        {/* Group header divider row */}
                         {(isFirstRow || isNewGroup) && (
                           <tr key={`group-${r.gender}-${idx}`}>
-                            <td colSpan={9} className={`px-4 py-1.5 ${
-                              r.gender === 'Male'
-                                ? 'bg-blue-50 border-t border-blue-100'
-                                : r.gender === 'Female'
-                                ? 'bg-pink-50 border-t border-pink-100'
-                                : 'bg-gray-50 border-t border-gray-200'
+                            <td colSpan={10} className={`px-4 py-1.5 ${
+                              r.gender === 'Male' ? 'bg-blue-50 border-t border-blue-100'
+                              : r.gender === 'Female' ? 'bg-pink-50 border-t border-pink-100'
+                              : 'bg-gray-50 border-t border-gray-200'
                             }`}>
                               <span className={`text-xs font-bold uppercase tracking-widest ${
-                                r.gender === 'Male'
-                                  ? 'text-blue-500'
-                                  : r.gender === 'Female'
-                                  ? 'text-pink-500'
-                                  : 'text-gray-400'
+                                r.gender === 'Male' ? 'text-blue-500'
+                                : r.gender === 'Female' ? 'text-pink-500'
+                                : 'text-gray-400'
                               }`}>
                                 {r.gender === 'Male' ? '♂' : r.gender === 'Female' ? '♀' : '⚧'} {r.gender}
                               </span>
@@ -381,24 +408,32 @@ export default function AdmissionRegisterPage() {
                           <td className="px-4 py-3 font-medium text-gray-500 whitespace-nowrap">{r.name}</td>
                           <td className="px-4 py-3">
                             <span className="bg-teal-50 text-teal-700 text-xs font-medium px-2 py-0.5 rounded">
-                              Std {r.standard}
+                              {r.standard}
                             </span>
                           </td>
                           <td className="px-4 py-3">
                             <span className={`text-xs font-medium px-2 py-0.5 rounded ${
-                              r.gender === 'Male'
-                                ? 'bg-blue-50 text-blue-700'
-                                : r.gender === 'Female'
-                                ? 'bg-pink-50 text-pink-700'
-                                : 'bg-gray-100 text-gray-600'
-                            }`}>
-                              {r.gender}
-                            </span>
+                              r.gender === 'Male' ? 'bg-blue-50 text-blue-700'
+                              : r.gender === 'Female' ? 'bg-pink-50 text-pink-700'
+                              : 'bg-gray-100 text-gray-600'
+                            }`}>{r.gender}</span>
                           </td>
                           <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{r.date_of_birth}</td>
                           <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{r.parent_guardian}</td>
                           <td className="px-4 py-3 text-gray-600 font-mono text-xs">{r.mobile_no}</td>
                           <td className="px-4 py-3 text-gray-600 text-xs">{r.vehicle_point || '—'}</td>
+                          {/* ── Login status column ── */}
+                          <td className="px-4 py-3">
+                            {(r as any).parent_auth_user_id ? (
+                              <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                                ✓ Active
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
+                                ⏳ None
+                              </span>
+                            )}
+                          </td>
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-1">
                               <button onClick={() => openEdit(r)} className="p-1.5 rounded hover:bg-gray-100 text-gray-500 hover:text-teal-800 transition-colors" title="Edit">
@@ -440,6 +475,15 @@ export default function AdmissionRegisterPage() {
               <button onClick={closeForm} className="text-gray-400 hover:text-gray-600 text-xl leading-none">✕</button>
             </div>
             <div className="p-6 space-y-5">
+              {!editId && (
+                <div className="flex items-start gap-2 p-3 bg-teal-50 border border-teal-200 rounded-lg">
+                  <KeyRound className="w-4 h-4 text-teal-600 mt-0.5 shrink-0" />
+                  <p className="text-xs text-teal-700">
+                    A parent login will be <strong>automatically created</strong> when this student is added.
+                    <br />Login: <strong>{form.admission_no || 'admission_no'}@iqra.school</strong> / Password: <strong>{form.admission_no || 'admission_no'}</strong>
+                  </p>
+                </div>
+              )}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Field label="Admission No. *">
                   <input type="text" value={form.admission_no}
@@ -505,9 +549,7 @@ export default function AdmissionRegisterPage() {
                 </div>
               </div>
               {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">
-                  {error}
-                </div>
+                <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">{error}</div>
               )}
             </div>
             <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100">
@@ -545,16 +587,12 @@ export default function AdmissionRegisterPage() {
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
                 Type the student name to confirm
               </label>
-              <input
-                type="text"
-                value={deleteConfirmName}
+              <input type="text" value={deleteConfirmName}
                 onChange={e => setDeleteConfirmName(e.target.value)}
-                placeholder={deleteConfirm.name}
-                autoFocus
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 placeholder-gray-300 text-gray-900"
-              />
+                placeholder={deleteConfirm.name} autoFocus
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 placeholder-gray-300 text-gray-900" />
               {deleteConfirmName.length > 0 && deleteConfirmName !== deleteConfirm.name && (
-                <p className="text-xs text-red-500 mt-1.5">Name does not match. Please type exactly as shown.</p>
+                <p className="text-xs text-red-500 mt-1.5">Name does not match.</p>
               )}
               {deleteConfirmName === deleteConfirm.name && (
                 <p className="text-xs text-green-600 mt-1.5">✓ Name confirmed. You can now delete.</p>
@@ -562,11 +600,9 @@ export default function AdmissionRegisterPage() {
             </div>
             <div className="flex gap-3 justify-end">
               <button onClick={closeDeleteConfirm} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 cursor-pointer rounded-lg transition-colors">Cancel</button>
-              <button
-                onClick={() => handleDelete(deleteConfirm.id!)}
+              <button onClick={() => handleDelete(deleteConfirm.id!)}
                 disabled={deleteConfirmName !== deleteConfirm.name}
-                className="px-4 py-2 text-sm font-medium bg-red-600 hover:bg-red-700 disabled:bg-red-200 disabled:text-red-400 disabled:cursor-not-allowed cursor-pointer text-white rounded-lg transition-colors"
-              >
+                className="px-4 py-2 text-sm font-medium bg-red-600 hover:bg-red-700 disabled:bg-red-200 disabled:text-red-400 disabled:cursor-not-allowed cursor-pointer text-white rounded-lg transition-colors">
                 Delete
               </button>
             </div>
