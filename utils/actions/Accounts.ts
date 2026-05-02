@@ -4,6 +4,20 @@ import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { AccountEntry, NewEntry, EntryType, MonthlySummary, CategorySummary } from '@/type/accounts'
 
+// ── Re-export types so UI can import everything from one place ────────────────
+export type {
+  AccountEntry,
+  NewEntry,
+  EntryType,
+  MonthlySummary,
+  CategorySummary,
+} from '@/type/accounts'
+
+export type {
+  IncomeCategory,
+  ExpenditureCategory,
+} from '@/type/accounts'
+
 // ── Fetch entries ─────────────────────────────────────────
 export async function fetchEntries(
   opts: { type?: EntryType; month?: string; limit?: number; offset?: number } = {}
