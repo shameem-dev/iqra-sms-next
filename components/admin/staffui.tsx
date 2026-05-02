@@ -189,56 +189,39 @@ export default function StaffUI() {
               {/* Head */}
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50">
-                  {/* # */}
                   <th className="w-10 px-4 py-3 text-left text-xs font-medium text-slate-400 select-none">#</th>
-
-                  {/* Name */}
                   <th
                     className="px-4 py-3 text-left text-xs font-medium text-slate-500 cursor-pointer hover:text-slate-800 select-none whitespace-nowrap"
                     onClick={() => handleSort('name')}
                   >
                     <span className="inline-flex items-center">Name <SortIcon col="name" /></span>
                   </th>
-
-                  {/* Mobile */}
                   <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 whitespace-nowrap">Mobile</th>
-
-                  {/* Designation */}
                   <th
                     className="px-4 py-3 text-left text-xs font-medium text-slate-500 cursor-pointer hover:text-slate-800 select-none whitespace-nowrap"
                     onClick={() => handleSort('designation')}
                   >
                     <span className="inline-flex items-center">Designation <SortIcon col="designation" /></span>
                   </th>
-
-                  {/* Department */}
                   <th
                     className="px-4 py-3 text-left text-xs font-medium text-slate-500 cursor-pointer hover:text-slate-800 select-none whitespace-nowrap"
                     onClick={() => handleSort('department')}
                   >
                     <span className="inline-flex items-center">Department <SortIcon col="department" /></span>
                   </th>
-
-                  {/* Joined */}
                   <th
                     className="px-4 py-3 text-left text-xs font-medium text-slate-500 cursor-pointer hover:text-slate-800 select-none whitespace-nowrap"
                     onClick={() => handleSort('date_joined')}
                   >
                     <span className="inline-flex items-center">Joined <SortIcon col="date_joined" /></span>
                   </th>
-
-                  {/* Salary */}
                   <th
                     className="px-4 py-3 text-right text-xs font-medium text-slate-500 cursor-pointer hover:text-slate-800 select-none whitespace-nowrap"
                     onClick={() => handleSort('total_salary')}
                   >
                     <span className="inline-flex items-center justify-end">Salary <SortIcon col="total_salary" /></span>
                   </th>
-
-                  {/* Status */}
                   <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 whitespace-nowrap">Status</th>
-
-                  {/* Actions */}
                   <th className="px-4 py-3 text-center text-xs font-medium text-slate-500 w-24">Actions</th>
                 </tr>
               </thead>
@@ -246,10 +229,7 @@ export default function StaffUI() {
               {/* Body */}
               <tbody className="divide-y divide-slate-100">
                 {filtered.map((s, i) => (
-                  <tr
-                    key={s.id}
-                    className="group hover:bg-slate-50 transition-colors"
-                  >
+                  <tr key={s.id} className="hover:bg-slate-50/60 transition-colors">
                     {/* # */}
                     <td className="px-4 py-3 text-xs text-slate-400 tabular-nums">{i + 1}</td>
 
@@ -333,29 +313,29 @@ export default function StaffUI() {
                         )}
                     </td>
 
-                    {/* Actions */}
+                    {/* Actions — matches AccountsUI style */}
                     <td className="px-4 py-3">
-                      <div className="flex items-center justify-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center justify-center gap-0.5">
                         <button
                           onClick={() => setViewingStaff(s)}
                           title="View"
-                          className="p-1.5 rounded-md text-slate-400 hover:text-teal-600 hover:bg-teal-50 transition-colors"
+                          className="p-1.5 rounded-md text-slate-50 hover:text-white bg-teal-600 hover:bg-teal-700 transition-colors"
                         >
-                          <Eye className="w-4 h-4" />
+                          <Eye className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => { setEditingStaff(s); setModalOpen(true); }}
                           title="Edit"
-                          className="p-1.5 rounded-md text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                          className="p-1.5 rounded-md text-slate-50 hover:text-white bg-blue-700 hover:bg-blue-800 transition-colors"
                         >
-                          <Pencil className="w-4 h-4" />
+                          <Pencil className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => setDeleteConfirm(s.id)}
                           title="Delete"
-                          className="p-1.5 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                          className="p-1.5 rounded-md text-slate-50 hover:text-white bg-red-700 hover:bg-red-800 transition-colors"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </td>
@@ -419,10 +399,10 @@ export default function StaffUI() {
       {/* ── Modals ── */}
       {modalOpen && (
         <StaffModal
-            key={editingStaff?.id ?? 'new'}
-            staff={editingStaff}
-            onClose={() => { setModalOpen(false); setEditingStaff(null); }}
-            onSaved={fetchStaff}
+          key={editingStaff?.id ?? 'new'}
+          staff={editingStaff}
+          onClose={() => { setModalOpen(false); setEditingStaff(null); }}
+          onSaved={fetchStaff}
         />
       )}
       {viewingStaff && (
