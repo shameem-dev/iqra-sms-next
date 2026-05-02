@@ -13,6 +13,7 @@ import {
   type IncomeCategory, type ExpenditureCategory
 } from '@/utils/actions/Accounts';
 import { useAccountsRealtime } from '@/hooks/useAccountsRealtime';
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 export const INCOME_CATEGORIES: { value: IncomeCategory; label: string }[] = [
@@ -65,7 +66,6 @@ function monthLabel(ym: string) {
   return new Date(Number(y), Number(m) - 1).toLocaleString('en-IN', { month: 'long', year: 'numeric' });
 }
 
-// ── Resolve a category value OR raw string to a display label ─────────────────
 function resolveIncomeLabel(raw: string | null | undefined): string {
   if (!raw) return '—';
   return INCOME_CATEGORIES.find(c => c.value === raw)?.label ?? raw;
@@ -338,9 +338,6 @@ function BSRow({
 }) {
   const isIncome = entry.type === 'income';
 
-  // ✅ FIX: resolveIncomeLabel / resolveExpenditureLabel falls back to the
-  // raw string when no code-based match is found, so fee-payment entries
-  // like "Admission Fee" display correctly instead of showing '—'
   const categoryLabel = isIncome
     ? resolveIncomeLabel(entry.income_category)
     : resolveExpenditureLabel(entry.expenditure_category);
@@ -372,27 +369,20 @@ function BSRow({
       <td className="px-3 py-2.5 text-xs text-slate-400 whitespace-nowrap">
         {entry.bill_voucher_no || entry.receipt_no || <span className="text-slate-200">—</span>}
       </td>
-      {/* Income column */}
       <td className="px-3 py-2.5 text-right whitespace-nowrap border-l border-slate-100">
         {isIncome ? (
-          <span className="text-sm font-semibold tabular-nums text-teal-700">
-            ₹{fmt(amount)}
-          </span>
+          <span className="text-sm font-semibold tabular-nums text-teal-700">₹{fmt(amount)}</span>
         ) : (
           <span className="text-slate-200 text-sm">—</span>
         )}
       </td>
-      {/* Expenditure column */}
       <td className="px-3 py-2.5 text-right whitespace-nowrap border-l border-slate-100">
         {!isIncome ? (
-          <span className="text-sm font-semibold tabular-nums text-rose-600">
-            ₹{fmt(amount)}
-          </span>
+          <span className="text-sm font-semibold tabular-nums text-rose-600">₹{fmt(amount)}</span>
         ) : (
           <span className="text-slate-200 text-sm">—</span>
         )}
       </td>
-      {/* Actions */}
       <td className="px-3 py-2.5 w-16 border-l border-slate-100">
         <div className="flex items-center justify-center gap-0.5">
           <button onClick={() => onEdit(entry)} className="p-1.5 text-slate-50 hover:text-white bg-blue-700 hover:bg-blue-800 rounded-md transition-colors" title="Edit">
@@ -449,26 +439,32 @@ export default function AccountsUI({ staffList = [] }: AccountsUIProps) {
   const [deleteTarget, setDeleteTarget]   = useState<string | null>(null);
   const [toast, setToast]                 = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
-  
-// ✅ Correct order — define first, use after
-const loadData = useCallback(async () => {
-  try {
-    setLoading(true);
-    console.log('Loading data...', new Date().toISOString()); // ADD THIS
-    const [data, t] = await Promise.all([
-      fetchEntries({}),
-      fetchTotals()
-    ]);
-    console.log('Data loaded:', data.length, t); // ADD THIS
-    setEntries(data);
-    setTotals(t);
-  } catch (e: any) {
-    console.error('Load error:', e); // ADD THIS
-    setToast({ message: e.message ?? 'Failed to load entries', type: 'error' });
-  } finally {
-    setLoading(false);
-  }
-}, []);
+  // ── Load data ─────────────────────────────────────────
+  const loadData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const [data, t] = await Promise.all([
+        fetchEntries({}),
+        fetchTotals(),
+      ]);
+      setEntries(data);
+      setTotals(t);
+    } catch (e: any) {
+      setToast({ message: e.message ?? 'Failed to load entries', type: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // ── FIX 1: Call loadData on mount ────────────────────
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  // ── FIX 2: Wire up realtime subscription ─────────────
+  useAccountsRealtime(loadData);
+
+  // ── Sync filterMonth → dateFrom / dateTo ─────────────
   useEffect(() => {
     if (filterMonth) {
       const [y, m] = filterMonth.split('-').map(Number);
@@ -499,7 +495,6 @@ const loadData = useCallback(async () => {
   const filtered = sortedAll.filter(e => {
     const q = search.toLowerCase();
 
-    // ✅ FIX: search also checks raw income_category string (e.g. "Admission Fee")
     const inLabel = resolveIncomeLabel(e.income_category).toLowerCase().includes(q);
     const exLabel = resolveExpenditureLabel(e.expenditure_category).toLowerCase().includes(q);
 
