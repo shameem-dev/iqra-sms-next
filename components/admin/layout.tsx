@@ -10,6 +10,7 @@ import MarksEntryPage from "../marks/entry"
 import FeeTrackerPage from "./fees/tracker/FeeTracker"
 import PaymentPage from "./fees/payment/PaymentMain"
 import DocumentGenerator from "./certifictes"
+import AdminAttendance from "./attendance/AdminAttendanceMain"
 
 interface PreselectedStudent {
   id: number
@@ -30,6 +31,9 @@ export default function AdminLayout() {
 
   const renderContent = () => {
     switch (activeTab) {
+
+      case "attendance":
+        return <AdminAttendance />
       case "marks":
         return <MarksEntryPage />
       case "fees":
