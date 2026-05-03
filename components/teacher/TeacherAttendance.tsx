@@ -144,7 +144,7 @@ export default function TeacherAttendance({ classAssignment, userId }: Props) {
         )}
 
         {/* ── Date selector ── */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-3 flex items-center justify-between gap-2">
+        <div className="bg-white rounded-2xl border text-black font-bold border-slate-700 p-3 flex items-center justify-between gap-2">
           <button
             onClick={() => changeDate(-1)}
             className="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 active:bg-slate-100 transition-colors"

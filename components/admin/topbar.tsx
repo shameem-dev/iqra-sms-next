@@ -2,6 +2,7 @@
 import { useRouter } from "next/navigation"
 import { Menu, Bell, Settings, LogOut, ChevronDown } from "lucide-react"
 import { useState } from "react"
+import { register } from "module"
 
 const SECTIONS: Record<string, string> = {
   users: "User Management",
@@ -10,7 +11,7 @@ const SECTIONS: Record<string, string> = {
   attendance: "Student Attendance",
   leave: "Leave Requests",
   reports: "Reports",
-  admission: "Admission",
+  admission: "Admission-Register",
   staff: "Staff Data",
 }
 
@@ -21,8 +22,9 @@ const descriptions: Record<string, string> = {
   attendance: "Track student attendance and generate reports",
   leave: "Approve and manage leave requests",
   reports: "Generate reports and analytics",
-  admission: "Manage admission and batch configurations",
+  admission: "Manage student admissions and parent login access",
   staff: "Manage staff members and their details",
+ 
 }
 
 interface TopBarProps {

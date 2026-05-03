@@ -26,7 +26,7 @@ const SIDEBAR_ITEMS = [
   { id: "attendance", label: "Student Attendance", icon: Clock, badge: null },
   { id: "marks", label: "Marks", icon: FileText, badge: "" },
   { id: "fees", label: "Fees", icon: BarChart3, badge: null },
-  { id: "admission-register", label: "Admission", icon: ClipboardPlus, badge: null },
+  { id: "admission", label: "Admission", icon: ClipboardPlus, badge: null },
   { id: "staff", label: "Staff Data", icon: Users, badge: null },
   { id: "cerificates & reports", label: "Certificates & Reports", icon: BarChart3, badge: null },
 
