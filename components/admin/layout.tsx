@@ -50,7 +50,7 @@ export default function AdminLayout() {
         return <StaffUI />
         case "cerificates & reports":
         return <DocumentGenerator />
-      case "admission-register":
+      case "admission":
         return <AdmissionRegisterPage />
     }
   }
