@@ -44,7 +44,7 @@ export default function AttendanceGrid({
         <tr className={style.row}>
           <td colSpan={daysInMonth + 2}
             className={`px-3 py-1.5 text-xs font-bold uppercase tracking-widest border-b ${style.text} ${style.border}`}>
-            {genderLabel === 'Male' ? '♂' : genderLabel === 'Female' ? '♀' : '⚧'} {genderLabel}
+            {genderLabel === 'Male' ? '' : genderLabel === 'Female' ? '' : ''} {genderLabel}
           </td>
         </tr>
 

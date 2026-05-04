@@ -90,4 +90,5 @@ export interface StudentFeeStatus {
   totalPaid: number
   totalBalance: number
   status: 'paid' | 'partial' | 'pending'
+  s
 }
