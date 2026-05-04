@@ -5,7 +5,7 @@ import { useState } from "react"
 import { register } from "module"
 
 const SECTIONS: Record<string, string> = {
-  users: "User Management",
+  users: "Dashboard",
   Accounts: "Accounts",
   import: "Import Students",
   attendance: "Student Attendance",
@@ -16,7 +16,7 @@ const SECTIONS: Record<string, string> = {
 }
 
 const descriptions: Record<string, string> = {
-  users: "Manage teachers, students, and parents",
+  users: "Access your dashboard and manage your institution",
   Accounts: "Manage financial records and transactions",
   import: "Import student data from CSV or Excel files",
   attendance: "Track student attendance and generate reports",
