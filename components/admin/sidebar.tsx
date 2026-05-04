@@ -15,7 +15,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 const SIDEBAR_ITEMS = [
-  { id: "users", label: "User Management", icon: Users, badge: null },
+  { id: "users", label: "Dashboard", icon: Users, badge: null },
   {
     id: "Accounts",
     label: "Accounts",

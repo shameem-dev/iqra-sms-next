@@ -10,6 +10,7 @@ import MarksEntryPage from "../marks/entry"
 import FeeTrackerPage from "./fees/tracker/FeeTracker"
 import PaymentPage from "./fees/payment/PaymentMain"
 import DocumentGenerator from "./certifictes"
+import Dashboard from "./Dashboard"
 import AdminAttendance from "./attendance/AdminAttendanceMain"
 
 interface PreselectedStudent {
@@ -56,6 +57,8 @@ export default function AdminLayout() {
         return <DocumentGenerator />
       case "admission":
         return <AdmissionRegisterPage />
+        default:
+        return <Dashboard />
     }
   }
 
