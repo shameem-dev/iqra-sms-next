@@ -16,21 +16,13 @@ import { useRouter } from "next/navigation";
 
 const SIDEBAR_ITEMS = [
   { id: "users", label: "Dashboard", icon: Users, badge: null },
-  {
-    id: "Accounts",
-    label: "Accounts",
-    icon: FileSpreadsheet,
-    badge: null,
-  },
-  { id: "import", label: "Import Students", icon: Upload, badge: null },
+  { id: "Accounts", label: "Accounts", icon: FileSpreadsheet, badge: null },
   { id: "attendance", label: "Student Attendance", icon: Clock, badge: null },
   { id: "marks", label: "Marks", icon: FileText, badge: "" },
   { id: "fees", label: "Fees", icon: BarChart3, badge: null },
   { id: "admission", label: "Admission", icon: ClipboardPlus, badge: null },
   { id: "staff", label: "Staff Data", icon: Users, badge: null },
   { id: "cerificates & reports", label: "Certificates & Reports", icon: BarChart3, badge: null },
-
-
 ];
 
 interface SidebarProps {
@@ -48,128 +40,125 @@ export default function Sidebar({
 }: SidebarProps) {
   const router = useRouter();
 
-  const handleLogout = () => {
-    router.push("/");
-  };
-
-  const handleLogoClick = () => {
-    if (!sidebarOpen && setSidebarOpen) {
-      setSidebarOpen(true);
-    }
-  };
-
-  const handleNavItemClick = (id: string) => {
-    if (typeof setActiveTab === "function") {
-      setActiveTab(id);
-    }
-  };
-
-  const handleCollapseClick = () => {
-    if (typeof setSidebarOpen === "function") {
-      setSidebarOpen(false);
-    }
-  };
+  const handleLogout = () => router.push("/");
+  const handleLogoClick = () => { if (!sidebarOpen) setSidebarOpen(true); };
+  const handleNavItemClick = (id: string) => { if (typeof setActiveTab === "function") setActiveTab(id); };
+  const handleCollapseClick = () => { if (typeof setSidebarOpen === "function") setSidebarOpen(false); };
 
   return (
     <div
-      className={`${sidebarOpen ? "w-72" : "w-20"} bg-gradient-to-b from-slate-900 to-slate-800 text-white transition-all duration-300 flex flex-col border-r border-slate-700 h-screen`}
+      className={`${
+        sidebarOpen ? "w-64" : "w-20"
+      } flex flex-col h-screen transition-all duration-300 bg-gradient-to-b from-[#0a1e4f] via-[#112d72] to-[#0b2458]`}
     >
       {/* Header */}
-      <div className="px-4 py-4 border-b border-slate-700 flex items-center gap-2">
-        {/* Logo - clicking expands sidebar when collapsed */}
+      <div className="px-4 py-4 flex items-center gap-3 border-b border-[#c49a28]/30">
         <div
           onClick={handleLogoClick}
-          className={`flex items-center gap-3 flex-1 min-w-0 rounded-lg transition-all ${
-            !sidebarOpen ? "cursor-pointer hover:opacity-80" : "cursor-default"
+          className={`flex items-center gap-3 flex-1 min-w-0 ${
+            !sidebarOpen ? "cursor-pointer" : "cursor-default"
           }`}
-          title={!sidebarOpen ? "Expand sidebar" : undefined}
         >
-          <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
+          <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 overflow-hidden bg-white/5">
             <Image
               src="/images/logo.png"
-              alt="Logo"
-              width={24}
-              height={24}
-              className="w-10 h-10"
+              alt="IQRAH Logo"
+              width={32}
+              height={32}
+              className="w-8 h-8 object-contain rounded-md"
             />
           </div>
+
           {sidebarOpen && (
             <div className="min-w-0">
-              <div className="font-bold text-sm truncate">IQRAH School</div>
-              <div className="text-xs text-slate-400 truncate">
+              <div className="text-white font-bold text-sm tracking-[0.12em] uppercase truncate">
+                IQRAH
+              </div>
+              <div className="text-[#c49a28] text-[9px] tracking-[0.15em] uppercase truncate">
                 Admin Portal
               </div>
             </div>
           )}
         </div>
 
-        {/* Collapse icon - only shown when sidebar is open */}
         {sidebarOpen && (
           <button
             onClick={handleCollapseClick}
-            className="flex items-center justify-center p-2 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-lg transition-all flex-shrink-0"
+            className="flex items-center justify-center w-7 h-7 rounded-lg shrink-0 border border-[#c49a28]/30 text-[#c49a28]/70 hover:text-[#c49a28] hover:bg-[#c49a28]/10 transition-all"
             title="Collapse sidebar"
           >
-            <PanelLeftClose size={18} />
+            <PanelLeftClose size={14} />
           </button>
         )}
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-3 py-4 space-y-2 overflow-y-auto">
-        {SIDEBAR_ITEMS.map((item) => (
-          <button
-            key={item.id}
-            onClick={() => handleNavItemClick(item.id)}
-            className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-all group relative ${
-              sidebarOpen ? "justify-start" : "justify-center"
-            } ${
-              activeTab === item.id
-                ? "bg-indigo-600 text-white shadow-lg"
-                : "text-slate-400 hover:text-white hover:bg-slate-700/50"
-            }`}
-            title={!sidebarOpen ? item.label : undefined}
-          >
-            <item.icon size={22} className="flex-shrink-0" />
-            {sidebarOpen && (
-              <>
-                <span className="text-sm font-medium flex-1 text-left">
-                  {item.label}
-                </span>
-                {item.badge && (
-                  <span className="px-2 py-1 bg-red-500 text-white text-xs rounded-full font-semibold">
-                    {item.badge}
-                  </span>
-                )}
-              </>
-            )}
-            {activeTab === item.id && sidebarOpen && (
-              <ChevronRight
-                size={16}
-                className="absolute right-2 text-indigo-300"
-              />
-            )}
-          </button>
-        ))}
+      <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5 [scrollbar-width:none]">
+        {SIDEBAR_ITEMS.map((item) => {
+          const isActive = activeTab === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => handleNavItemClick(item.id)}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all relative text-[13px] border-l-[3px] ${
+                sidebarOpen ? "justify-start" : "justify-center"
+              } ${
+                isActive
+                  ? "bg-gradient-to-r from-[#c49a28]/20 to-[#c49a28]/5 border-[#c49a28] text-white font-medium"
+                  : "border-transparent text-white/50 hover:bg-white/5 hover:text-white"
+              }`}
+              title={!sidebarOpen ? item.label : undefined}
+            >
+              {/* Icon box */}
+              <div
+                className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-all ${
+                  isActive ? "bg-[#c49a28]/20" : "bg-white/5"
+                }`}
+              >
+                <item.icon
+                  size={15}
+                  className={isActive ? "text-[#c49a28]" : ""}
+                />
+              </div>
+
+              {sidebarOpen && (
+                <>
+                  <span className="flex-1 text-left truncate">{item.label}</span>
+                  {item.badge && (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#c49a28] text-[#0b2255]">
+                      {item.badge}
+                    </span>
+                  )}
+                  {isActive && (
+                    <ChevronRight
+                      size={13}
+                      className="absolute right-2 text-[#c49a28]"
+                    />
+                  )}
+                </>
+              )}
+            </button>
+          );
+        })}
       </nav>
 
-      {/* Footer - Logout */}
-      <div className="px-3 py-4 border-t border-slate-700">
+      {/* Footer */}
+      <div className="px-3 py-3 border-t border-[#c49a28]/30">
         {sidebarOpen ? (
           <button
             onClick={handleLogout}
-            className="w-full flex items-center justify-between gap-2 px-3 py-3 text-white bg-red-700 hover:bg-red-800 rounded-lg transition-all font-medium text-sm"
+            className="w-full flex items-center justify-between gap-2 px-4 py-2.5 rounded-xl text-[13px] font-medium text-[#c49a28] bg-[#c49a28]/10 border border-[#c49a28]/30 hover:bg-[#c49a28]/20 transition-all"
           >
             <span>Logout</span>
-            <LogOut size={18} />
+            <LogOut size={16} />
           </button>
         ) : (
           <button
             onClick={handleLogout}
-            className="w-full flex items-center justify-center p-3 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-all"
+            className="w-full flex items-center justify-center p-3 rounded-xl text-[#c49a28] hover:bg-[#c49a28]/10 transition-all"
             title="Logout"
           >
-            <LogOut size={20} />
+            <LogOut size={18} />
           </button>
         )}
       </div>

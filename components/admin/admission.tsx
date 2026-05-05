@@ -30,18 +30,18 @@ const EMPTY_FORM: AdmissionRecord = {
   vehicle_point: '', gender: '',
 }
 
-/* ─── tiny helpers ───────────────────────────────────────────────────── */
+/* ─── helpers ─────────────────────────────────────────────────────────── */
 const inputCls =
-  'w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-lg px-3 py-2.5 text-sm ' +
-  'focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent ' +
-  'placeholder-slate-400 transition-all'
+  'w-full bg-white border border-[#E2E8F0] text-[#0F172A] rounded-xl px-4 py-2.5 text-sm ' +
+  'focus:outline-none focus:ring-2 focus:ring-[#6C63FF]/40 focus:border-[#6C63FF] ' +
+  'placeholder-[#94A3B8] transition-all shadow-sm'
 
 const selectCls = inputCls + ' appearance-none cursor-pointer'
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-semibold text-slate-500 uppercase tracking-widest">
+      <label className="text-[11px] font-bold text-[#64748B] uppercase tracking-widest">
         {label}
       </label>
       {children}
@@ -49,20 +49,11 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   )
 }
 
-// FIX 1: Removed unused `icon` prop from StatCard
-function StatCard({
-  label, value, color,
-}: {
-  label: string
-  value: number
-  color: string
-}) {
+function StatCard({ label, value, accent }: { label: string; value: number; accent: string }) {
   return (
-    <div className={`flex items-center gap-3 px-4 py-3 rounded-xl border ${color}`}>
-      <div>
-        <p className="text-2xl font-bold leading-none">{value}</p>
-        <p className="text-xs font-medium opacity-70 mt-0.5">{label}</p>
-      </div>
+    <div className={`relative overflow-hidden flex flex-col justify-between px-5 py-4 rounded-2xl border ${accent} min-w-[120px]`}>
+      <p className="text-[11px] font-bold uppercase tracking-widest opacity-60 mb-1">{label}</p>
+      <p className="text-3xl font-black leading-none">{value}</p>
     </div>
   )
 }
@@ -86,7 +77,6 @@ function exportToExcel(data: AdmissionRecord[], filename = 'admissions.csv') {
   URL.revokeObjectURL(url)
 }
 
-// FIX 2: Type for AdmissionRecord extended with optional parent_auth_user_id
 type AdmissionRecordWithAuth = AdmissionRecord & {
   parent_auth_user_id?: string | null
 }
@@ -112,8 +102,6 @@ export default function AdmissionRegisterPage() {
   const [generatingLogins, setGeneratingLogins]   = useState(false)
   const [genResult, setGenResult]                 = useState<{ created: number; failed: number } | null>(null)
 
-  /* ── load ── */
-  // FIX 3: catch (err: unknown) instead of catch (err: any)
   async function loadRecords() {
     setLoading(true)
     try {
@@ -144,10 +132,9 @@ export default function AdmissionRegisterPage() {
     setFiltered(r)
   }, [search, filterStd, filterGender, records])
 
-  const maleCount   = filtered.filter(r => r.gender === 'Male').length
-  const femaleCount = filtered.filter(r => r.gender === 'Female').length
+  const boyCount  = filtered.filter(r => r.gender === 'Male').length
+  const girlCount = filtered.filter(r => r.gender === 'Female').length
 
-  /* ── form helpers ── */
   function openAdd()  { setForm(EMPTY_FORM); setEditId(null); setShowForm(true); setError('') }
   function openEdit(r: AdmissionRecord) { setForm({ ...r }); setEditId(r.id ?? null); setShowForm(true); setError('') }
   function closeForm() { setShowForm(false); setForm(EMPTY_FORM); setEditId(null); setError('') }
@@ -216,7 +203,7 @@ export default function AdmissionRegisterPage() {
   function handlePrintLoginCards() {
     const cards = records.map(r => `
       <div class="card">
-        <div class="school"> IQRAH SCHOOL — Parent Login Card</div>
+        <div class="school">IQRAH SCHOOL — Parent Login Card</div>
         <div class="name">${r.name}</div>
         <div class="meta">Admission No: <strong>${r.admission_no}</strong> &nbsp;|&nbsp; Class: <strong>${r.standard}</strong></div>
         <div class="cred-box">
@@ -252,11 +239,18 @@ export default function AdmissionRegisterPage() {
     win.document.close()
   }
 
+  /* ─── gender display helper ─── */
+  function genderLabel(g: string) {
+    if (g === 'Male')   return 'Boy'
+    if (g === 'Female') return 'Girl'
+    return g || '—'
+  }
+
   /* ════════════════════════════ RENDER ════════════════════════════════════ */
   return (
-    <div className="min-h-screen bg-slate-50 font-sans">
+    <div className="min-h-screen font-sans" style={{ background: '#F7F8FC' }}>
 
-      {/* ── Print extract (single student) ── */}
+      {/* ── Single-student print view ── */}
       {printRecord && (
         <div ref={printRef} className="hidden print:block fixed inset-0 bg-white p-10 text-black z-50">
           <div className="border-2 border-slate-800 p-8 max-w-2xl mx-auto rounded-2xl">
@@ -269,7 +263,7 @@ export default function AdmissionRegisterPage() {
                 ['Admission No.', printRecord.admission_no],
                 ['Student Name',  printRecord.name],
                 ['Standard',      printRecord.standard],
-                ['Gender',        printRecord.gender],
+                ['Gender',        genderLabel(printRecord.gender)],
                 ['Date of Birth', printRecord.date_of_birth],
                 ['Aadhar No.',    printRecord.aadhar_no],
                 ['Parent / Guardian', printRecord.parent_guardian],
@@ -294,16 +288,18 @@ export default function AdmissionRegisterPage() {
       {/* ═══════════════════════ MAIN UI ═══════════════════════════════════ */}
       <div className="max-w-screen-xl mx-auto px-4 sm:px-6 py-8 print:hidden">
 
-        {/* ── Page header ── */}
+        {/* ── Header ── */}
         <div className="mb-8">
-          <div className="flex flex-wrap items-start justify-end gap-4">
+          {/* Title row */}
+          <div className="flex flex-wrap items-center justify-end gap-4 mb-6">
+          
 
             {/* Action buttons */}
             <div className="flex items-center gap-2 flex-wrap">
               <button
                 onClick={handleExcelDownload}
                 disabled={filtered.length === 0}
-                className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 disabled:opacity-40 text-xs font-semibold transition-colors"
+                className="inline-flex items-center gap-2 h-9 px-4 rounded-xl border border-[#BBF7D0] bg-[#F0FDF4] text-[#15803D] hover:bg-[#DCFCE7] disabled:opacity-40 text-xs font-bold transition-all"
               >
                 <Download className="w-3.5 h-3.5" /> Export CSV
               </button>
@@ -311,7 +307,7 @@ export default function AdmissionRegisterPage() {
               <button
                 onClick={handleGenerateAllLogins}
                 disabled={generatingLogins}
-                className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 disabled:opacity-50 text-xs font-semibold transition-colors"
+                className="inline-flex items-center gap-2 h-9 px-4 rounded-xl border border-[#FDE68A] bg-[#FFFBEB] text-[#B45309] hover:bg-[#FEF3C7] disabled:opacity-50 text-xs font-bold transition-all"
               >
                 <KeyRound className="w-3.5 h-3.5" />
                 {generatingLogins ? 'Generating…' : 'Generate Logins'}
@@ -319,14 +315,14 @@ export default function AdmissionRegisterPage() {
 
               <button
                 onClick={handlePrintLoginCards}
-                className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg border border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100 text-xs font-semibold transition-colors"
+                className="inline-flex items-center gap-2 h-9 px-4 rounded-xl border border-[#DDD6FE] bg-[#F5F3FF] text-[#6D28D9] hover:bg-[#EDE9FE] text-xs font-bold transition-all"
               >
                 <Printer className="w-3.5 h-3.5" /> Login Cards
               </button>
 
               <button
                 onClick={loadRecords}
-                className="h-9 w-9 inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:text-indigo-600 hover:border-indigo-300 transition-colors"
+                className="h-9 w-9 inline-flex items-center justify-center rounded-xl border border-[#E2E8F0] bg-white text-[#94A3B8] hover:text-[#6C63FF] hover:border-[#6C63FF]/30 transition-all shadow-sm"
                 title="Refresh"
               >
                 <RefreshCw className="w-4 h-4" />
@@ -334,7 +330,8 @@ export default function AdmissionRegisterPage() {
 
               <button
                 onClick={openAdd}
-                className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-sm shadow-indigo-200 transition-colors"
+                className="inline-flex items-center gap-2 h-9 px-5 rounded-xl text-white text-xs font-bold shadow-lg transition-all hover:opacity-90 active:scale-95"
+                style={{ background: 'linear-gradient(135deg, #6C63FF 0%, #4F46E5 100%)', boxShadow: '0 4px 14px rgba(108,99,255,0.35)' }}
               >
                 <Plus className="w-4 h-4" /> Add Student
               </button>
@@ -342,34 +339,33 @@ export default function AdmissionRegisterPage() {
           </div>
 
           {/* ── Stat cards ── */}
-          {/* FIX 4: Removed icon prop from StatCard usage */}
-          <div className="flex flex-wrap gap-3 mt-5">
+          <div className="flex flex-wrap gap-3">
             <StatCard
               label="Total Students"
               value={filtered.length}
-              color="bg-white border-slate-200 text-slate-700"
+              accent="bg-white border-[#E2E8F0] text-[#0F172A]"
             />
             <StatCard
-              label="Male"
-              value={maleCount}
-              color="bg-blue-50 border-blue-200 text-blue-700"
+              label="Boys"
+              value={boyCount}
+              accent="bg-[#EFF6FF] border-[#BFDBFE] text-[#1D4ED8]"
             />
             <StatCard
-              label="Female"
-              value={femaleCount}
-              color="bg-pink-50 border-pink-200 text-pink-700"
+              label="Girls"
+              value={girlCount}
+              accent="bg-[#FDF2F8] border-[#FBCFE8] text-[#BE185D]"
             />
           </div>
         </div>
 
-        {/* ── Generate-logins result banner ── */}
+        {/* ── Login-gen result banner ── */}
         {genResult && (
-          <div className="mb-5 flex items-center gap-3 px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-xl text-sm text-emerald-700">
+          <div className="mb-5 flex items-center gap-3 px-4 py-3 bg-[#F0FDF4] border border-[#BBF7D0] rounded-2xl text-sm text-[#166534]">
             <span>✅ Created <strong>{genResult.created}</strong> parent login{genResult.created !== 1 ? 's' : ''}</span>
             {genResult.failed > 0 && (
               <span className="text-red-600">({genResult.failed} failed)</span>
             )}
-            <button onClick={() => setGenResult(null)} className="ml-auto text-emerald-400 hover:text-emerald-600 transition-colors">
+            <button onClick={() => setGenResult(null)} className="ml-auto text-[#4ADE80] hover:text-[#16A34A] transition-colors">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -378,16 +374,16 @@ export default function AdmissionRegisterPage() {
         {/* ── Filters ── */}
         <div className="flex flex-col sm:flex-row gap-3 mb-5">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94A3B8] pointer-events-none" />
             <input
               type="text"
               placeholder="Search by name, admission no, or mobile…"
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+              className="w-full pl-10 pr-4 py-2.5 bg-white border border-[#E2E8F0] rounded-xl text-sm text-[#0F172A] placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#6C63FF]/30 focus:border-[#6C63FF] transition-all shadow-sm"
             />
             {search && (
-              <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+              <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94A3B8] hover:text-[#475569]">
                 <X className="w-3.5 h-3.5" />
               </button>
             )}
@@ -397,31 +393,31 @@ export default function AdmissionRegisterPage() {
             <select
               value={filterStd}
               onChange={e => setFilterStd(e.target.value)}
-              className="h-10 pl-3 pr-8 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 appearance-none cursor-pointer min-w-[160px]"
+              className="h-10 pl-3 pr-8 bg-white border border-[#E2E8F0] rounded-xl text-sm text-[#334155] focus:outline-none focus:ring-2 focus:ring-[#6C63FF]/30 appearance-none cursor-pointer min-w-[160px] shadow-sm"
             >
               <option value="">All Standards</option>
               {STANDARDS.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
-            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#94A3B8] pointer-events-none" />
           </div>
 
           <div className="relative">
             <select
               value={filterGender}
               onChange={e => setFilterGender(e.target.value)}
-              className="h-10 pl-3 pr-8 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 appearance-none cursor-pointer min-w-[130px]"
+              className="h-10 pl-3 pr-8 bg-white border border-[#E2E8F0] rounded-xl text-sm text-[#334155] focus:outline-none focus:ring-2 focus:ring-[#6C63FF]/30 appearance-none cursor-pointer min-w-[130px] shadow-sm"
             >
-              <option value="">All Genders</option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
+              <option value="">All</option>
+              <option value="Male">Boys</option>
+              <option value="Female">Girls</option>
             </select>
-            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#94A3B8] pointer-events-none" />
           </div>
 
           {(search || filterStd || filterGender) && (
             <button
               onClick={() => { setSearch(''); setFilterStd(''); setFilterGender('') }}
-              className="inline-flex items-center gap-1.5 h-10 px-3 rounded-lg border border-slate-200 bg-white text-slate-500 hover:text-slate-700 text-sm transition-colors"
+              className="inline-flex items-center gap-1.5 h-10 px-3 rounded-xl border border-[#E2E8F0] bg-white text-[#64748B] hover:text-[#334155] text-sm transition-colors shadow-sm"
             >
               <X className="w-3.5 h-3.5" /> Clear
             </button>
@@ -429,24 +425,24 @@ export default function AdmissionRegisterPage() {
         </div>
 
         {/* ── Table ── */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="bg-white rounded-2xl border border-[#E2E8F0] shadow-sm overflow-hidden">
           {loading ? (
             <div className="py-20 text-center">
-              <div className="inline-flex items-center gap-2 text-slate-400 text-sm">
+              <div className="inline-flex items-center gap-2 text-[#94A3B8] text-sm">
                 <RefreshCw className="w-4 h-4 animate-spin" /> Loading records…
               </div>
             </div>
           ) : filtered.length === 0 ? (
             <div className="py-20 text-center">
-              <Users className="w-10 h-10 text-slate-200 mx-auto mb-3" />
-              <p className="text-slate-400 text-sm font-medium">No records found</p>
-              <p className="text-slate-300 text-xs mt-1">Try adjusting your filters or add a student</p>
+              <Users className="w-10 h-10 text-[#E2E8F0] mx-auto mb-3" />
+              <p className="text-[#94A3B8] text-sm font-semibold">No records found</p>
+              <p className="text-[#CBD5E1] text-xs mt-1">Try adjusting your filters or add a student</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="bg-slate-50 border-b border-slate-100">
+                  <tr style={{ background: '#F8F9FF', borderBottom: '1.5px solid #EEF0FF' }}>
                     {[
                       'Adm. No', 'Student Name', 'Standard', 'Gender',
                       'Date of Birth', 'Guardian', 'Mobile',
@@ -454,74 +450,78 @@ export default function AdmissionRegisterPage() {
                     ].map(h => (
                       <th
                         key={h}
-                        className="px-4 py-3 text-left text-[11px] font-semibold text-slate-400 uppercase tracking-widest whitespace-nowrap first:pl-5 last:pr-5"
+                        className="px-4 py-3.5 text-left text-[10px] font-extrabold text-[#94A3B8] uppercase tracking-widest whitespace-nowrap first:pl-5 last:pr-5"
                       >
                         {h}
                       </th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-50">
-                  {filtered.map(r => (
-                    <tr key={r.id} className="hover:bg-slate-50/60 transition-colors group">
+                <tbody>
+                  {filtered.map((r, idx) => (
+                    <tr
+                      key={r.id}
+                      className="transition-colors hover:bg-[#F8F9FF] group"
+                      style={{ borderBottom: idx < filtered.length - 1 ? '1px solid #F1F5F9' : 'none' }}
+                    >
                       {/* Admission No */}
                       <td className="px-4 py-3.5 pl-5">
-                        <span className="font-mono text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded">
+                        <span className="font-mono text-xs font-black text-[#6C63FF] bg-[#EEF0FF] px-2.5 py-1 rounded-lg">
                           {r.admission_no}
                         </span>
                       </td>
 
                       {/* Name */}
                       <td className="px-4 py-3.5">
-                        <span className="font-semibold text-slate-800 whitespace-nowrap">{r.name}</span>
+                        <span className="font-bold text-[#0F172A] whitespace-nowrap">{r.name}</span>
                       </td>
 
                       {/* Standard */}
                       <td className="px-4 py-3.5">
-                        <span className="text-xs font-semibold bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full whitespace-nowrap">
+                        <span className="text-xs font-bold bg-[#F1F5F9] text-[#475569] px-2.5 py-1 rounded-lg whitespace-nowrap">
                           {r.standard}
                         </span>
                       </td>
 
-                      {/* Gender */}
+                      {/* Gender — Boy / Girl */}
                       <td className="px-4 py-3.5">
-                        <span className={`inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap ${
+                        <span className={`inline-flex items-center text-xs font-bold px-2.5 py-1 rounded-lg whitespace-nowrap ${
                           r.gender === 'Male'
-                            ? 'bg-blue-50 text-blue-700'
+                            ? 'bg-[#EFF6FF] text-[#1D4ED8]'
                             : r.gender === 'Female'
-                              ? 'bg-pink-50 text-pink-700'
-                              : 'bg-slate-100 text-slate-600'
+                              ? 'bg-[#FDF2F8] text-[#BE185D]'
+                              : 'bg-[#F1F5F9] text-[#475569]'
                         }`}>
-                          {r.gender || '—'}
+                          {genderLabel(r.gender)}
                         </span>
                       </td>
 
                       {/* DOB */}
-                      <td className="px-4 py-3.5 text-slate-500 whitespace-nowrap text-xs">
+                      <td className="px-4 py-3.5 text-[#64748B] whitespace-nowrap text-xs font-medium">
                         {r.date_of_birth}
                       </td>
 
                       {/* Parent */}
-                      <td className="px-4 py-3.5 text-slate-600 whitespace-nowrap">{r.parent_guardian}</td>
+                      <td className="px-4 py-3.5 text-[#334155] whitespace-nowrap text-sm">{r.parent_guardian}</td>
 
                       {/* Mobile */}
                       <td className="px-4 py-3.5">
-                        <span className="font-mono text-xs text-slate-500">{r.mobile_no}</span>
+                        <span className="font-mono text-xs text-[#64748B]">{r.mobile_no}</span>
                       </td>
 
                       {/* Vehicle */}
-                      <td className="px-4 py-3.5 text-slate-500 text-xs whitespace-nowrap">
-                        {r.vehicle_point || <span className="text-slate-300">—</span>}
+                      <td className="px-4 py-3.5 text-[#64748B] text-xs whitespace-nowrap">
+                        {r.vehicle_point || <span className="text-[#CBD5E1]">—</span>}
                       </td>
 
-                      {/* Login status — FIX: use typed AdmissionRecordWithAuth instead of (r as any) */}
+                      {/* Login status */}
                       <td className="px-4 py-3.5">
                         {r.parent_auth_user_id ? (
-                          <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-100 px-2.5 py-1 rounded-full">
+                          <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-[#15803D] bg-[#F0FDF4] border border-[#BBF7D0] px-2.5 py-1 rounded-lg uppercase tracking-wide">
                             Active
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-600 bg-amber-50 border border-amber-100 px-2.5 py-1 rounded-full">
+                          <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-[#B45309] bg-[#FFFBEB] border border-[#FDE68A] px-2.5 py-1 rounded-lg uppercase tracking-wide">
                             None
                           </span>
                         )}
@@ -529,27 +529,30 @@ export default function AdmissionRegisterPage() {
 
                       {/* Actions */}
                       <td className="px-4 py-3.5 pr-5">
-                        <div className="flex items-center gap-0.5 transition-opacity">
+                        <div className="flex items-center gap-1">
                           <button
                             onClick={() => openEdit(r)}
-                            className="p-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-500 transition-colors"
+                            className="p-1.5 rounded-lg text-white transition-all hover:scale-105 active:scale-95"
+                            style={{ background: 'linear-gradient(135deg,#3B82F6,#1D4ED8)' }}
                             title="Edit"
                           >
-                            <SquarePen size={16} strokeWidth={1.5} />
+                            <SquarePen size={14} strokeWidth={2} />
                           </button>
                           <button
                             onClick={() => handlePrint(r)}
-                            className="p-1.5 rounded-lg bg-slate-600 text-white hover:bg-slate-500 transition-colors"
+                            className="p-1.5 rounded-lg text-white transition-all hover:scale-105 active:scale-95"
+                            style={{ background: 'linear-gradient(135deg,#64748B,#475569)' }}
                             title="Print Extract"
                           >
-                            <Printer size={16} strokeWidth={1.5} />
+                            <Printer size={14} strokeWidth={2} />
                           </button>
                           <button
                             onClick={() => { setDeleteConfirm(r); setDeleteConfirmName('') }}
-                            className="p-1.5 rounded-lg bg-red-600 text-white hover:bg-red-500 transition-colors"
+                            className="p-1.5 rounded-lg text-white transition-all hover:scale-105 active:scale-95"
+                            style={{ background: 'linear-gradient(135deg,#EF4444,#B91C1C)' }}
                             title="Delete"
                           >
-                            <Trash size={16} strokeWidth={1.5} />
+                            <Trash size={14} strokeWidth={2} />
                           </button>
                         </div>
                       </td>
@@ -561,9 +564,8 @@ export default function AdmissionRegisterPage() {
           )}
         </div>
 
-        {/* Table footer */}
         {filtered.length > 0 && (
-          <p className="text-xs text-slate-400 mt-3 text-right">
+          <p className="text-xs text-[#94A3B8] mt-3 text-right font-medium">
             Showing {filtered.length} of {records.length} records
           </p>
         )}
@@ -571,20 +573,26 @@ export default function AdmissionRegisterPage() {
 
       {/* ══════════════════ Add / Edit Modal ════════════════════════════════ */}
       {showForm && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm print:hidden">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden">
+        <div className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm print:hidden">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden border border-[#E2E8F0]">
 
             {/* Modal header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+            <div
+              className="flex items-center justify-between px-6 py-4"
+              style={{ borderBottom: '1px solid #F1F5F9', background: 'linear-gradient(135deg,#F8F9FF 0%,#F3F0FF 100%)' }}
+            >
               <div>
-                <h2 className="text-base font-bold text-slate-900">
+                <h2 className="text-base font-black text-[#0F172A]">
                   {editId ? 'Edit Student Record' : 'New Admission'}
                 </h2>
-                <p className="text-xs text-slate-400 mt-0.5">
+                <p className="text-xs text-[#64748B] mt-0.5">
                   {editId ? 'Update the student details below' : 'Fill in the student details to register'}
                 </p>
               </div>
-              <button onClick={closeForm} className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors">
+              <button
+                onClick={closeForm}
+                className="text-[#94A3B8] hover:text-[#334155] p-1.5 rounded-xl hover:bg-[#F1F5F9] transition-colors"
+              >
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -592,9 +600,9 @@ export default function AdmissionRegisterPage() {
             {/* Modal body */}
             <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
               {!editId && (
-                <div className="flex items-start gap-3 p-3.5 bg-indigo-50 border border-indigo-100 rounded-xl">
-                  <KeyRound className="w-4 h-4 text-indigo-500 mt-0.5 shrink-0" />
-                  <p className="text-xs text-indigo-700 leading-relaxed">
+                <div className="flex items-start gap-3 p-3.5 bg-[#F5F3FF] border border-[#DDD6FE] rounded-xl">
+                  <KeyRound className="w-4 h-4 text-[#6C63FF] mt-0.5 shrink-0" />
+                  <p className="text-xs text-[#4C1D95] leading-relaxed">
                     A parent login will be <strong>automatically created</strong> when this student is added.
                     <br />
                     Login: <strong>{form.admission_no || '<adm_no>'}@iqra.school</strong> &nbsp;/&nbsp; Password: <strong>{form.admission_no || '<adm_no>'}</strong>
@@ -623,7 +631,7 @@ export default function AdmissionRegisterPage() {
                       <option value="">Select standard</option>
                       {STANDARDS.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
-                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#94A3B8] pointer-events-none" />
                   </div>
                 </Field>
 
@@ -633,10 +641,10 @@ export default function AdmissionRegisterPage() {
                       onChange={e => setForm({ ...form, gender: e.target.value })}
                       className={selectCls}>
                       <option value="">Select gender</option>
-                      <option value="Male">Male</option>
-                      <option value="Female">Female</option>
+                      <option value="Male">Boy</option>
+                      <option value="Female">Girl</option>
                     </select>
-                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#94A3B8] pointer-events-none" />
                   </div>
                 </Field>
 
@@ -672,7 +680,7 @@ export default function AdmissionRegisterPage() {
                       <option value="">Select point</option>
                       {VEHICLE_POINTS.map(v => <option key={v} value={v}>{v}</option>)}
                     </select>
-                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#94A3B8] pointer-events-none" />
                   </div>
                 </Field>
 
@@ -687,7 +695,7 @@ export default function AdmissionRegisterPage() {
               </div>
 
               {error && (
-                <div className="flex items-center gap-2.5 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3">
+                <div className="flex items-center gap-2.5 bg-[#FEF2F2] border border-[#FECACA] text-[#DC2626] text-sm rounded-xl px-4 py-3">
                   <AlertTriangle className="w-4 h-4 shrink-0" />
                   {error}
                 </div>
@@ -695,13 +703,19 @@ export default function AdmissionRegisterPage() {
             </div>
 
             {/* Modal footer */}
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/50">
-              <button onClick={closeForm}
-                className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[#F1F5F9] bg-[#F8F9FF]">
+              <button
+                onClick={closeForm}
+                className="px-4 py-2 text-sm font-semibold text-[#64748B] hover:bg-[#F1F5F9] rounded-xl transition-colors"
+              >
                 Cancel
               </button>
-              <button onClick={handleSave} disabled={saving}
-                className="px-5 py-2 text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white rounded-lg shadow-sm shadow-indigo-200 transition-colors">
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="px-6 py-2 text-sm font-bold text-white rounded-xl transition-all hover:opacity-90 disabled:opacity-50 active:scale-95"
+                style={{ background: 'linear-gradient(135deg,#6C63FF 0%,#4F46E5 100%)', boxShadow: '0 4px 12px rgba(108,99,255,0.3)' }}
+              >
                 {saving ? 'Saving…' : editId ? 'Save Changes' : 'Add Student'}
               </button>
             </div>
@@ -711,28 +725,28 @@ export default function AdmissionRegisterPage() {
 
       {/* ══════════════════ Delete Confirm Modal ════════════════════════════ */}
       {deleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm print:hidden">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm print:hidden">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm border border-[#E2E8F0]">
             <div className="flex items-center gap-3 mb-5">
-              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
-                <AlertTriangle className="w-5 h-5 text-red-600" />
+              <div className="w-10 h-10 rounded-xl bg-[#FEF2F2] flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5 text-[#DC2626]" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-slate-900">Delete Student Record?</h3>
-                <p className="text-xs text-slate-400 mt-0.5">This action cannot be undone</p>
+                <h3 className="text-base font-black text-[#0F172A]">Delete Student Record?</h3>
+                <p className="text-xs text-[#94A3B8] mt-0.5">This action cannot be undone</p>
               </div>
             </div>
 
-            <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 mb-5">
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1">Student</p>
-              <p className="text-sm font-bold text-slate-800">{deleteConfirm.name}</p>
-              <p className="text-xs text-slate-400 mt-1">
-                {deleteConfirm.admission_no} &middot; {deleteConfirm.standard} &middot; {deleteConfirm.gender}
+            <div className="bg-[#F8F9FF] border border-[#E2E8F0] rounded-xl px-4 py-3 mb-5">
+              <p className="text-[10px] font-extrabold text-[#94A3B8] uppercase tracking-widest mb-1">Student</p>
+              <p className="text-sm font-black text-[#0F172A]">{deleteConfirm.name}</p>
+              <p className="text-xs text-[#64748B] mt-1">
+                {deleteConfirm.admission_no} · {deleteConfirm.standard} · {genderLabel(deleteConfirm.gender)}
               </p>
             </div>
 
             <div className="mb-5">
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-widest mb-2">
+              <label className="block text-[10px] font-extrabold text-[#64748B] uppercase tracking-widest mb-2">
                 Type the student name to confirm
               </label>
               <input
@@ -741,29 +755,30 @@ export default function AdmissionRegisterPage() {
                 onChange={e => setDeleteConfirmName(e.target.value)}
                 placeholder={deleteConfirm.name}
                 autoFocus
-                className="w-full border border-slate-200 bg-slate-50 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 placeholder-slate-300 text-slate-900 transition-all"
+                className="w-full border border-[#E2E8F0] bg-[#F8F9FF] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-300 placeholder-[#CBD5E1] text-[#0F172A] transition-all"
               />
               {deleteConfirmName.length > 0 && deleteConfirmName !== deleteConfirm.name && (
-                <p className="text-xs text-red-500 mt-1.5 flex items-center gap-1">
+                <p className="text-xs text-[#DC2626] mt-1.5 flex items-center gap-1">
                   <X className="w-3 h-3" /> Name does not match
                 </p>
               )}
               {deleteConfirmName === deleteConfirm.name && (
-                <p className="text-xs text-emerald-600 mt-1.5">✓ Name confirmed. You can now delete.</p>
+                <p className="text-xs text-[#16A34A] mt-1.5">✓ Name confirmed. You can now delete.</p>
               )}
             </div>
 
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => { setDeleteConfirm(null); setDeleteConfirmName('') }}
-                className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                className="px-4 py-2 text-sm font-semibold text-[#64748B] hover:bg-[#F1F5F9] rounded-xl transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={() => handleDelete(deleteConfirm.id!)}
                 disabled={deleteConfirmName !== deleteConfirm.name}
-                className="px-4 py-2 text-sm font-semibold bg-red-600 hover:bg-red-700 disabled:bg-red-200 disabled:text-red-400 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+                className="px-4 py-2 text-sm font-bold text-white rounded-xl transition-all hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95"
+                style={{ background: 'linear-gradient(135deg,#EF4444,#B91C1C)', boxShadow: '0 4px 12px rgba(220,38,38,0.25)' }}
               >
                 Delete
               </button>
