@@ -4,38 +4,41 @@ import { FeeRow, Student } from '@/type/fees'
 const supabase = createClient()
 
 export const FEE_TYPES = [
-  { key: 'admission', label: 'Admission fee',       defaultAmount: 2000 },
-  { key: 'welfare',   label: 'Welfare fee',         defaultAmount: 500  },
-  { key: 'book',      label: 'Book fee',            defaultAmount: 1500 },
-  { key: 'vehicle',   label: 'Vehicle fee',         defaultAmount: 1200 },
-  { key: 'exam',      label: 'Exam fee',            defaultAmount: 800  },
-  { key: 'tuition1',  label: 'Tuition fee 1st term',defaultAmount: 3000 },
-  { key: 'tuition2',  label: 'Tuition fee 2nd term',defaultAmount: 3000 },
-  { key: 'tuition3',  label: 'Tuition fee 3rd term',defaultAmount: 3000 },
-  { key: 'tuition4',  label: 'Tuition fee 4th term',defaultAmount: 3000 },
-  { key: 'others',    label: 'Other fees',          defaultAmount: 0    },
+  { key: 'admission', label: 'Admission fee',        defaultAmount: 2000 },
+  { key: 'welfare',   label: 'Welfare fee',          defaultAmount: 500  },
+  { key: 'book',      label: 'Book fee',             defaultAmount: 1500 },
+  { key: 'vehicle',   label: 'Vehicle fee',          defaultAmount: 1200 },
+  { key: 'exam',      label: 'Exam fee',             defaultAmount: 800  },
+  { key: 'tuition1',  label: 'Tuition fee 1st term', defaultAmount: 3000 },
+  { key: 'tuition2',  label: 'Tuition fee 2nd term', defaultAmount: 3000 },
+  { key: 'tuition3',  label: 'Tuition fee 3rd term', defaultAmount: 3000 },
+  { key: 'tuition4',  label: 'Tuition fee 4th term', defaultAmount: 3000 },
+  { key: 'others',    label: 'Other fees',           defaultAmount: 0    },
 ]
 
+// FIX: shared select string so gender is never accidentally omitted again
+const STUDENT_SELECT =
+  'id, admission_no, name, standard, gender, parent_guardian, mobile_no, address, vehicle_point, date_of_birth, aadhar_no'
 
 // getAllStudents
 export async function getAllStudents(): Promise<Student[]> {
   const { data, error } = await supabase
     .from('students_list')
-    .select('id, admission_no, name, standard, parent_guardian, mobile_no, address, vehicle_point, date_of_birth, aadhar_no')
+    .select(STUDENT_SELECT)   // FIX: added gender
     .order('admission_no')
   if (error) throw error
-  return data || []
+  return (data ?? []) as Student[]
 }
 
 // searchStudents
 export async function searchStudents(query: string): Promise<Student[]> {
   const { data, error } = await supabase
     .from('students_list')
-    .select('id, admission_no, name, standard, parent_guardian, mobile_no, address, vehicle_point, date_of_birth, aadhar_no')
+    .select(STUDENT_SELECT)   // FIX: added gender
     .or(`admission_no.ilike.%${query}%,name.ilike.%${query}%`)
     .limit(10)
   if (error) throw error
-  return data || []
+  return (data ?? []) as Student[]
 }
 
 // Get or create fee rows for a student
@@ -55,10 +58,10 @@ export async function getOrCreateFeeRows(
   if (missing.length > 0) {
     await supabase.from('student_fees').insert(
       missing.map(f => ({
-        student_id: studentId,
-        fee_type: f.key,
-        total_amount: f.defaultAmount, // ← use default amount
-        paid_amount: 0,
+        student_id:    studentId,
+        fee_type:      f.key,
+        total_amount:  f.defaultAmount,
+        paid_amount:   0,
         academic_year: year,
       }))
     )
@@ -78,10 +81,7 @@ export async function getOrCreateFeeRows(
 export async function updateTotal(id: number, total: number) {
   const { error } = await supabase
     .from('student_fees')
-    .update({
-      total_amount: total,
-      updated_at: new Date().toISOString()
-    })
+    .update({ total_amount: total, updated_at: new Date().toISOString() })
     .eq('id', id)
   if (error) throw error
 }
@@ -105,8 +105,8 @@ export async function savePayment(
     await supabase
       .from('student_fees')
       .update({
-        paid_amount: (current?.paid_amount || 0) + p.payNow,
-        updated_at: new Date().toISOString(),
+        paid_amount:  (current?.paid_amount || 0) + p.payNow,
+        updated_at:   new Date().toISOString(),
       })
       .eq('id', p.id)
   }
@@ -117,15 +117,15 @@ export async function savePayment(
   const { data: receipt, error } = await supabase
     .from('fee_payments')
     .insert({
-      student_id: studentId,
-      receipt_no: receiptNo,
-      total_paid: totalPaid,
-      academic_year: year,
-      payment_date: new Date().toISOString().split('T')[0],
+      student_id:      studentId,
+      receipt_no:      receiptNo,
+      total_paid:      totalPaid,
+      academic_year:   year,
+      payment_date:    new Date().toISOString().split('T')[0],
       payment_details: paymentRows.map(p => ({
         fee_type: p.fee_type,
-        label: FEE_TYPES.find(f => f.key === p.fee_type)?.label || p.fee_type,
-        amount: p.payNow,
+        label:    FEE_TYPES.find(f => f.key === p.fee_type)?.label || p.fee_type,
+        amount:   p.payNow,
       })),
     })
     .select()

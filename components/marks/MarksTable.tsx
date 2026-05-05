@@ -44,10 +44,11 @@ export default function MarksTable({
     return value > max
   }
 
+  // FIX: reduce<number> explicit generic + ?? instead of ||
   function calcTotal(marks: MarkFormData): number {
     return [marks.ut1, marks.ut2, marks.ut3, marks.ut4,
       marks.mid_term, marks.half_yearly, marks.final]
-      .reduce((sum, v) => sum + (v || 0), 0)
+      .reduce<number>((sum, v) => sum + (v ?? 0), 0)
   }
 
   function calcMaxTotal(): number {
@@ -55,7 +56,7 @@ export default function MarksTable({
       activeSubject.max_ut3, activeSubject.max_ut4,
       activeSubject.max_mid_term, activeSubject.max_half_yearly,
       activeSubject.max_final]
-      .reduce((sum, v) => sum + (v || 0), 0)
+      .reduce<number>((sum, v) => sum + (v ?? 0), 0)  // FIX: same pattern for consistency
   }
 
   function calcPercent(marks: MarkFormData): string {

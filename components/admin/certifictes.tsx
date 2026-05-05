@@ -418,10 +418,13 @@ function SelectField({ label, value, onChange, options }: {
   )
 }
 
+// ── Updater type alias ─────────────────────────────────────────────────────
+type TCUpdater = (prev: TCOverrides) => TCOverrides
+
 // ── TC Edit Panel ──────────────────────────────────────────────────────────
 function TCEditPanel({ ov, setOv, onSave, saving }: {
   ov: TCOverrides
-  setOv: React.Dispatch<React.SetStateAction<TCOverrides>>
+  setOv: (updater: TCUpdater) => void   // FIX: plain updater, not SetStateAction<TCOverrides | null>
   onSave: () => void
   saving: boolean
 }) {
@@ -470,10 +473,10 @@ function TCEditPanel({ ov, setOv, onSave, saving }: {
         Status Flags
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4, background: LIGHT, borderRadius: 7, padding: '8px 12px', border: `1px solid ${BORDER}` }}>
-        <Toggle label="Qualified for promotion" value={ov.qualified}      onChange={set('qualified') as (v: boolean) => void} />
-        <Toggle label="Fees paid"               value={ov.fees_paid}      onChange={set('fees_paid') as (v: boolean) => void} />
-        <Toggle label="Fee concession"          value={ov.fee_concession} onChange={set('fee_concession') as (v: boolean) => void} />
-        <Toggle label="Vaccinated"              value={ov.vaccinated}     onChange={set('vaccinated') as (v: boolean) => void} />
+        <Toggle label="Qualified for promotion" value={ov.qualified}      onChange={v => setOv(prev => ({ ...prev, qualified: v }))} />
+        <Toggle label="Fees paid"               value={ov.fees_paid}      onChange={v => setOv(prev => ({ ...prev, fees_paid: v }))} />
+        <Toggle label="Fee concession"          value={ov.fee_concession} onChange={v => setOv(prev => ({ ...prev, fee_concession: v }))} />
+        <Toggle label="Vaccinated"              value={ov.vaccinated}     onChange={v => setOv(prev => ({ ...prev, vaccinated: v }))} />
       </div>
 
       {/* Save */}
@@ -491,18 +494,16 @@ function TCEditPanel({ ov, setOv, onSave, saving }: {
 // ── Edit Modal ─────────────────────────────────────────────────────────────
 function EditModal({ ov, setOv, onSave, saving, saveMsg, onClose }: {
   ov: TCOverrides
-  setOv: React.Dispatch<React.SetStateAction<TCOverrides>>
+  setOv: (updater: TCUpdater) => void   // FIX: plain updater, not SetStateAction<TCOverrides | null>
   onSave: () => void
   saving: boolean
   saveMsg: string
   onClose: () => void
 }) {
-  // Close on backdrop click
   function handleBackdrop(e: React.MouseEvent<HTMLDivElement>) {
     if (e.target === e.currentTarget) onClose()
   }
 
-  // Close on Escape key
   useEffect(() => {
     function onKey(e: KeyboardEvent) { if (e.key === 'Escape') onClose() }
     window.addEventListener('keydown', onKey)
@@ -623,7 +624,7 @@ export default function DocumentGenerator() {
   const [selected, setSelected] = useState<StudentWithMarks | null>(null)
   const [docType, setDocType]   = useState<'tc' | 'cc' | 'pr'>('tc')
   const [search, setSearch]     = useState('')
-  const [classFilter, setClassFilter] = useState<string>('All') // New State
+  const [classFilter, setClassFilter] = useState<string>('All')
   const [showModal, setShowModal] = useState(false)
   const [ov, setOv]               = useState<TCOverrides | null>(null)
   const [saving, setSaving]       = useState(false)
@@ -639,7 +640,7 @@ export default function DocumentGenerator() {
           setOv(marksToOverrides(data[0].marks))
         }
       })
-      .catch(e => setError(e.message))
+      .catch((e: unknown) => setError(e instanceof Error ? e.message : 'Failed to load'))
       .finally(() => setLoading(false))
   }, [])
 
@@ -649,10 +650,8 @@ export default function DocumentGenerator() {
     setSaveMsg('')
   }
 
-  // Generate unique classes for the dropdown
   const uniqueClasses = ['All', ...Array.from(new Set(students.map(s => s.standard))).sort()]
 
-  // Combined Search and Class Filter logic
   const filtered = students.filter(s => {
     const matchesSearch = s.name.toLowerCase().includes(search.toLowerCase()) || s.admission_no.includes(search)
     const matchesClass  = classFilter === 'All' || s.standard === classFilter
@@ -710,7 +709,7 @@ export default function DocumentGenerator() {
         category:        ov.category,
         admission_date:  ov.admission_date,
       })
-      setSaveMsg(' Saved')
+      setSaveMsg('✓ Saved')
     } catch (e: unknown) {
       setSaveMsg('✗ ' + (e instanceof Error ? e.message : 'Save failed'))
     } finally {
@@ -741,7 +740,8 @@ export default function DocumentGenerator() {
       {showModal && ov && (
         <EditModal
           ov={ov}
-          setOv={setOv}
+          // FIX: bridge the nullable state setter to the non-null updater the modal expects
+          setOv={(updater: TCUpdater) => setOv(prev => prev ? updater(prev) : prev)}
           onSave={handleSave}
           saving={saving}
           saveMsg={saveMsg}
@@ -759,17 +759,16 @@ export default function DocumentGenerator() {
           </div>
         </div>
 
-        {/* Filter Section */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <div style={{ fontSize:9, fontWeight:700, color:TEXT_S, letterSpacing:'0.8px', textTransform:'uppercase' }}>Filter by Class</div>
-          <select 
+          <select
             value={classFilter}
             onChange={(e) => setClassFilter(e.target.value)}
             style={{ fontSize:11.5, padding:'5px 8px', borderRadius:7, border:`1px solid ${BORDER}`, background:LIGHT, color:NAVY, outline:'none', cursor:'pointer' }}
           >
             {uniqueClasses.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
-          
+
           <div style={{ fontSize:9, fontWeight:700, color:TEXT_S, letterSpacing:'0.8px', textTransform:'uppercase', marginTop: 4 }}>Search Name/No.</div>
           <input
             value={search}
@@ -803,10 +802,8 @@ export default function DocumentGenerator() {
 
       {/* ── Main panel ── */}
       <div style={{ flex:1, display:'flex', flexDirection:'column', gap:10, minWidth:0 }}>
-        {/* ... Rest of your Main Panel Code remains the same ... */}
         <div style={{ display:'flex', gap:8, alignItems:'center', flexWrap:'wrap', background:WHITE, borderRadius:10, padding:'9px 14px', border:`1px solid ${BORDER}`, boxShadow:'0 2px 8px rgba(26,44,107,0.06)' }}>
-           {/* (DocType Buttons and Print Buttons) */}
-           <div style={{ display:'flex', gap:6 }}>
+          <div style={{ display:'flex', gap:6 }}>
             {(Object.entries(docLabels) as [keyof typeof docLabels, string][]).map(([key, label]) => {
               const active = docType === key
               return (

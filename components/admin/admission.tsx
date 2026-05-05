@@ -11,7 +11,7 @@ import {
 import {
   SquarePen, Trash, Printer, RefreshCw,
   AlertTriangle, Download, KeyRound,
-  Users, UserCheck, UserX, ChevronDown,
+  Users, ChevronDown,
   Search, X, Plus,
 } from 'lucide-react'
 
@@ -23,7 +23,6 @@ const VEHICLE_POINTS = [
   'Point 1', 'Point 2', 'Point 3', 'Point 4', 'Point 5',
   'Own Transport', 'Walking',
 ]
-const GENDERS = ['Male', 'Female']
 
 const EMPTY_FORM: AdmissionRecord = {
   admission_no: '', name: '', standard: '', date_of_birth: '',
@@ -50,8 +49,9 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   )
 }
 
+// FIX 1: Removed unused `icon` prop from StatCard
 function StatCard({
- label, value, color,
+  label, value, color,
 }: {
   label: string
   value: number
@@ -86,12 +86,17 @@ function exportToExcel(data: AdmissionRecord[], filename = 'admissions.csv') {
   URL.revokeObjectURL(url)
 }
 
+// FIX 2: Type for AdmissionRecord extended with optional parent_auth_user_id
+type AdmissionRecordWithAuth = AdmissionRecord & {
+  parent_auth_user_id?: string | null
+}
+
 /* ═══════════════════════════════════════════════════════════════════════ */
 export default function AdmissionRegisterPage() {
   const printRef = useRef<HTMLDivElement>(null)
 
-  const [records, setRecords]                     = useState<AdmissionRecord[]>([])
-  const [filtered, setFiltered]                   = useState<AdmissionRecord[]>([])
+  const [records, setRecords]                     = useState<AdmissionRecordWithAuth[]>([])
+  const [filtered, setFiltered]                   = useState<AdmissionRecordWithAuth[]>([])
   const [search, setSearch]                       = useState('')
   const [filterStd, setFilterStd]                 = useState('')
   const [filterGender, setFilterGender]           = useState('')
@@ -108,15 +113,20 @@ export default function AdmissionRegisterPage() {
   const [genResult, setGenResult]                 = useState<{ created: number; failed: number } | null>(null)
 
   /* ── load ── */
+  // FIX 3: catch (err: unknown) instead of catch (err: any)
   async function loadRecords() {
     setLoading(true)
     try {
       const data = await getAdmissions()
       setRecords(data)
       setFiltered(data)
-    } catch (err: any) { setError(err.message) }
-    finally { setLoading(false) }
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to load records')
+    } finally {
+      setLoading(false)
+    }
   }
+
   useEffect(() => { loadRecords() }, [])
 
   useEffect(() => {
@@ -138,7 +148,7 @@ export default function AdmissionRegisterPage() {
   const femaleCount = filtered.filter(r => r.gender === 'Female').length
 
   /* ── form helpers ── */
-  function openAdd()  { setForm(EMPTY_FORM); setEditId(null);           setShowForm(true); setError('') }
+  function openAdd()  { setForm(EMPTY_FORM); setEditId(null); setShowForm(true); setError('') }
   function openEdit(r: AdmissionRecord) { setForm({ ...r }); setEditId(r.id ?? null); setShowForm(true); setError('') }
   function closeForm() { setShowForm(false); setForm(EMPTY_FORM); setEditId(null); setError('') }
 
@@ -166,14 +176,23 @@ export default function AdmissionRegisterPage() {
         await addAdmission(form)
       }
       closeForm(); await loadRecords()
-    } catch (err: any) { setError(err.message) }
-    finally { setSaving(false) }
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to save record')
+    } finally {
+      setSaving(false)
+    }
   }
 
   async function handleDelete(id: number) {
-    try { await deleteAdmission(id); loadRecords() }
-    catch (err: any) { setError(err.message) }
-    finally { setDeleteConfirm(null); setDeleteConfirmName('') }
+    try {
+      await deleteAdmission(id)
+      loadRecords()
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to delete record')
+    } finally {
+      setDeleteConfirm(null)
+      setDeleteConfirmName('')
+    }
   }
 
   function handlePrint(r: AdmissionRecord) {
@@ -278,7 +297,7 @@ export default function AdmissionRegisterPage() {
         {/* ── Page header ── */}
         <div className="mb-8">
           <div className="flex flex-wrap items-start justify-end gap-4">
-          
+
             {/* Action buttons */}
             <div className="flex items-center gap-2 flex-wrap">
               <button
@@ -323,6 +342,7 @@ export default function AdmissionRegisterPage() {
           </div>
 
           {/* ── Stat cards ── */}
+          {/* FIX 4: Removed icon prop from StatCard usage */}
           <div className="flex flex-wrap gap-3 mt-5">
             <StatCard
               label="Total Students"
@@ -335,7 +355,6 @@ export default function AdmissionRegisterPage() {
               color="bg-blue-50 border-blue-200 text-blue-700"
             />
             <StatCard
-              icon={<UserX className="w-5 h-5" />}
               label="Female"
               value={femaleCount}
               color="bg-pink-50 border-pink-200 text-pink-700"
@@ -430,7 +449,7 @@ export default function AdmissionRegisterPage() {
                   <tr className="bg-slate-50 border-b border-slate-100">
                     {[
                       'Adm. No', 'Student Name', 'Standard', 'Gender',
-                      'Date of Birth', ' Guardian', 'Mobile',
+                      'Date of Birth', 'Guardian', 'Mobile',
                       'Vehicle Point', 'Login', 'Actions',
                     ].map(h => (
                       <th
@@ -495,39 +514,39 @@ export default function AdmissionRegisterPage() {
                         {r.vehicle_point || <span className="text-slate-300">—</span>}
                       </td>
 
-                      {/* Login status */}
+                      {/* Login status — FIX: use typed AdmissionRecordWithAuth instead of (r as any) */}
                       <td className="px-4 py-3.5">
-                        {(r as any).parent_auth_user_id ? (
+                        {r.parent_auth_user_id ? (
                           <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-100 px-2.5 py-1 rounded-full">
                             Active
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-600 bg-amber-50 border border-amber-100 px-2.5 py-1 rounded-full">
-                           None
+                            None
                           </span>
                         )}
                       </td>
 
                       {/* Actions */}
                       <td className="px-4 py-3.5 pr-5">
-                        <div className="flex items-center gap-0.5  transition-opacity">
+                        <div className="flex items-center gap-0.5 transition-opacity">
                           <button
                             onClick={() => openEdit(r)}
-                            className="p-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-500 text-slate-400 hover:text-indigo-100 transition-colors"
+                            className="p-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-500 transition-colors"
                             title="Edit"
                           >
                             <SquarePen size={16} strokeWidth={1.5} />
                           </button>
                           <button
                             onClick={() => handlePrint(r)}
-                            className="p-1.5 rounded-lg bg-slate-600 text-white hover:bg-slate-500 text-slate-100 hover:text-slate-100 transition-colors"
+                            className="p-1.5 rounded-lg bg-slate-600 text-white hover:bg-slate-500 transition-colors"
                             title="Print Extract"
                           >
                             <Printer size={16} strokeWidth={1.5} />
                           </button>
                           <button
                             onClick={() => { setDeleteConfirm(r); setDeleteConfirmName('') }}
-                            className="p-1.5 rounded-lg bg-red-600 text-white hover:bg-red-500 text-slate-400 hover:text-red-50 transition-colors"
+                            className="p-1.5 rounded-lg bg-red-600 text-white hover:bg-red-500 transition-colors"
                             title="Delete"
                           >
                             <Trash size={16} strokeWidth={1.5} />

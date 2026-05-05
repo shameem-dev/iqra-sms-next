@@ -76,7 +76,21 @@ function resolveExpenditureLabel(raw: string | null | undefined): string {
   return EXPENDITURE_CATEGORIES.find(c => c.value === raw)?.label ?? raw;
 }
 
-// ─── Field wrapper ─────────────────────────────────────────────────────────────
+// ─── Merge helper — replaces null values with defaults ────────────────────────
+
+function mergeWithDefaults<T extends Record<string, unknown>>(
+  base: T,
+  overrides: Partial<T>
+): T {
+  const result = { ...base };
+  for (const key in overrides) {
+    const val = overrides[key];
+    result[key] = (val !== null && val !== undefined ? val : base[key]) as T[typeof key];
+  }
+  return result;
+}
+
+// ─── Field wrapper ────────────────────────────────────────────────────────────
 
 function Field({ label, required, children }: {
   label: string; required?: boolean; children: React.ReactNode;
@@ -119,25 +133,25 @@ function Toast({ message, type, onClose }: {
 
 function emptyIncome() {
   return {
-    date: new Date().toISOString().split('T')[0],
-    amount: '' as unknown as number,
-    bill_voucher_no: '',
-    notes: '',
-    income_category: 'daily_fees' as IncomeCategory,
-    book_no: '',
-    receipt_no: '',
+    date:             new Date().toISOString().split('T')[0],
+    amount:           '' as unknown as number,
+    bill_voucher_no:  '',
+    notes:            '',
+    income_category:  'daily_fees' as IncomeCategory,
+    book_no:          '',
+    receipt_no:       '',
   };
 }
 
 function emptyExpenditure() {
   return {
-    date: new Date().toISOString().split('T')[0],
-    amount: '' as unknown as number,
-    bill_voucher_no: '',
-    notes: '',
-    expenditure_category: 'salary' as ExpenditureCategory,
-    staff_name: '',
-    vehicle_no: '',
+    date:                  new Date().toISOString().split('T')[0],
+    amount:                '' as unknown as number,
+    bill_voucher_no:       '',
+    notes:                 '',
+    expenditure_category:  'salary' as ExpenditureCategory,
+    staff_name:            '',
+    vehicle_no:            '',
   };
 }
 
@@ -152,7 +166,9 @@ interface IncomeFormProps {
 
 function IncomeForm({ initial, onSave, onCancel, saving }: IncomeFormProps) {
   const [form, setForm] = useState(() =>
-    initial ? { ...emptyIncome(), ...initial } : emptyIncome()
+    initial
+      ? mergeWithDefaults(emptyIncome(), initial as Partial<ReturnType<typeof emptyIncome>>)
+      : emptyIncome()
   );
   const [error, setError] = useState<string | null>(null);
 
@@ -163,14 +179,14 @@ function IncomeForm({ initial, onSave, onCancel, saving }: IncomeFormProps) {
     if (!form.amount || Number(form.amount) <= 0) { setError('Enter a valid amount'); return; }
     if (!form.date) { setError('Date is required'); return; }
     await onSave({
-      type: 'income',
-      date: form.date,
-      amount: Number(form.amount),
+      type:            'income',
+      date:            form.date,
+      amount:          Number(form.amount),
       bill_voucher_no: form.bill_voucher_no || null,
-      notes: form.notes || null,
+      notes:           form.notes || null,
       income_category: form.income_category,
-      book_no: form.book_no || null,
-      receipt_no: form.receipt_no || null,
+      book_no:         form.book_no || null,
+      receipt_no:      form.receipt_no || null,
     });
   };
 
@@ -185,7 +201,11 @@ function IncomeForm({ initial, onSave, onCancel, saving }: IncomeFormProps) {
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2">
           <Field label="Income Category" required>
-            <select value={form.income_category} onChange={e => set('income_category', e.target.value as IncomeCategory)} className={selectCls}>
+            <select
+              value={form.income_category}
+              onChange={e => set('income_category', e.target.value as IncomeCategory)}
+              className={selectCls}
+            >
               {INCOME_CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
             </select>
           </Field>
@@ -194,24 +214,54 @@ function IncomeForm({ initial, onSave, onCancel, saving }: IncomeFormProps) {
           <input type="date" value={form.date} onChange={e => set('date', e.target.value)} className={inputCls} />
         </Field>
         <Field label="Amount (₹)" required>
-          <input type="number" min="0" step="0.01" value={form.amount} onChange={e => set('amount', e.target.value as unknown as number)} placeholder="0.00" className={inputCls} />
+          <input
+            type="number" min="0" step="0.01"
+            value={form.amount}
+            onChange={e => set('amount', e.target.value as unknown as number)}
+            placeholder="0.00"
+            className={inputCls}
+          />
         </Field>
         <Field label="Bill / Voucher No.">
-          <input type="text" value={form.bill_voucher_no} onChange={e => set('bill_voucher_no', e.target.value)} placeholder="e.g. INV-0042" className={inputCls} />
+          <input
+            type="text"
+            value={form.bill_voucher_no}
+            onChange={e => set('bill_voucher_no', e.target.value)}
+            placeholder="e.g. INV-0042"
+            className={inputCls}
+          />
         </Field>
         {(form.income_category === 'receipt' || form.income_category === 'daily_fees') && (
           <Field label="Receipt No.">
-            <input type="text" value={form.receipt_no} onChange={e => set('receipt_no', e.target.value)} placeholder="e.g. RCP-001" className={inputCls} />
+            <input
+              type="text"
+              value={form.receipt_no}
+              onChange={e => set('receipt_no', e.target.value)}
+              placeholder="e.g. RCP-001"
+              className={inputCls}
+            />
           </Field>
         )}
         {form.income_category === 'book' && (
           <Field label="Book No.">
-            <input type="text" value={form.book_no} onChange={e => set('book_no', e.target.value)} placeholder="e.g. BK-07" className={inputCls} />
+            <input
+              type="text"
+              value={form.book_no}
+              onChange={e => set('book_no', e.target.value)}
+              placeholder="e.g. BK-07"
+              className={inputCls}
+            />
           </Field>
         )}
         <div className="col-span-2">
           <Field label="Notes">
-            <textarea value={form.notes} onChange={e => set('notes', e.target.value)} rows={3} placeholder="Additional details…" className={`${inputCls} resize-none`} />
+            <textarea
+              value={form.notes}
+              onChange={e => set('notes', e.target.value)}
+              rows={3}
+              placeholder="Additional details…"
+              className={`${inputCls} resize-none`}
+            />
           </Field>
         </div>
       </div>
@@ -238,7 +288,9 @@ interface ExpenditureFormProps {
 
 function ExpenditureForm({ initial, onSave, onCancel, saving, staffList }: ExpenditureFormProps) {
   const [form, setForm] = useState(() =>
-    initial ? { ...emptyExpenditure(), ...initial } : emptyExpenditure()
+    initial
+      ? mergeWithDefaults(emptyExpenditure(), initial as Partial<ReturnType<typeof emptyExpenditure>>)
+      : emptyExpenditure()
   );
   const [error, setError] = useState<string | null>(null);
 
@@ -249,14 +301,14 @@ function ExpenditureForm({ initial, onSave, onCancel, saving, staffList }: Expen
     if (!form.amount || Number(form.amount) <= 0) { setError('Enter a valid amount'); return; }
     if (!form.date) { setError('Date is required'); return; }
     await onSave({
-      type: 'expenditure',
-      date: form.date,
-      amount: Number(form.amount),
-      bill_voucher_no: form.bill_voucher_no || null,
-      notes: form.notes || null,
+      type:                 'expenditure',
+      date:                 form.date,
+      amount:               Number(form.amount),
+      bill_voucher_no:      form.bill_voucher_no || null,
+      notes:                form.notes || null,
       expenditure_category: form.expenditure_category,
-      staff_name: form.staff_name || null,
-      vehicle_no: form.vehicle_no || null,
+      staff_name:           form.staff_name || null,
+      vehicle_no:           form.vehicle_no || null,
     });
   };
 
@@ -274,7 +326,11 @@ function ExpenditureForm({ initial, onSave, onCancel, saving, staffList }: Expen
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2">
           <Field label="Expenditure Category" required>
-            <select value={form.expenditure_category} onChange={e => set('expenditure_category', e.target.value as ExpenditureCategory)} className={selectCls}>
+            <select
+              value={form.expenditure_category}
+              onChange={e => set('expenditure_category', e.target.value as ExpenditureCategory)}
+              className={selectCls}
+            >
               {EXPENDITURE_CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
             </select>
           </Field>
@@ -283,12 +339,22 @@ function ExpenditureForm({ initial, onSave, onCancel, saving, staffList }: Expen
           <div className="col-span-2">
             <Field label="Staff Member">
               {staffList.length > 0 ? (
-                <select value={form.staff_name} onChange={e => set('staff_name', e.target.value)} className={selectCls}>
+                <select
+                  value={form.staff_name}
+                  onChange={e => set('staff_name', e.target.value)}
+                  className={selectCls}
+                >
                   <option value="">— All / General —</option>
                   {staffList.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               ) : (
-                <input type="text" value={form.staff_name} onChange={e => set('staff_name', e.target.value)} placeholder="Staff member name" className={inputCls} />
+                <input
+                  type="text"
+                  value={form.staff_name}
+                  onChange={e => set('staff_name', e.target.value)}
+                  placeholder="Staff member name"
+                  className={inputCls}
+                />
               )}
             </Field>
           </div>
@@ -296,7 +362,13 @@ function ExpenditureForm({ initial, onSave, onCancel, saving, staffList }: Expen
         {needsVehicle && (
           <div className="col-span-2">
             <Field label="Vehicle Number">
-              <input type="text" value={form.vehicle_no} onChange={e => set('vehicle_no', e.target.value)} placeholder="e.g. KL-07 AB 1234" className={inputCls} />
+              <input
+                type="text"
+                value={form.vehicle_no}
+                onChange={e => set('vehicle_no', e.target.value)}
+                placeholder="e.g. KL-07 AB 1234"
+                className={inputCls}
+              />
             </Field>
           </div>
         )}
@@ -304,14 +376,32 @@ function ExpenditureForm({ initial, onSave, onCancel, saving, staffList }: Expen
           <input type="date" value={form.date} onChange={e => set('date', e.target.value)} className={inputCls} />
         </Field>
         <Field label="Amount (₹)" required>
-          <input type="number" min="0" step="0.01" value={form.amount} onChange={e => set('amount', e.target.value as unknown as number)} placeholder="0.00" className={inputCls} />
+          <input
+            type="number" min="0" step="0.01"
+            value={form.amount}
+            onChange={e => set('amount', e.target.value as unknown as number)}
+            placeholder="0.00"
+            className={inputCls}
+          />
         </Field>
         <Field label="Bill / Voucher No.">
-          <input type="text" value={form.bill_voucher_no} onChange={e => set('bill_voucher_no', e.target.value)} placeholder="e.g. VCH-0099" className={inputCls} />
+          <input
+            type="text"
+            value={form.bill_voucher_no}
+            onChange={e => set('bill_voucher_no', e.target.value)}
+            placeholder="e.g. VCH-0099"
+            className={inputCls}
+          />
         </Field>
         <div className="col-span-2">
           <Field label="Notes">
-            <textarea value={form.notes} onChange={e => set('notes', e.target.value)} rows={3} placeholder="Additional details…" className={`${inputCls} resize-none`} />
+            <textarea
+              value={form.notes}
+              onChange={e => set('notes', e.target.value)}
+              rows={3}
+              placeholder="Additional details…"
+              className={`${inputCls} resize-none`}
+            />
           </Field>
         </div>
       </div>
@@ -449,19 +539,18 @@ export default function AccountsUI({ staffList = [] }: AccountsUIProps) {
       ]);
       setEntries(data);
       setTotals(t);
-    } catch (e: any) {
-      setToast({ message: e.message ?? 'Failed to load entries', type: 'error' });
-    } finally {
+    } catch (e: unknown) {
+     const message = e instanceof Error ? e.message : 'Failed to load entries';
+        setToast({ message, type: 'error' });
+      }finally {
       setLoading(false);
     }
   }, []);
 
-  // ── FIX 1: Call loadData on mount ────────────────────
   useEffect(() => {
     loadData();
   }, [loadData]);
 
-  // ── FIX 2: Wire up realtime subscription ─────────────
   useAccountsRealtime(loadData);
 
   // ── Sync filterMonth → dateFrom / dateTo ─────────────
@@ -531,8 +620,9 @@ export default function AccountsUI({ staffList = [] }: AccountsUIProps) {
       await loadData();
       setView('list');
       setEditTarget(null);
-    } catch (e: any) {
-      setToast({ message: e.message ?? 'Failed to save entry', type: 'error' });
+    }  catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Failed to save entry';
+      setToast({ message, type: 'error' });
     } finally {
       setSaving(false);
     }
@@ -545,9 +635,10 @@ export default function AccountsUI({ staffList = [] }: AccountsUIProps) {
       const t = await fetchTotals();
       setTotals(t);
       setToast({ message: 'Entry deleted', type: 'success' });
-    } catch (e: any) {
-      setToast({ message: e.message ?? 'Failed to delete entry', type: 'error' });
-    } finally {
+    } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : 'Failed to delete entry';
+        setToast({ message, type: 'error' });
+    }finally {
       setDeleteTarget(null);
     }
   };
