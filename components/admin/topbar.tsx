@@ -7,23 +7,23 @@ import { register } from "module"
 const SECTIONS: Record<string, string> = {
   users: "Dashboard",
   Accounts: "Accounts",
-  import: "Import Students",
   attendance: "Student Attendance",
   leave: "Leave Requests",
   reports: "Reports",
   admission: "Admission-Register",
   staff: "Staff Data",
+  marks: "Marks",
 }
 
 const descriptions: Record<string, string> = {
   users: "Access your dashboard and manage your institution",
   Accounts: "Manage financial records and transactions",
-  import: "Import student data from CSV or Excel files",
   attendance: "Track student attendance and generate reports",
   leave: "Approve and manage leave requests",
   reports: "Generate reports and analytics",
   admission: "Manage student admissions and parent login access",
   staff: "Manage staff members and their details",
+  marks: "Enter and manage student marks and assessments",
  
 }
 
