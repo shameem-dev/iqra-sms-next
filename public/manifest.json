@@ -1,13 +1,14 @@
 {
+  "id": "/",
   "name": "Iqrah Public School",
   "short_name": "IQRAH",
   "description": "School management system",
-  "start_url": "/teacher",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
   "background_color": "#ffffff",
-  "theme_color": "#4f46e5",
+  "theme_color": "#0F4AA1",
   "icons": [
     {
       "src": "/images/icon-192.png",
@@ -19,43 +20,7 @@
       "src": "/images/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/images/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
-    }
-  ],
-  "screenshots": [
-    {
-      "src": "/images/screenshot-narrow.png",
-      "sizes": "540x720",
-      "type": "image/png",
-      "form_factor": "narrow"
-    },
-    {
-      "src": "/images/screenshot-wide.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "wide"
-    }
-  ],
-  "categories": ["education"],
-  "shortcuts": [
-    {
-      "name": "Mark Attendance",
-      "short_name": "Attendance",
-      "description": "Quickly mark attendance",
-      "url": "/teacher?tab=attendance",
-      "icons": [
-        {
-          "src": "/images/icon-96.png",
-          "sizes": "96x96",
-          "type": "image/png"
-        }
-      ]
+      "purpose": "any maskable"
     }
   ]
 }

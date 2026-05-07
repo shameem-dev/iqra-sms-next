@@ -10,9 +10,10 @@ const SECTIONS: Record<string, string> = {
   attendance: "Student Attendance",
   leave: "Leave Requests",
   reports: "Reports",
-  admission: "Admission-Register",
+  admission: "Admission Register",
   staff: "Staff Data",
   marks: "Marks",
+  "certificates & reports": "Certificates & Reports",
 }
 
 const descriptions: Record<string, string> = {
@@ -24,7 +25,7 @@ const descriptions: Record<string, string> = {
   admission: "Manage student admissions and parent login access",
   staff: "Manage staff members and their details",
   marks: "Enter and manage student marks and assessments",
- 
+  "certificates & reports": "Generate certificates and reports"
 }
 
 interface TopBarProps {
