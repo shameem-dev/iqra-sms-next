@@ -53,8 +53,8 @@ export default function AdminLayout() {
         return <AccountsUI />
       case "staff":
         return <StaffUI />
-        case "cerificates & reports":
-        return <DocumentGenerator />
+case "certificates & reports":
+          return <DocumentGenerator />
       case "admission":
         return <AdmissionRegisterPage />
         default:
