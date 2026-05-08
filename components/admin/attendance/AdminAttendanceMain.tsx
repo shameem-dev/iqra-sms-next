@@ -1,17 +1,26 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Save, Loader2, RefreshCw } from 'lucide-react'
+import { createBrowserClient } from '@supabase/ssr'
 import { useAttendance } from '@/utils/actions/useAttendance'
 import AttendanceControls from './AttendanceControls'
 import AttendanceGrid from './AttendanceGrid'
+import AttendanceSummary from './AttendanceSummary'
+import HolidayManager from './HolidayManager'
 
 export default function AdminAttendance() {
   const today = new Date()
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!
+  )
 
-  const [selectedStandard, setSelectedStandard] = useState('')
+  const [selectedStandard, setSelectedStandard] = useState('FS1 A')
   const [year, setYear]   = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth())
+  const [holidays, setHolidays] = useState<Record<string, string>>({})
+  // holidays = { 'YYYY-MM-DD': 'Holiday Title' }
 
   const {
     students, attendance, dirtyDates,
@@ -20,6 +29,23 @@ export default function AdminAttendance() {
     getDayStats, getStudentStats,
   } = useAttendance(selectedStandard, year, month)
 
+  // ── Load holidays for current month ──────────────────────────────────────
+  useEffect(() => {
+    ;(async () => {
+      const from = `${year}-${String(month + 1).padStart(2, '0')}-01`
+      const lastDay = new Date(year, month + 1, 0).getDate()
+      const to   = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
+      const { data } = await supabase
+        .from('school_holidays')
+        .select('date, title')
+        .gte('date', from)
+        .lte('date', to)
+      const map: Record<string, string> = {}
+      ;(data || []).forEach((h: any) => { map[h.date] = h.title })
+      setHolidays(map)
+    })()
+  }, [year, month])
+
   function prevMonth() {
     if (month === 0) { setMonth(11); setYear(y => y - 1) }
     else setMonth(m => m - 1)
@@ -27,10 +53,6 @@ export default function AdminAttendance() {
   function nextMonth() {
     if (month === 11) { setMonth(0); setYear(y => y + 1) }
     else setMonth(m => m + 1)
-  }
-
-  function handleSelectStandard(std: string) {
-    setSelectedStandard(std)
   }
 
   return (
@@ -69,14 +91,17 @@ export default function AdminAttendance() {
       )}
       {error && (
         <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-          ⚠️ {error}
+          {error}
         </div>
       )}
+
+      {/* ── Holiday Manager ── */}
+      <HolidayManager />
 
       {/* ── Controls ── */}
       <AttendanceControls
         selectedStandard={selectedStandard}
-        onSelectStandard={handleSelectStandard}
+        onSelectStandard={setSelectedStandard}
         year={year}
         month={month}
         onPrevMonth={prevMonth}
@@ -105,20 +130,29 @@ export default function AdminAttendance() {
         </div>
       )}
 
-      {/* ── Grid ── */}
+      {/* ── Grid + Summary ── */}
       {selectedStandard && !loading && students.length > 0 && (
-        <AttendanceGrid
-          students={students}
-          attendance={attendance}
-          dirtyDates={dirtyDates}
-          year={year}
-          month={month}
-          onToggle={toggleStatus}
-          onMarkDayAll={markDayAll}
-          onMarkStudentAll={markStudentAll}
-          getDayStats={getDayStats}
-          getStudentStats={getStudentStats}
-        />
+        <>
+          <AttendanceGrid
+            students={students}
+            attendance={attendance}
+            dirtyDates={dirtyDates}
+            year={year}
+            month={month}
+            holidays={holidays}
+            onToggle={toggleStatus}
+            onMarkDayAll={markDayAll}
+            onMarkStudentAll={markStudentAll}
+            getDayStats={getDayStats}
+            getStudentStats={getStudentStats}
+          />
+          <AttendanceSummary
+            students={students}
+            attendance={attendance}
+            year={year}
+            month={month}
+          />
+        </>
       )}
     </div>
   )

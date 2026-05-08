@@ -33,16 +33,17 @@ const STANDARDS = [
 const DEFAULT_STANDARD = 'FS1 A'
 const ACADEMIC_YEAR = '2026-27'
 
-const examColumns: { label: string; field: keyof MarkFormData; maxKey: keyof Subject }[] = [
-  { label: 'UT1', field: 'ut1', maxKey: 'max_ut1' },
-  { label: 'UT2', field: 'ut2', maxKey: 'max_ut2' },
-  { label: 'UT3', field: 'ut3', maxKey: 'max_ut3' },
-  { label: 'UT4', field: 'ut4', maxKey: 'max_ut4' },
-  { label: 'Mid Term', field: 'mid_term', maxKey: 'max_mid_term' },
-  { label: 'Half Yearly', field: 'half_yearly', maxKey: 'max_half_yearly' },
-  { label: 'Final', field: 'final', maxKey: 'max_final' },
+const examColumns: { label: string; field: keyof Omit<MarkFormData, 'id'>; maxKey: keyof Subject }[] = [
+  { label: 'UT1',        field: 'ut1',        maxKey: 'max_ut1' },
+  { label: 'UT2',        field: 'ut2',        maxKey: 'max_ut2' },
+  { label: 'UT3',        field: 'ut3',        maxKey: 'max_ut3' },
+  { label: 'UT4',        field: 'ut4',        maxKey: 'max_ut4' },
+  { label: 'Mid Term',   field: 'mid_term',   maxKey: 'max_mid_term' },
+  { label: 'Half Yearly',field: 'half_yearly',maxKey: 'max_half_yearly' },
+  { label: 'Final',      field: 'final',      maxKey: 'max_final' },
 ]
 
+// emptyMarks never includes id — new rows must not send id to Postgres
 const emptyMarks = (): MarkFormData => ({
   ut1: null, ut2: null, ut3: null, ut4: null,
   mid_term: null, half_yearly: null, final: null,
@@ -248,14 +249,16 @@ export default function MarksEntryPage() {
         standard: student.standard,
         marks: existing
           ? {
-              id: existing.id,
-              ut1: existing.ut1, ut2: existing.ut2,
-              ut3: existing.ut3, ut4: existing.ut4,
+              id: existing.id,          // existing row — keep id for upsert match
+              ut1: existing.ut1,
+              ut2: existing.ut2,
+              ut3: existing.ut3,
+              ut4: existing.ut4,
               mid_term: existing.mid_term,
               half_yearly: existing.half_yearly,
               final: existing.final,
             }
-          : emptyMarks(),
+          : emptyMarks(),               // new row — NO id, let Postgres use DEFAULT
       }
     })
 
@@ -334,8 +337,8 @@ export default function MarksEntryPage() {
       .slice(0, 3)
   }
 
-  function handleMarkChange(studentId: number, field: keyof MarkFormData, value: string) {
-    const num = value === '' ? null : parseInt(value)
+  function handleMarkChange(studentId: number, field: keyof Omit<MarkFormData, 'id'>, value: string) {
+    const num = value === '' ? null : parseInt(value, 10)
     setMarksData(prev =>
       prev.map(row =>
         row.student_id === studentId
@@ -351,6 +354,7 @@ export default function MarksEntryPage() {
   }
 
   async function handleSave() {
+    // Validate: no mark exceeds its max
     let hasError = false
     if (activeSubject) {
       marksData.forEach(row => {
@@ -369,25 +373,40 @@ export default function MarksEntryPage() {
     setError('')
     setSuccess('')
 
-    const upsertData = marksData.map(row => ({
-      ...(row.marks.id ? { id: row.marks.id } : {}),
-      student_id: row.student_id,
-      subject_id: activeSubject!.id,
-      academic_year: ACADEMIC_YEAR,
-      ut1: row.marks.ut1, ut2: row.marks.ut2,
-      ut3: row.marks.ut3, ut4: row.marks.ut4,
-      mid_term: row.marks.mid_term,
-      half_yearly: row.marks.half_yearly,
-      final: row.marks.final,
-      updated_at: new Date().toISOString(),
-    }))
+    // ── FIXED: build payload explicitly, only include id when it truly exists ──
+    const upsertData = marksData.map(row => {
+      // Base payload — never includes id for new rows
+      const payload: Record<string, unknown> = {
+        student_id:    row.student_id,
+        subject_id:    activeSubject!.id,
+        academic_year: ACADEMIC_YEAR,
+        ut1:           row.marks.ut1,
+        ut2:           row.marks.ut2,
+        ut3:           row.marks.ut3,
+        ut4:           row.marks.ut4,
+        mid_term:      row.marks.mid_term,
+        half_yearly:   row.marks.half_yearly,
+        final:         row.marks.final,
+        updated_at:    new Date().toISOString(),
+      }
+
+      // Only add id if this row already exists in DB
+      // This lets upsert match by id for updates,
+      // while new rows rely on the onConflict columns instead
+      if (row.marks.id !== undefined) {
+        payload.id = row.marks.id
+      }
+
+      return payload
+    })
 
     const { error } = await supabase
       .from('marks')
       .upsert(upsertData, { onConflict: 'student_id,subject_id,academic_year' })
 
-    if (error) setError(error.message)
-    else {
+    if (error) {
+      setError(error.message)
+    } else {
       setSuccess('Marks saved successfully!')
       setEditMode(false)
       fetchMarks(activeSubject!)
@@ -471,14 +490,10 @@ export default function MarksEntryPage() {
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <header className="bg-white border-b border-slate-100 sticky top-0 z-30 shadow-sm w-full">
         <div className="w-full px-6 py-4 flex items-center justify-between gap-4">
-
-          {/* Title */}
           <div className="leading-tight">
             <p className="text-sm font-bold text-slate-800">Marks Entry</p>
             <p className="text-xs text-slate-400">Academic Year {ACADEMIC_YEAR}</p>
           </div>
-
-          {/* Class Selector */}
           <div className="flex items-center gap-2">
             <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 hidden sm:block">
               Class
@@ -497,37 +512,16 @@ export default function MarksEntryPage() {
       {/* ── Main ───────────────────────────────────────────────────────────── */}
       <main className="w-full px-6 py-6 space-y-5">
 
-        {/* Alerts */}
         {error && <Alert type="error" message={error} />}
         {success && <Alert type="success" message={success} />}
 
         {/* ── Stats ──────────────────────────────────────────────────────── */}
         {subjects.length > 0 && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <StatCard
-              label="Class"
-              value={selectedStandard}
-              icon={ClipboardList}
-              accent="bg-indigo-500"
-            />
-            <StatCard
-              label="Students"
-              value={totalStudents || '—'}
-              icon={Users}
-              accent="bg-violet-500"
-            />
-            <StatCard
-              label="Subjects"
-              value={totalSubjects}
-              icon={BookOpen}
-              accent="bg-sky-500"
-            />
-            <StatCard
-              label="Entries"
-              value={totalStudents ? `${enteredCount} / ${totalStudents}` : '—'}
-              icon={BarChart2}
-              accent="bg-emerald-500"
-            />
+            <StatCard label="Class"    value={selectedStandard}                              icon={ClipboardList} accent="bg-indigo-500" />
+            <StatCard label="Students" value={totalStudents || '—'}                          icon={Users}         accent="bg-violet-500" />
+            <StatCard label="Subjects" value={totalSubjects}                                 icon={BookOpen}      accent="bg-sky-500" />
+            <StatCard label="Entries"  value={totalStudents ? `${enteredCount} / ${totalStudents}` : '—'} icon={BarChart2} accent="bg-emerald-500" />
           </div>
         )}
 
@@ -551,10 +545,7 @@ export default function MarksEntryPage() {
         {subjects.length > 0 && (
           <div className="bg-white border border-slate-100 rounded-2xl shadow-sm w-full overflow-hidden">
             <div className="px-5 pt-5 border-b border-slate-100">
-              <SectionHeader
-                title="Subjects"
-                subtitle="Choose a subject to view or enter marks"
-              />
+              <SectionHeader title="Subjects" subtitle="Choose a subject to view or enter marks" />
             </div>
             <div className="px-5 py-4">
               <SubjectTabs
@@ -633,20 +624,14 @@ export default function MarksEntryPage() {
 
         {/* ── No students ─────────────────────────────────────────────────── */}
         {!loading && activeSubject && marksData.length === 0 && (
-          <EmptyState
-            icon={Users}
-            message={`No students found in ${selectedStandard}.`}
-          />
+          <EmptyState icon={Users} message={`No students found in ${selectedStandard}.`} />
         )}
 
         {/* ── Analytics ───────────────────────────────────────────────────── */}
         {!loading && marksData.length > 0 && activeSubject && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             <div className="bg-white border border-slate-100 rounded-2xl shadow-sm p-5">
-              <SectionHeader
-                title="Top Scorers"
-                subtitle={`By exam · ${activeSubject.name}`}
-              />
+              <SectionHeader title="Top Scorers" subtitle={`By exam · ${activeSubject.name}`} />
               <TopScorers
                 activeSubject={activeSubject}
                 marksData={marksData}
@@ -654,10 +639,7 @@ export default function MarksEntryPage() {
               />
             </div>
             <div className="bg-white border border-slate-100 rounded-2xl shadow-sm p-5">
-              <SectionHeader
-                title="Class Toppers"
-                subtitle="Overall rank across all subjects"
-              />
+              <SectionHeader title="Class Toppers" subtitle="Overall rank across all subjects" />
               <ClassTopper
                 selectedStandard={selectedStandard}
                 toppers={getClassToppers()}

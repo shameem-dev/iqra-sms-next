@@ -3,13 +3,13 @@
 import { Student, Status, getDaysInMonth, fmtDate, getDayLabel, isWeekend } from '@/type/attedence'
 import AttendanceCell from './AttendanceCell'
 
-
 interface Props {
   students: Student[]
   attendance: Record<string, Record<number, Status>>
   dirtyDates: Set<string>
   year: number
   month: number
+  holidays: Record<string, string>   // ← NEW
   onToggle: (dateStr: string, studentId: number) => void
   onMarkDayAll: (dateStr: string, status: Status) => void
   onMarkStudentAll: (studentId: number, status: Status) => void
@@ -24,7 +24,7 @@ const GENDER_STYLE: Record<string, { row: string; text: string; border: string }
 }
 
 export default function AttendanceGrid({
-  students, attendance, dirtyDates, year, month,
+  students, attendance, dirtyDates, year, month, holidays,
   onToggle, onMarkDayAll, onMarkStudentAll,
   getDayStats, getStudentStats,
 }: Props) {
@@ -44,17 +44,17 @@ export default function AttendanceGrid({
         <tr className={style.row}>
           <td colSpan={daysInMonth + 2}
             className={`px-3 py-1.5 text-xs font-bold uppercase tracking-widest border-b ${style.text} ${style.border}`}>
-            {genderLabel === 'Male' ? '♂' : genderLabel === 'Female' ? '♀' : '⚧'} {genderLabel}
+            {genderLabel === 'Male' ? '' : genderLabel === 'Female' ? '' : ''} {genderLabel}
           </td>
         </tr>
 
-        {group.map((student) => {
+        {group.map(student => {
           const stats = getStudentStats(student.id)
           return (
             <tr key={student.id}
               className="border-b border-slate-100 hover:bg-slate-50 transition-colors group">
 
-              {/* Name + mark-all buttons */}
+              {/* Name */}
               <td className="sticky left-0 z-10 bg-white group-hover:bg-slate-50 px-3 py-1.5 border-r border-slate-200 transition-colors">
                 <div className="flex items-center justify-between gap-2">
                   <div className="min-w-0">
@@ -91,12 +91,26 @@ export default function AttendanceGrid({
                 </div>
               </td>
 
-              {/* Attendance cells */}
+              {/* Cells */}
               {Array.from({ length: daysInMonth }).map((_, i) => {
-                const d       = i + 1
-                const dateStr = fmtDate(year, month, d)
-                // ✅ Default is 'none' — no fake present
-                const status  = attendance[dateStr]?.[student.id] ?? 'none'
+                const d         = i + 1
+                const dateStr   = fmtDate(year, month, d)
+                const isHoliday = !!holidays[dateStr]
+                const status    = attendance[dateStr]?.[student.id] ?? 'none'
+
+                // Holiday cell — blocked
+                if (isHoliday) {
+                  return (
+                    <td key={d}
+                      className="p-0.5 text-center border-r border-slate-100 bg-orange-50"
+                      title={holidays[dateStr]}>
+                      <div className="w-7 h-7 rounded-lg flex items-center justify-center text-[9px] font-bold text-orange-400 bg-orange-100">
+                        H
+                      </div>
+                    </td>
+                  )
+                }
+
                 return (
                   <AttendanceCell
                     key={d}
@@ -132,6 +146,11 @@ export default function AttendanceGrid({
           <span className="w-5 h-5 rounded bg-slate-100 inline-flex items-center justify-center text-slate-300 font-bold">—</span>
           Not marked
         </span>
+        <span className="flex items-center gap-1">
+          <span className="w-5 h-5 rounded bg-orange-100 inline-flex items-center justify-center text-[10px]">H</span>
+          Holiday
+        </span>
+        
         <span className="ml-auto text-slate-400">{students.length} students</span>
       </div>
 
@@ -148,20 +167,23 @@ export default function AttendanceGrid({
                 Month
               </th>
               {Array.from({ length: daysInMonth }).map((_, i) => {
-                const d       = i + 1
-                const dateStr = fmtDate(year, month, d)
-                const weekend = isWeekend(year, month, d)
-                const isToday = dateStr === todayStr
+                const d         = i + 1
+                const dateStr   = fmtDate(year, month, d)
+                const weekend   = isWeekend(year, month, d)
+                const isToday   = dateStr === todayStr
+                const isHoliday = !!holidays[dateStr]
                 return (
                   <th key={d}
+                    title={isHoliday ? holidays[dateStr] : undefined}
                     className={`py-1 text-center font-semibold border-r border-slate-100 w-8 ${
-                      isToday ? 'bg-teal-50 text-teal-700'    :
-                      weekend ? 'bg-slate-100 text-slate-400' :
-                                'bg-slate-50 text-slate-600'
+                      isHoliday ? 'bg-orange-50 text-orange-400' :
+                      isToday   ? 'bg-teal-50 text-teal-700'     :
+                      weekend   ? 'bg-slate-100 text-slate-400'  :
+                                  'bg-slate-50 text-slate-600'
                     }`}>
                     <div>{d}</div>
-                    <div className="text-[9px] font-normal text-slate-400">
-                      {getDayLabel(year, month, d)}
+                    <div className="text-[9px] font-normal">
+                      {isHoliday ? '' : getDayLabel(year, month, d)}
                     </div>
                   </th>
                 )
@@ -175,23 +197,25 @@ export default function AttendanceGrid({
               </td>
               <td className="bg-white border-r border-slate-100" />
               {Array.from({ length: daysInMonth }).map((_, i) => {
-                const d       = i + 1
-                const dateStr = fmtDate(year, month, d)
-                const stats   = getDayStats(dateStr)
+                const d         = i + 1
+                const dateStr   = fmtDate(year, month, d)
+                const isHoliday = !!holidays[dateStr]
                 return (
-                  <td key={d} className="py-1 text-center border-r border-slate-100 bg-white">
-                    <div className="flex flex-col gap-0.5 items-center">
-                      <button onClick={() => onMarkDayAll(dateStr, 'present')}
-                        title="All Present"
-                        className="w-6 h-3 rounded-sm bg-emerald-100 hover:bg-emerald-400 text-emerald-700 hover:text-white text-[8px] font-bold transition-colors">
-                        P
-                      </button>
-                      <button onClick={() => onMarkDayAll(dateStr, 'absent')}
-                        title="All Absent"
-                        className="w-6 h-3 rounded-sm bg-red-100 hover:bg-red-400 text-red-700 hover:text-white text-[8px] font-bold transition-colors">
-                        A
-                      </button>
-                    </div>
+                  <td key={d} className={`py-1 text-center border-r border-slate-100 ${isHoliday ? 'bg-orange-50' : 'bg-white'}`}>
+                    {!isHoliday && (
+                      <div className="flex flex-col gap-0.5 items-center">
+                        <button onClick={() => onMarkDayAll(dateStr, 'present')}
+                          title="All Present"
+                          className="w-6 h-3 rounded-sm bg-emerald-100 hover:bg-emerald-400 text-emerald-700 hover:text-white text-[8px] font-bold transition-colors">
+                          P
+                        </button>
+                        <button onClick={() => onMarkDayAll(dateStr, 'absent')}
+                          title="All Absent"
+                          className="w-6 h-3 rounded-sm bg-red-100 hover:bg-red-400 text-red-700 hover:text-white text-[8px] font-bold transition-colors">
+                          A
+                        </button>
+                      </div>
+                    )}
                   </td>
                 )
               })}
@@ -204,7 +228,7 @@ export default function AttendanceGrid({
             {renderGenderGroup(otherStudents,  'Other')}
           </tbody>
 
-          {/* Footer: daily totals */}
+          {/* Footer */}
           <tfoot>
             <tr className="border-t-2 border-slate-300 bg-slate-50">
               <td className="sticky left-0 z-10 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600 border-r border-slate-200">
@@ -212,18 +236,23 @@ export default function AttendanceGrid({
               </td>
               <td className="border-r border-slate-100" />
               {Array.from({ length: daysInMonth }).map((_, i) => {
-                const d       = i + 1
-                const dateStr = fmtDate(year, month, d)
-                const stats   = getDayStats(dateStr)
+                const d         = i + 1
+                const dateStr   = fmtDate(year, month, d)
+                const isHoliday = !!holidays[dateStr]
+                const stats     = getDayStats(dateStr)
                 return (
-                  <td key={d} className="py-1.5 text-center border-r border-slate-100">
-                    <div className="text-[10px] leading-tight">
-                      <div className="text-emerald-600 font-semibold">{stats.present}</div>
-                      <div className="text-red-500 font-semibold">{stats.absent}</div>
-                      {stats.none > 0 && (
-                        <div className="text-slate-300">{stats.none}?</div>
-                      )}
-                    </div>
+                  <td key={d} className={`py-1.5 text-center border-r border-slate-100 ${isHoliday ? 'bg-orange-50' : ''}`}>
+                    {isHoliday ? (
+                      <span className="text-[10px] text-orange-400">—</span>
+                    ) : (
+                      <div className="text-[10px] leading-tight">
+                        <div className="text-emerald-600 font-semibold">{stats.present}</div>
+                        <div className="text-red-500 font-semibold">{stats.absent}</div>
+                        {stats.none > 0 && (
+                          <div className="text-slate-300">{stats.none}?</div>
+                        )}
+                      </div>
+                    )}
                   </td>
                 )
               })}

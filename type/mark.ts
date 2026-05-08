@@ -48,7 +48,9 @@ export interface Mark {
   updated_at: string
 }
 
+// id is optional — present only for existing rows, omitted for new inserts
 export interface MarkFormData {
+  id?: number          // ← FIXED: optional, never set on new rows
   ut1: number | null
   ut2: number | null
   ut3: number | null
@@ -66,7 +68,7 @@ export interface MarkWithStudent {
   name: string
   admission_no: string
   standard: string
-  marks: MarkFormData & { id?: number }
+  marks: MarkFormData   // id? is already part of MarkFormData now
 }
 
 // ============================================
@@ -83,8 +85,7 @@ export interface TopScorer {
 }
 
 // ============================================
-// EXISTING STUDENT (already in your project,
-// add only if not already defined)
+// STUDENT
 // ============================================
 export interface Student {
   id: number

@@ -38,6 +38,21 @@ export default function TeacherAttendance({ classAssignment, userId }: Props) {
   const [saved, setSaved]               = useState(false)
   const [error, setError]               = useState('')
 
+  // ── Holiday state ─────────────────────────────────────────────────────────
+  const [holidays, setHolidays] = useState<Record<string, { title: string; type: string }>>({})
+
+  // ── Load all holidays once ────────────────────────────────────────────────
+  useEffect(() => {
+    ;(async () => {
+      const { data } = await supabase
+        .from('school_holidays')
+        .select('date, title, type')
+      const map: Record<string, { title: string; type: string }> = {}
+      ;(data || []).forEach((h: any) => { map[h.date] = { title: h.title, type: h.type } })
+      setHolidays(map)
+    })()
+  }, [])
+
   // ── Load students + attendance for selected date ───────────────────────────
   useEffect(() => {
     ;(async () => {
@@ -77,6 +92,17 @@ export default function TeacherAttendance({ classAssignment, userId }: Props) {
     })()
   }, [selectedDate, standard])
 
+  // ── Derived: is selected date a holiday ───────────────────────────────────
+  const holidayInfo  = holidays[selectedDate]
+  const isHoliday    = !!holidayInfo
+
+  const TYPE_EMOJI: Record<string, string> = {
+    holiday: '🎉',
+    leave:   '📅',
+    exam:    '📝',
+    event:   '🎊',
+  }
+
   // ── Toggle present ↔ absent ───────────────────────────────────────────────
   function toggleStatus(studentId: number) {
     setAttendance(prev => ({
@@ -85,7 +111,7 @@ export default function TeacherAttendance({ classAssignment, userId }: Props) {
     }))
   }
 
-  // ── Mark all present or all absent ───────────────────────────────────────
+  // ── Mark all present or all absent ────────────────────────────────────────
   function markAll(status: Status) {
     const allMap: Record<number, Status> = {}
     students.forEach(s => { allMap[s.id] = status })
@@ -94,6 +120,7 @@ export default function TeacherAttendance({ classAssignment, userId }: Props) {
 
   // ── Save attendance ───────────────────────────────────────────────────────
   async function handleSave() {
+    if (isHoliday) return  // extra safety guard
     setSaving(true); setError(''); setSaved(false)
     try {
       const rows = students.map(student => ({
@@ -129,7 +156,7 @@ export default function TeacherAttendance({ classAssignment, userId }: Props) {
   const presentCount = Object.values(attendance).filter(s => s === 'present').length
   const absentCount  = Object.values(attendance).filter(s => s === 'absent').length
 
-  // ── Group students by gender for rendering ────────────────────────────────
+  // ── Group students by gender ──────────────────────────────────────────────
   const maleStudents   = students.filter(s => s.gender === 'Male')
   const femaleStudents = students.filter(s => s.gender === 'Female')
   const otherStudents  = students.filter(s => s.gender !== 'Male' && s.gender !== 'Female')
@@ -138,10 +165,8 @@ export default function TeacherAttendance({ classAssignment, userId }: Props) {
     if (group.length === 0) return null
     return (
       <>
-        {/* Gender group header */}
         <tr className={color}>
-          <td colSpan={3}
-            className="px-4 py-1.5 text-xs font-bold uppercase tracking-widest border-b">
+          <td colSpan={3} className="px-4 py-1.5 text-xs font-bold uppercase tracking-widest border-b">
             {label === 'Male' ? '♂' : label === 'Female' ? '♀' : '⚧'} {label}
           </td>
         </tr>
@@ -179,13 +204,16 @@ export default function TeacherAttendance({ classAssignment, userId }: Props) {
           <h2 className="text-base font-bold text-slate-700">Attendance — {standard}</h2>
           <p className="text-xs text-slate-400 mt-0.5">{students.length} students</p>
         </div>
-        <button
-          onClick={handleSave}
-          disabled={saving || students.length === 0}
-          className="flex items-center gap-2 h-9 px-4 text-sm font-semibold bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-60 transition-colors">
-          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          {saving ? 'Saving…' : 'Save Attendance'}
-        </button>
+        {/* Hide save button on holidays */}
+        {!isHoliday && (
+          <button
+            onClick={handleSave}
+            disabled={saving || students.length === 0}
+            className="flex items-center gap-2 h-9 px-4 text-sm font-semibold bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-60 transition-colors">
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            {saving ? 'Saving…' : 'Save Attendance'}
+          </button>
+        )}
       </div>
 
       {/* ── Messages ── */}
@@ -200,7 +228,7 @@ export default function TeacherAttendance({ classAssignment, userId }: Props) {
         </div>
       )}
 
-      {/* ── Date selector + stats + mark all ── */}
+      {/* ── Date selector ── */}
       <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-3">
 
         {/* Date navigation */}
@@ -224,43 +252,81 @@ export default function TeacherAttendance({ classAssignment, userId }: Props) {
                 Today
               </span>
             )}
+            {/* Holiday badge next to date */}
+            {isHoliday && (
+              <span className="text-xs font-medium text-orange-700 bg-orange-50 border border-orange-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                {TYPE_EMOJI[holidayInfo.type] || '🎌'} {holidayInfo.title}
+              </span>
+            )}
           </div>
 
-          {/* Stats */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-medium text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg">
-              ✓ Present: {presentCount}
-            </span>
-            <span className="text-xs font-medium text-red-700 bg-red-50 px-3 py-1.5 rounded-lg">
-              ✗ Absent: {absentCount}
-            </span>
-          </div>
+          {/* Stats — only shown on non-holidays */}
+          {!isHoliday && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg">
+                ✓ Present: {presentCount}
+              </span>
+              <span className="text-xs font-medium text-red-700 bg-red-50 px-3 py-1.5 rounded-lg">
+                ✗ Absent: {absentCount}
+              </span>
+            </div>
+          )}
         </div>
 
-        {/* Mark all buttons */}
-        <div className="flex items-center gap-2 pt-1 border-t border-slate-100">
-          <span className="text-xs text-slate-400">Mark all:</span>
-          <button onClick={() => markAll('present')}
-            className="text-xs px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition-colors font-medium">
-            All Present
-          </button>
-          <button onClick={() => markAll('absent')}
-            className="text-xs px-3 py-1.5 bg-red-50 text-red-700 border border-red-200 rounded-lg hover:bg-red-100 transition-colors font-medium">
-            All Absent
-          </button>
-        </div>
+        {/* Mark all — only shown on non-holidays */}
+        {!isHoliday && (
+          <div className="flex items-center gap-2 pt-1 border-t border-slate-100">
+            <span className="text-xs text-slate-400">Mark all:</span>
+            <button onClick={() => markAll('present')}
+              className="text-xs px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition-colors font-medium">
+              All Present
+            </button>
+            <button onClick={() => markAll('absent')}
+              className="text-xs px-3 py-1.5 bg-red-50 text-red-700 border border-red-200 rounded-lg hover:bg-red-100 transition-colors font-medium">
+              All Absent
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* ── Students table ── */}
-      {loading ? (
+      {/* ── Holiday block ── */}
+      {isHoliday ? (
+        <div className="bg-orange-50 border border-orange-200 rounded-xl p-10 text-center">
+          <div className="text-5xl mb-4">
+            {TYPE_EMOJI[holidayInfo.type] || '🎌'}
+          </div>
+          <p className="text-lg font-bold text-orange-700">{holidayInfo.title}</p>
+          <p className="text-sm text-orange-500 mt-2">
+            This day is marked as a holiday by the admin.
+          </p>
+          <p className="text-xs text-orange-400 mt-1">
+            Attendance cannot be taken on this day.
+          </p>
+          <div className="mt-4 flex justify-center gap-2">
+            <button onClick={() => changeDate(-1)}
+              className="text-xs px-4 py-2 bg-white border border-orange-200 text-orange-600 rounded-lg hover:bg-orange-50 transition-colors">
+              ← Previous Day
+            </button>
+            {selectedDate < today && (
+              <button onClick={() => changeDate(1)}
+                className="text-xs px-4 py-2 bg-white border border-orange-200 text-orange-600 rounded-lg hover:bg-orange-50 transition-colors">
+                Next Day →
+              </button>
+            )}
+          </div>
+        </div>
+
+      ) : loading ? (
         <div className="flex items-center justify-center py-16 text-slate-400 gap-2">
           <Loader2 className="w-5 h-5 animate-spin" />
           <span className="text-sm">Loading…</span>
         </div>
+
       ) : students.length === 0 ? (
         <div className="text-center py-16 text-slate-400 text-sm">
           No students found in {standard}
         </div>
+
       ) : (
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <table className="w-full text-sm">
