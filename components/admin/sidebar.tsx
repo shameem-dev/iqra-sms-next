@@ -6,13 +6,12 @@ import {
   FileText,
   BarChart3,
   ChevronRight,
-  Upload,
   LogOut,
   PanelLeftClose,
   ClipboardPlus,
 } from "lucide-react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { createClient } from "@/utils/supabase/client";
 
 const SIDEBAR_ITEMS = [
   { id: "users", label: "Dashboard", icon: Users, badge: null },
@@ -22,7 +21,7 @@ const SIDEBAR_ITEMS = [
   { id: "fees", label: "Fees", icon: BarChart3, badge: null },
   { id: "admission", label: "Admission Register", icon: ClipboardPlus, badge: null },
   { id: "staff", label: "Staff Management", icon: Users, badge: null },
-{ id: "certificates & reports", label: "Certificates & Reports", icon: BarChart3, badge: null },
+  { id: "certificates & reports", label: "Certificates & Reports", icon: BarChart3, badge: null },
 ];
 
 interface SidebarProps {
@@ -38,9 +37,13 @@ export default function Sidebar({
   sidebarOpen = true,
   setSidebarOpen,
 }: SidebarProps) {
-  const router = useRouter();
+  const supabase = createClient();
 
-  const handleLogout = () => router.push("/");
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    window.location.href = "/login"; // hard redirect clears all client state
+  };
+
   const handleLogoClick = () => { if (!sidebarOpen) setSidebarOpen(true); };
   const handleNavItemClick = (id: string) => { if (typeof setActiveTab === "function") setActiveTab(id); };
   const handleCollapseClick = () => { if (typeof setSidebarOpen === "function") setSidebarOpen(false); };
@@ -146,7 +149,7 @@ export default function Sidebar({
       <div className="px-3 py-3 border-t border-[#c49a28]/30">
         {sidebarOpen ? (
           <button
-            onClick={handleLogout}
+            onClick={() => handleLogout()}
             className="w-full flex items-center justify-between gap-2 px-4 py-2.5 rounded-xl text-[13px] font-medium text-[#c49a28] bg-[#c49a28]/10 border border-[#c49a28]/30 hover:bg-[#c49a28]/20 transition-all"
           >
             <span>Logout</span>
@@ -154,7 +157,7 @@ export default function Sidebar({
           </button>
         ) : (
           <button
-            onClick={handleLogout}
+            onClick={() => handleLogout()}
             className="w-full flex items-center justify-center p-3 rounded-xl text-[#c49a28] hover:bg-[#c49a28]/10 transition-all"
             title="Logout"
           >

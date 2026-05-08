@@ -21,44 +21,44 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // Get session
   const { data: { user } } = await supabase.auth.getUser()
   const path = request.nextUrl.pathname
   const role = user?.user_metadata?.role
 
-  // ── Not logged in ─────────────────────────────────────
-  if (!user && !path.startsWith('/login')) {
-    return NextResponse.redirect(new URL('/login', request.url))
+  // ── DEBUG: remove after fixing
+  console.log('MIDDLEWARE:', { path, hasUser: !!user, role })
+
+  // Not logged in → force login
+  if (!user) {
+    // Allow /login through, block everything else
+    if (!path.startsWith('/login')) {
+      const loginUrl = new URL('/login', request.url)
+      return NextResponse.redirect(loginUrl)
+    }
+    return supabaseResponse
   }
 
-  // ── Logged in ─────────────────────────────────────────
-  if (user) {
-    // On login page → redirect to correct dashboard
-    if (path === '/login' || path === '/') {
-      if (role === 'admin')   return NextResponse.redirect(new URL('/admin', request.url))
-      if (role === 'teacher') return NextResponse.redirect(new URL('/teacher', request.url))
-      if (role === 'parent')  return NextResponse.redirect(new URL('/parent', request.url))
-    }
+  // Logged in + on login or root → go to dashboard
+  if (path === '/login' || path === '/') {
+    if (role === 'admin')   return NextResponse.redirect(new URL('/admin', request.url))
+    if (role === 'teacher') return NextResponse.redirect(new URL('/teacher', request.url))
+    if (role === 'parent')  return NextResponse.redirect(new URL('/parent', request.url))
+  }
 
-    // Teacher trying to access admin or parent → block
-    if (role === 'teacher' && (path.startsWith('/admin') || path.startsWith('/parent'))) {
-      return NextResponse.redirect(new URL('/teacher', request.url))
-    }
-
-    // Parent trying to access admin or teacher → block
-    if (role === 'parent' && (path.startsWith('/admin') || path.startsWith('/teacher'))) {
-      return NextResponse.redirect(new URL('/parent', request.url))
-    }
-
-    // Non-admin trying to access admin → block
-    if (role !== 'admin' && path.startsWith('/admin')) {
-      return NextResponse.redirect(new URL(`/${role}`, request.url))
-    }
+  // Role-based route protection
+  if (role === 'teacher' && (path.startsWith('/admin') || path.startsWith('/parent'))) {
+    return NextResponse.redirect(new URL('/teacher', request.url))
+  }
+  if (role === 'parent' && (path.startsWith('/admin') || path.startsWith('/teacher'))) {
+    return NextResponse.redirect(new URL('/parent', request.url))
+  }
+  if (role !== 'admin' && path.startsWith('/admin')) {
+    return NextResponse.redirect(new URL(`/${role}`, request.url))
   }
 
   return supabaseResponse
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|api).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|api|images).*)'],
 }
