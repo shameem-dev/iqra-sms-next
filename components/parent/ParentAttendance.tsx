@@ -14,7 +14,7 @@ export default function ParentAttendance({ studentId, studentName }: Props) {
 
   const today   = new Date()
   const [year, setYear]   = useState(today.getFullYear())
-  const [month, setMonth] = useState(today.getMonth()) // 0-indexed
+  const [month, setMonth] = useState(today.getMonth())
   const [records, setRecords] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -24,7 +24,6 @@ export default function ParentAttendance({ studentId, studentName }: Props) {
       const from = `${year}-${String(month + 1).padStart(2, '0')}-01`
       const lastDay = new Date(year, month + 1, 0).getDate()
       const to   = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
-
       const { data } = await supabase
         .from('attendance')
         .select('date, status')
@@ -32,7 +31,6 @@ export default function ParentAttendance({ studentId, studentName }: Props) {
         .gte('date', from)
         .lte('date', to)
         .order('date')
-
       setRecords(data || [])
       setLoading(false)
     })()
@@ -47,23 +45,22 @@ export default function ParentAttendance({ studentId, studentName }: Props) {
     else setMonth(m => m + 1)
   }
 
-  const monthName = new Date(year, month).toLocaleString('en-IN', { month: 'long', year: 'numeric' })
+  const monthName    = new Date(year, month).toLocaleString('en-IN', { month: 'long', year: 'numeric' })
   const presentCount = records.filter(r => r.status === 'present').length
   const absentCount  = records.filter(r => r.status === 'absent').length
   const lateCount    = records.filter(r => r.status === 'late').length
   const totalDays    = records.length
   const pct          = totalDays > 0 ? Math.round((presentCount / totalDays) * 100) : 0
 
-  // Build calendar
-  const firstDay  = new Date(year, month, 1).getDay()
+  const firstDay    = new Date(year, month, 1).getDay()
   const daysInMonth = new Date(year, month + 1, 0).getDate()
   const attMap: Record<string, string> = {}
   records.forEach(r => { attMap[r.date] = r.status })
 
   const STATUS_COLOR: Record<string, string> = {
-    present: 'bg-emerald-500 text-white',
-    absent:  'bg-red-500 text-white',
-    late:    'bg-amber-500 text-white',
+    present: 'bg-teal-500 text-white',
+    absent:  'bg-red-400 text-white',
+    late:    'bg-amber-400 text-white',
   }
 
   return (
@@ -87,63 +84,57 @@ export default function ParentAttendance({ studentId, studentName }: Props) {
       {/* Stats */}
       <div className="grid grid-cols-4 gap-3">
         <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-center">
-          <p className="text-xs text-slate-500">Total Days</p>
+          <p className="text-xs text-slate-400">Total</p>
           <p className="text-xl font-bold text-slate-700">{totalDays}</p>
         </div>
-        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-center">
-          <p className="text-xs text-emerald-600">Present</p>
-          <p className="text-xl font-bold text-emerald-700">{presentCount}</p>
+        <div className="bg-teal-50 border border-teal-200 rounded-xl p-3 text-center">
+          <p className="text-xs text-teal-500">Present</p>
+          <p className="text-xl font-bold text-teal-700">{presentCount}</p>
         </div>
         <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-center">
-          <p className="text-xs text-red-600">Absent</p>
-          <p className="text-xl font-bold text-red-700">{absentCount}</p>
+          <p className="text-xs text-red-400">Absent</p>
+          <p className="text-xl font-bold text-red-600">{absentCount}</p>
         </div>
-        <div className={`rounded-xl p-3 text-center border ${pct >= 75 ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}>
-          <p className={`text-xs ${pct >= 75 ? 'text-emerald-600' : 'text-red-600'}`}>Attendance %</p>
-          <p className={`text-xl font-bold ${pct >= 75 ? 'text-emerald-700' : 'text-red-700'}`}>{pct}%</p>
+        <div className={`rounded-xl p-3 text-center border ${pct >= 75 ? 'bg-teal-50 border-teal-200' : 'bg-red-50 border-red-200'}`}>
+          <p className={`text-xs ${pct >= 75 ? 'text-teal-500' : 'text-red-400'}`}>%</p>
+          <p className={`text-xl font-bold ${pct >= 75 ? 'text-teal-700' : 'text-red-600'}`}>{pct}%</p>
         </div>
       </div>
 
       {/* Calendar */}
       {loading ? (
         <div className="flex items-center justify-center py-10 text-slate-400 gap-2">
-          <Loader2 className="w-5 h-5 animate-spin" /><span className="text-sm">Loading…</span>
+          <Loader2 className="w-5 h-5 animate-spin text-teal-500" /><span className="text-sm">Loading…</span>
         </div>
       ) : (
         <div className="bg-white rounded-xl border border-slate-200 p-4">
-          {/* Day headers */}
           <div className="grid grid-cols-7 mb-2">
             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
               <div key={d} className="text-center text-xs font-medium text-slate-400 py-1">{d}</div>
             ))}
           </div>
-          {/* Day cells */}
           <div className="grid grid-cols-7 gap-1">
-            {/* Empty cells for first day offset */}
             {Array.from({ length: firstDay }).map((_, i) => <div key={`e-${i}`} />)}
-            {/* Day cells */}
             {Array.from({ length: daysInMonth }).map((_, i) => {
-              const day   = i + 1
+              const day     = i + 1
               const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
               const status  = attMap[dateStr]
               const isToday = dateStr === today.toISOString().split('T')[0]
               return (
                 <div key={day}
-                  className={`aspect-square flex items-center justify-center rounded-lg text-xs font-medium transition-colors
+                  className={`aspect-square flex items-center justify-center rounded-lg text-xs font-medium
                     ${status ? STATUS_COLOR[status] : 'bg-slate-50 text-slate-400'}
-                    ${isToday ? 'ring-2 ring-blue-500 ring-offset-1' : ''}
+                    ${isToday ? 'ring-2 ring-teal-500 ring-offset-1' : ''}
                   `}>
                   {day}
                 </div>
               )
             })}
           </div>
-
-          {/* Legend */}
-          <div className="flex items-center gap-4 mt-4 pt-3 border-t border-slate-100 text-xs text-slate-500">
-            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-emerald-500 inline-block" /> Present</span>
-            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-red-500 inline-block" /> Absent</span>
-            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-amber-500 inline-block" /> Late</span>
+          <div className="flex items-center gap-4 mt-4 pt-3 border-t border-slate-100 text-xs text-slate-400">
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-teal-500 inline-block" /> Present</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-red-400 inline-block" /> Absent</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-amber-400 inline-block" /> Late</span>
             <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-slate-200 inline-block" /> No record</span>
           </div>
         </div>
