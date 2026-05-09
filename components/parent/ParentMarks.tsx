@@ -36,7 +36,7 @@ export default function ParentMarks({ studentId, standard }: Props) {
 
   if (loading) return (
     <div className="flex items-center justify-center py-16 text-slate-400 gap-2">
-      <Loader2 className="w-5 h-5 animate-spin" /><span className="text-sm">Loading marks…</span>
+      <Loader2 className="w-5 h-5 animate-spin text-teal-500" /><span className="text-sm">Loading marks…</span>
     </div>
   )
 
@@ -57,9 +57,9 @@ export default function ParentMarks({ studentId, standard }: Props) {
           <table className="w-full text-sm min-w-[600px]">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200">
-                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500">Subject</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-slate-400">Subject</th>
                 {examFields.map(f => (
-                  <th key={f} className="px-3 py-3 text-center text-xs font-medium text-slate-500 whitespace-nowrap">
+                  <th key={f} className="px-3 py-3 text-center text-xs font-medium text-slate-400 whitespace-nowrap">
                     {EXAM_LABELS[f]}
                   </th>
                 ))}
@@ -81,9 +81,9 @@ export default function ParentMarks({ studentId, standard }: Props) {
                           {score !== null && score !== undefined ? (
                             <div>
                               <span className={`text-sm font-semibold ${
-                                pct !== null && pct >= 75 ? 'text-emerald-600'
-                                : pct !== null && pct >= 50 ? 'text-amber-600'
-                                : 'text-red-600'
+                                pct !== null && pct >= 75 ? 'text-teal-600'
+                                : pct !== null && pct >= 50 ? 'text-amber-500'
+                                : 'text-red-500'
                               }`}>{score}</span>
                               {max && <span className="text-xs text-slate-400">/{max}</span>}
                             </div>
@@ -101,11 +101,10 @@ export default function ParentMarks({ studentId, standard }: Props) {
         </div>
       </div>
 
-      {/* Color legend */}
-      <div className="flex items-center gap-4 text-xs text-slate-500">
-        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-emerald-500 inline-block" /> 75%+ Good</span>
-        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-amber-500 inline-block" /> 50–74% Average</span>
-        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-red-500 inline-block" /> Below 50% Needs Improvement</span>
+      <div className="flex items-center gap-4 text-xs text-slate-400">
+        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-teal-500 inline-block" /> 75%+ Good</span>
+        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block" /> 50–74% Average</span>
+        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-red-400 inline-block" /> Below 50%</span>
       </div>
     </div>
   )

@@ -3,10 +3,12 @@
 import { useState, useEffect } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 import { Loader2 } from 'lucide-react'
+import { getAcademicYear } from '@/lib/academicYear'
+
 
 interface Props { studentId: number }
 
-const ACADEMIC_YEAR = '2025-2026'
+const ACADEMIC_YEAR = getAcademicYear()
 
 export default function ParentFees({ studentId }: Props) {
   const supabase = createBrowserClient(
@@ -37,7 +39,7 @@ export default function ParentFees({ studentId }: Props) {
 
   if (loading) return (
     <div className="flex items-center justify-center py-16 text-slate-400 gap-2">
-      <Loader2 className="w-5 h-5 animate-spin" /><span className="text-sm">Loading fees…</span>
+      <Loader2 className="w-5 h-5 animate-spin text-teal-500" /><span className="text-sm">Loading fees…</span>
     </div>
   )
 
@@ -45,88 +47,89 @@ export default function ParentFees({ studentId }: Props) {
     <div className="space-y-4">
       <h2 className="text-base font-bold text-slate-700">Fee Summary — {ACADEMIC_YEAR}</h2>
 
-      {/* Summary cards */}
       <div className="grid grid-cols-3 gap-3">
         <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-center">
           <p className="text-xs text-slate-500 mb-1">Total Fees</p>
           <p className="text-lg font-bold text-slate-700">₹{totalAmount.toLocaleString('en-IN')}</p>
         </div>
-        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-center">
-          <p className="text-xs text-emerald-600 mb-1">Paid</p>
-          <p className="text-lg font-bold text-emerald-700">₹{totalPaid.toLocaleString('en-IN')}</p>
+        <div className="bg-teal-50 border border-teal-200 rounded-xl p-4 text-center">
+          <p className="text-xs text-teal-600 mb-1">Paid</p>
+          <p className="text-lg font-bold text-teal-700">₹{totalPaid.toLocaleString('en-IN')}</p>
         </div>
-        <div className={`rounded-xl p-4 text-center border ${totalBalance > 0 ? 'bg-red-50 border-red-200' : 'bg-emerald-50 border-emerald-200'}`}>
-          <p className={`text-xs mb-1 ${totalBalance > 0 ? 'text-red-600' : 'text-emerald-600'}`}>Balance</p>
-          <p className={`text-lg font-bold ${totalBalance > 0 ? 'text-red-700' : 'text-emerald-700'}`}>
+        <div className={`rounded-xl p-4 text-center border ${totalBalance > 0 ? 'bg-red-50 border-red-200' : 'bg-teal-50 border-teal-200'}`}>
+          <p className={`text-xs mb-1 ${totalBalance > 0 ? 'text-red-600' : 'text-teal-600'}`}>Balance</p>
+          <p className={`text-lg font-bold ${totalBalance > 0 ? 'text-red-700' : 'text-teal-700'}`}>
             ₹{totalBalance.toLocaleString('en-IN')}
           </p>
         </div>
       </div>
 
-      {/* Fee breakdown */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         <div className="px-4 py-3 border-b border-slate-100 bg-slate-50">
-          <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Fee Breakdown</p>
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Fee Breakdown</p>
         </div>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-slate-100">
-              <th className="px-4 py-2.5 text-left text-xs font-medium text-slate-500">Fee Type</th>
-              <th className="px-4 py-2.5 text-right text-xs font-medium text-slate-500">Total</th>
-              <th className="px-4 py-2.5 text-right text-xs font-medium text-slate-500">Paid</th>
-              <th className="px-4 py-2.5 text-right text-xs font-medium text-slate-500">Balance</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {fees.map(f => {
-              const balance = Number(f.total_amount) - Number(f.paid_amount)
-              return (
-                <tr key={f.id} className="hover:bg-slate-50">
-                  <td className="px-4 py-2.5 text-slate-700">{f.fee_type}</td>
-                  <td className="px-4 py-2.5 text-right text-slate-600">₹{Number(f.total_amount).toLocaleString('en-IN')}</td>
-                  <td className="px-4 py-2.5 text-right text-emerald-600">₹{Number(f.paid_amount).toLocaleString('en-IN')}</td>
-                  <td className={`px-4 py-2.5 text-right font-medium ${balance > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
-                    ₹{balance.toLocaleString('en-IN')}
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Payment history */}
-      {payments.length > 0 && (
-        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-          <div className="px-4 py-3 border-b border-slate-100 bg-slate-50">
-            <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Payment History</p>
-          </div>
+        <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-slate-100">
-                <th className="px-4 py-2.5 text-left text-xs font-medium text-slate-500">Date</th>
-                <th className="px-4 py-2.5 text-left text-xs font-medium text-slate-500">Receipt No</th>
-                <th className="px-4 py-2.5 text-left text-xs font-medium text-slate-500">Details</th>
-                <th className="px-4 py-2.5 text-right text-xs font-medium text-slate-500">Amount</th>
+                <th className="px-4 py-2.5 text-left text-xs font-medium text-slate-400">Fee Type</th>
+                <th className="px-4 py-2.5 text-right text-xs font-medium text-slate-400">Total</th>
+                <th className="px-4 py-2.5 text-right text-xs font-medium text-slate-400">Paid</th>
+                <th className="px-4 py-2.5 text-right text-xs font-medium text-slate-400">Balance</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {payments.map(p => (
-                <tr key={p.id} className="hover:bg-slate-50">
-                  <td className="px-4 py-2.5 text-slate-600 whitespace-nowrap">
-                    {new Date(p.payment_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-                  </td>
-                  <td className="px-4 py-2.5 font-mono text-xs text-teal-600">{p.receipt_no}</td>
-                  <td className="px-4 py-2.5 text-xs text-slate-500">
-                    {(p.payment_details || []).map((d: any) => d.fee_type).join(', ')}
-                  </td>
-                  <td className="px-4 py-2.5 text-right font-semibold text-emerald-700">
-                    ₹{Number(p.total_paid).toLocaleString('en-IN')}
-                  </td>
-                </tr>
-              ))}
+              {fees.map(f => {
+                const balance = Number(f.total_amount) - Number(f.paid_amount)
+                return (
+                  <tr key={f.id} className="hover:bg-slate-50">
+                    <td className="px-4 py-2.5 text-slate-700">{f.fee_type}</td>
+                    <td className="px-4 py-2.5 text-right text-slate-600">₹{Number(f.total_amount).toLocaleString('en-IN')}</td>
+                    <td className="px-4 py-2.5 text-right text-teal-600">₹{Number(f.paid_amount).toLocaleString('en-IN')}</td>
+                    <td className={`px-4 py-2.5 text-right font-medium ${balance > 0 ? 'text-red-600' : 'text-teal-600'}`}>
+                      ₹{balance.toLocaleString('en-IN')}
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      {payments.length > 0 && (
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="px-4 py-3 border-b border-slate-100 bg-slate-50">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Payment History</p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-100">
+                  <th className="px-4 py-2.5 text-left text-xs font-medium text-slate-400">Date</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-medium text-slate-400">Receipt No</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-medium text-slate-400">Details</th>
+                  <th className="px-4 py-2.5 text-right text-xs font-medium text-slate-400">Amount</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {payments.map(p => (
+                  <tr key={p.id} className="hover:bg-slate-50">
+                    <td className="px-4 py-2.5 text-slate-600 whitespace-nowrap">
+                      {new Date(p.payment_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    </td>
+                    <td className="px-4 py-2.5 font-mono text-xs text-teal-600">{p.receipt_no}</td>
+                    <td className="px-4 py-2.5 text-xs text-slate-400">
+                      {(p.payment_details || []).map((d: any) => d.fee_type).join(', ')}
+                    </td>
+                    <td className="px-4 py-2.5 text-right font-semibold text-teal-700">
+                      ₹{Number(p.total_paid).toLocaleString('en-IN')}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
