@@ -113,7 +113,7 @@ export default function PaymentForm({ unpaidFees, onSave, onCancel, receiptNo }:
       <div className="flex gap-3">
         <button onClick={handleSubmit} disabled={saving || totalPayingNow === 0}
           className="flex-1 bg-teal-600 text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-teal-700 disabled:opacity-50">
-          {saving ? 'Saving...' : `💾 Save ₹${totalPayingNow.toLocaleString()}`}
+          {saving ? 'Saving...' : `Save ₹${totalPayingNow.toLocaleString()}`}
         </button>
         <button onClick={onCancel}
           className="flex-1 border border-gray-300 text-gray-500 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50">

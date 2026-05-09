@@ -168,7 +168,7 @@ export default function StudentFeeSummary({
 
       {grandBalance === 0 && grandTotal > 0 && (
         <div className="text-center py-4 bg-teal-50 border border-teal-200 rounded-xl">
-          <p className="text-teal-600 font-semibold text-sm">✅ All fees paid!</p>
+          <p className="text-teal-600 font-semibold text-sm"> All fees paid!</p>
           <p className="text-xs text-teal-400 mt-0.5">No outstanding balance</p>
         </div>
       )}

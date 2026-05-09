@@ -173,7 +173,7 @@ export default function FeeTableAll({ students, onSelectStudent, loading, feeTyp
                 </div>
               </div>
 
-              <div className="text-right ml-4 flex-shrink-0">
+              <div className="text-right ml-4 shrink-0">
                 {student.totalAmount > 0 ? (
                   <>
                     <p className="text-xs text-gray-400">Balance</p>

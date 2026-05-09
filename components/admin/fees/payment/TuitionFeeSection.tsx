@@ -140,7 +140,7 @@ export default function TuitionFeeSection({ tuitionFees, studentStandard, onAdd,
             <div className="flex gap-2">
               <button onClick={handleSaveAdd} disabled={adding}
                 className="flex-1 bg-teal-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-teal-700 disabled:opacity-50">
-                {adding ? 'Saving...' : '✅ Save'}
+                {adding ? 'Saving...' : ' Save'}
               </button>
               <button onClick={() => setShowAddInput(false)}
                 className="flex-1 border border-gray-300 text-gray-500 py-2 rounded-lg text-sm font-medium hover:bg-gray-50">
