@@ -237,7 +237,7 @@ export default function BulkFeeAssignment() {
                   ${feeCategory === 'tuition'
                     ? 'bg-teal-600 text-white border-teal-600'
                     : 'bg-gray-50 text-gray-500 border-gray-200 hover:border-teal-300'}`}>
-                📚 Tuition Fee
+                 Tuition Fee
               </button>
               <button
                 onClick={() => setFeeCategory('vehicle')}
@@ -245,7 +245,7 @@ export default function BulkFeeAssignment() {
                   ${feeCategory === 'vehicle'
                     ? 'bg-teal-600 text-white border-teal-600'
                     : 'bg-gray-50 text-gray-500 border-gray-200 hover:border-teal-300'}`}>
-                🚌 Vehicle Fee
+                 Vehicle Fee
               </button>
             </div>
           </div>
@@ -338,7 +338,7 @@ export default function BulkFeeAssignment() {
               onClick={() => { setStep(1); setSelectedIds(new Set()) }}
               className="text-xs text-teal-600 hover:text-teal-800 border border-teal-300
                 rounded-lg px-2 py-1 hover:bg-teal-100 transition-all">
-              ✏️ Edit
+              Edit
             </button>
           </div>
 
@@ -371,7 +371,7 @@ export default function BulkFeeAssignment() {
 
             {/* Search */}
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">🔍</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></span>
               <input
                 type="text"
                 value={search}
@@ -407,7 +407,7 @@ export default function BulkFeeAssignment() {
                           ? 'border-teal-400 bg-teal-50'
                           : 'border-gray-200 bg-white hover:border-teal-300 hover:bg-gray-50'}`}>
                       {/* Checkbox */}
-                      <div className={`w-5 h-5 rounded flex items-center justify-center flex-shrink-0
+                      <div className={`w-5 h-5 rounded flex items-center justify-center shrink-0
                         border-2 transition-all
                         ${isSelected
                           ? 'bg-teal-600 border-teal-600'
@@ -425,7 +425,7 @@ export default function BulkFeeAssignment() {
                         </p>
                       </div>
                       {isSelected && (
-                        <span className="text-xs text-teal-600 font-semibold flex-shrink-0">
+                        <span className="text-xs text-teal-600 font-semibold shrink-0">
                           ₹{amount.toLocaleString()}
                         </span>
                       )}
@@ -522,7 +522,7 @@ export default function BulkFeeAssignment() {
             </div>
 
             <p className="text-xs text-yellow-700 bg-yellow-50 border border-yellow-200 px-3 py-2 rounded-lg">
-              ⚠️ Students who already have <strong>{selectedFeeType}</strong> assigned will be skipped automatically.
+              Students who already have <strong>{selectedFeeType}</strong> assigned will be skipped automatically.
             </p>
 
             <div className="flex gap-3">
@@ -537,7 +537,7 @@ export default function BulkFeeAssignment() {
                 disabled={assigning}
                 className="flex-1 bg-teal-600 text-white py-2.5 rounded-xl text-sm font-semibold
                   hover:bg-teal-700 disabled:opacity-50 transition-all">
-                {assigning ? 'Assigning...' : `✅ Assign to ${selectedIds.size} Students`}
+                {assigning ? 'Assigning...' : ` Assign to ${selectedIds.size} Students`}
               </button>
             </div>
           </div>
@@ -576,7 +576,7 @@ export default function BulkFeeAssignment() {
           {assignResults.success.length > 0 && (
             <div>
               <p className="text-xs font-semibold text-teal-600 mb-2">
-                ✅ Successfully assigned ({assignResults.success.length})
+                 Successfully assigned ({assignResults.success.length})
               </p>
               <div className="space-y-1 max-h-40 overflow-y-auto">
                 {assignResults.success.map((name, i) => (
@@ -592,7 +592,7 @@ export default function BulkFeeAssignment() {
           {assignResults.skipped.length > 0 && (
             <div>
               <p className="text-xs font-semibold text-yellow-600 mb-2">
-                ⚠️ Skipped — already assigned ({assignResults.skipped.length})
+                 Skipped — already assigned ({assignResults.skipped.length})
               </p>
               <div className="space-y-1 max-h-40 overflow-y-auto">
                 {assignResults.skipped.map((name, i) => (
@@ -608,7 +608,7 @@ export default function BulkFeeAssignment() {
           {assignResults.failed.length > 0 && (
             <div>
               <p className="text-xs font-semibold text-red-500 mb-2">
-                ❌ Failed ({assignResults.failed.length})
+                 Failed ({assignResults.failed.length})
               </p>
               <div className="space-y-1 max-h-40 overflow-y-auto">
                 {assignResults.failed.map((name, i) => (

@@ -181,7 +181,7 @@ export default function VehicleFeeSection({ vehicleFees, onAdd, onDelete, onEdit
                       disabled={saving}
                       className="bg-teal-600 text-white px-3 py-2 rounded-lg text-xs font-medium
                         hover:bg-teal-700 disabled:opacity-50">
-                      {saving ? '...' : '✅ Save'}
+                      {saving ? '...' : ' Save'}
                     </button>
                     <button
                       onClick={() => setEditingId(null)}
@@ -191,7 +191,7 @@ export default function VehicleFeeSection({ vehicleFees, onAdd, onDelete, onEdit
                   </div>
                   {fee.paid_amount > 0 && (
                     <p className="text-xs text-yellow-600 mt-1">
-                      ⚠️ Min: ₹{fee.paid_amount.toLocaleString()} (already paid)
+                       Min: ₹{fee.paid_amount.toLocaleString()} (already paid)
                     </p>
                   )}
                 </div>
@@ -264,7 +264,7 @@ export default function VehicleFeeSection({ vehicleFees, onAdd, onDelete, onEdit
                 disabled={saving || addAmount <= 0}
                 className="flex-1 bg-teal-600 text-white py-2 rounded-lg text-sm font-medium
                   hover:bg-teal-700 disabled:opacity-50">
-                {saving ? 'Saving...' : '✅ Save'}
+                {saving ? 'Saving...' : ' Save'}
               </button>
               <button
                 onClick={() => { setAddingTerm(null); setAddAmount(0) }}
@@ -296,7 +296,7 @@ export default function VehicleFeeSection({ vehicleFees, onAdd, onDelete, onEdit
             </p>
           )}
           {vehicleFees.length === 10 && (
-            <p className="text-xs text-teal-500 mt-1 font-medium">✅ All 10 terms added</p>
+            <p className="text-xs text-teal-500 mt-1 font-medium"> All 10 terms added</p>
           )}
         </div>
       )}

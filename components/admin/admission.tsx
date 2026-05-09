@@ -15,6 +15,7 @@ import {
   Search, X, Plus,
 } from 'lucide-react'
 
+/* ─── Constants ────────────────────────────────────────────────────────── */
 const STANDARDS = [
   "FS1 A", "FS1 B", "FS2 A", "FS2 B",
   "GRADE 1 A", "GRADE 2 A", "GRADE 2 B", "GRADE 3 A", "GRADE 4 A",
@@ -30,7 +31,15 @@ const EMPTY_FORM: AdmissionRecord = {
   vehicle_point: '', gender: '',
 }
 
-/* ─── helpers ─────────────────────────────────────────────────────────── */
+/* ─── FIX: Explicit local type that includes parent auth fields ─────────
+   Even if admission.ts is not yet updated, this ensures the page
+   always carries parent_auth_user_id through state and rendering.        */
+type AdmissionRecordWithAuth = AdmissionRecord & {
+  parent_auth_user_id?: string | null
+  parent_email?: string | null
+}
+
+/* ─── Style helpers ─────────────────────────────────────────────────────── */
 const inputCls =
   'w-full bg-white border border-[#E2E8F0] text-[#0F172A] rounded-xl px-4 py-2.5 text-sm ' +
   'focus:outline-none focus:ring-2 focus:ring-[#6C63FF]/40 focus:border-[#6C63FF] ' +
@@ -38,6 +47,7 @@ const inputCls =
 
 const selectCls = inputCls + ' appearance-none cursor-pointer'
 
+/* ─── Sub-components ────────────────────────────────────────────────────── */
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1.5">
@@ -58,6 +68,7 @@ function StatCard({ label, value, accent }: { label: string; value: number; acce
   )
 }
 
+/* ─── CSV export ────────────────────────────────────────────────────────── */
 function exportToExcel(data: AdmissionRecord[], filename = 'admissions.csv') {
   const headers = [
     'Admission No', 'Student Name', 'Standard', 'Gender',
@@ -77,14 +88,12 @@ function exportToExcel(data: AdmissionRecord[], filename = 'admissions.csv') {
   URL.revokeObjectURL(url)
 }
 
-type AdmissionRecordWithAuth = AdmissionRecord & {
-  parent_auth_user_id?: string | null
-}
-
 /* ═══════════════════════════════════════════════════════════════════════ */
 export default function AdmissionRegisterPage() {
   const printRef = useRef<HTMLDivElement>(null)
 
+  // FIX: All record state uses AdmissionRecordWithAuth so parent_auth_user_id
+  // is preserved from getAdmissions() all the way to the Login badge render.
   const [records, setRecords]                     = useState<AdmissionRecordWithAuth[]>([])
   const [filtered, setFiltered]                   = useState<AdmissionRecordWithAuth[]>([])
   const [search, setSearch]                       = useState('')
@@ -97,18 +106,21 @@ export default function AdmissionRegisterPage() {
   const [saving, setSaving]                       = useState(false)
   const [error, setError]                         = useState('')
   const [printRecord, setPrintRecord]             = useState<AdmissionRecord | null>(null)
-  const [deleteConfirm, setDeleteConfirm]         = useState<AdmissionRecord | null>(null)
+  const [deleteConfirm, setDeleteConfirm]         = useState<AdmissionRecordWithAuth | null>(null)
   const [deleteConfirmName, setDeleteConfirmName] = useState('')
   const [generatingLogins, setGeneratingLogins]   = useState(false)
   const [genResult, setGenResult]                 = useState<{ created: number; failed: number } | null>(null)
 
+  /* ─── Load records ──────────────────────────────────────────────────── */
   async function loadRecords() {
     setLoading(true)
     try {
-      const data = await getAdmissions()
+      // getAdmissions returns the raw DB rows including parent_auth_user_id.
+      // We cast to AdmissionRecordWithAuth so the field survives into state.
+      const data = await getAdmissions() as AdmissionRecordWithAuth[]
       setRecords(data)
       setFiltered(data)
-    } catch (err: unknown) {
+    } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load records')
     } finally {
       setLoading(false)
@@ -117,6 +129,7 @@ export default function AdmissionRegisterPage() {
 
   useEffect(() => { loadRecords() }, [])
 
+  /* ─── Filter effect ─────────────────────────────────────────────────── */
   useEffect(() => {
     let r = [...records]
     if (search) {
@@ -135,6 +148,7 @@ export default function AdmissionRegisterPage() {
   const boyCount  = filtered.filter(r => r.gender === 'Male').length
   const girlCount = filtered.filter(r => r.gender === 'Female').length
 
+  /* ─── Form helpers ──────────────────────────────────────────────────── */
   function openAdd()  { setForm(EMPTY_FORM); setEditId(null); setShowForm(true); setError('') }
   function openEdit(r: AdmissionRecord) { setForm({ ...r }); setEditId(r.id ?? null); setShowForm(true); setError('') }
   function closeForm() { setShowForm(false); setForm(EMPTY_FORM); setEditId(null); setError('') }
@@ -152,6 +166,7 @@ export default function AdmissionRegisterPage() {
     return true
   }
 
+  /* ─── Save (add or edit) ────────────────────────────────────────────── */
   async function handleSave() {
     if (!validate()) return
     setSaving(true); setError('')
@@ -170,10 +185,11 @@ export default function AdmissionRegisterPage() {
     }
   }
 
+  /* ─── Delete ────────────────────────────────────────────────────────── */
   async function handleDelete(id: number) {
     try {
       await deleteAdmission(id)
-      loadRecords()
+      await loadRecords()
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to delete record')
     } finally {
@@ -182,38 +198,57 @@ export default function AdmissionRegisterPage() {
     }
   }
 
+  /* ─── Print single student ──────────────────────────────────────────── */
   function handlePrint(r: AdmissionRecord) {
     setPrintRecord(r)
     setTimeout(() => { window.print(); setPrintRecord(null) }, 300)
   }
 
+  /* ─── CSV download ──────────────────────────────────────────────────── */
   function handleExcelDownload() {
     const parts = [filterGender, filterStd].filter(Boolean).join('_').replace(/\s/g, '_')
     exportToExcel(filtered, parts ? `admissions_${parts}.csv` : 'admissions_all.csv')
   }
 
+  /* ─── Generate all parent logins ────────────────────────────────────── */
   async function handleGenerateAllLogins() {
-    setGeneratingLogins(true); setGenResult(null)
-    const res  = await fetch('/api/admin/create-parent-bulk', { method: 'POST' })
-    const json = await res.json()
-    setGenResult({ created: json.created ?? 0, failed: json.failed ?? 0 })
-    await loadRecords(); setGeneratingLogins(false)
+    setGeneratingLogins(true)
+    setGenResult(null)
+    setError('')
+    try {
+      // NOTE: URL matches your actual folder name `create-parent-user`
+      const res = await fetch('/api/admin/create-parent-user', { method: 'POST' })
+      if (!res.ok) throw new Error(`Server error: ${res.status}`)
+      const json = await res.json()
+      setGenResult({ created: json.created ?? 0, failed: json.failed ?? 0 })
+      // Reload so Login badges update immediately after generation
+      await loadRecords()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to generate logins')
+    } finally {
+      setGeneratingLogins(false)
+    }
   }
 
+  /* ─── Print login cards for all students ───────────────────────────── */
   function handlePrintLoginCards() {
-    const cards = records.map(r => `
-      <div class="card">
-        <div class="school">IQRAH SCHOOL — Parent Login Card</div>
-        <div class="name">${r.name}</div>
-        <div class="meta">Admission No: <strong>${r.admission_no}</strong> &nbsp;|&nbsp; Class: <strong>${r.standard}</strong></div>
-        <div class="cred-box">
-          <div class="cred-title">Login Credentials</div>
-          <div class="cred-row"><span class="label">Email</span><span class="value">${r.admission_no}@iqra.school</span></div>
-          <div class="cred-row"><span class="label">Password</span><span class="value">${r.admission_no}</span></div>
-        </div>
-        <div class="note">Login at: <strong>your-school-url.com/login</strong></div>
-      </div>`).join('')
-
+    
+    const cards = records.map(r => {
+  const paddedId = String(r.admission_no).padEnd(6, '0');
+  
+  return `
+    <div class="card">
+      <div class="school">IQRAH SCHOOL — Parent Login Card</div>
+      <div class="name">${r.name}</div>
+      <div class="meta">Admission No: <strong>${r.admission_no}</strong> &nbsp;|&nbsp; Class: <strong>${r.standard}</strong></div>
+      <div class="cred-box">
+        <div class="cred-title">Login Credentials</div>
+        <div class="cred-row"><span class="label">Email</span><span class="value">${r.admission_no}@iqra.school</span></div>
+        <div class="cred-row"><span class="label">Password</span><span class="value">${paddedId}</span></div>
+      </div>
+      <div class="note">Login at: <strong>https://iqra-sms-next.vercel.app/login</strong></div>
+    </div>`;
+}).join('');
     const win = window.open('', '_blank')
     if (!win) return
     win.document.write(`<!DOCTYPE html><html><head><title>Parent Login Cards</title>
@@ -239,7 +274,7 @@ export default function AdmissionRegisterPage() {
     win.document.close()
   }
 
-  /* ─── gender display helper ─── */
+  /* ─── Gender display helper ─────────────────────────────────────────── */
   function genderLabel(g: string) {
     if (g === 'Male')   return 'Boy'
     if (g === 'Female') return 'Girl'
@@ -290,12 +325,9 @@ export default function AdmissionRegisterPage() {
 
         {/* ── Header ── */}
         <div className="mb-8">
-          {/* Title row */}
           <div className="flex flex-wrap items-center justify-end gap-4 mb-6">
-          
-
-            {/* Action buttons */}
             <div className="flex items-center gap-2 flex-wrap">
+
               <button
                 onClick={handleExcelDownload}
                 disabled={filtered.length === 0}
@@ -340,30 +372,39 @@ export default function AdmissionRegisterPage() {
 
           {/* ── Stat cards ── */}
           <div className="flex flex-wrap gap-3">
+            <StatCard label="Total Students" value={filtered.length} accent="bg-white border-[#E2E8F0] text-[#0F172A]" />
+            <StatCard label="Boys"           value={boyCount}        accent="bg-[#EFF6FF] border-[#BFDBFE] text-[#1D4ED8]" />
+            <StatCard label="Girls"          value={girlCount}       accent="bg-[#FDF2F8] border-[#FBCFE8] text-[#BE185D]" />
+            {/* FIX: Added "Active Logins" stat card so you can see at a glance
+                how many parents have login accounts */}
             <StatCard
-              label="Total Students"
-              value={filtered.length}
-              accent="bg-white border-[#E2E8F0] text-[#0F172A]"
-            />
-            <StatCard
-              label="Boys"
-              value={boyCount}
-              accent="bg-[#EFF6FF] border-[#BFDBFE] text-[#1D4ED8]"
-            />
-            <StatCard
-              label="Girls"
-              value={girlCount}
-              accent="bg-[#FDF2F8] border-[#FBCFE8] text-[#BE185D]"
+              label="Active Logins"
+              value={records.filter(r => !!r.parent_auth_user_id).length}
+              accent="bg-[#F0FDF4] border-[#BBF7D0] text-[#15803D]"
             />
           </div>
         </div>
 
+        {/* ── Error banner ── */}
+        {error && (
+          <div className="mb-5 flex items-center gap-3 px-4 py-3 bg-[#FEF2F2] border border-[#FECACA] rounded-2xl text-sm text-[#DC2626]">
+            <AlertTriangle className="w-4 h-4 shrink-0" />
+            <span>{error}</span>
+            <button onClick={() => setError('')} className="ml-auto">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
         {/* ── Login-gen result banner ── */}
         {genResult && (
           <div className="mb-5 flex items-center gap-3 px-4 py-3 bg-[#F0FDF4] border border-[#BBF7D0] rounded-2xl text-sm text-[#166534]">
-            <span>✅ Created <strong>{genResult.created}</strong> parent login{genResult.created !== 1 ? 's' : ''}</span>
+            {genResult.created > 0
+              ? <span>Created <strong>{genResult.created}</strong> parent login{genResult.created !== 1 ? 's' : ''}</span>
+              : <span>All students already have parent logins</span>
+            }
             {genResult.failed > 0 && (
-              <span className="text-red-600">({genResult.failed} failed)</span>
+              <span className="text-red-600 ml-2">({genResult.failed} failed)</span>
             )}
             <button onClick={() => setGenResult(null)} className="ml-auto text-[#4ADE80] hover:text-[#16A34A] transition-colors">
               <X className="w-4 h-4" />
@@ -483,7 +524,7 @@ export default function AdmissionRegisterPage() {
                         </span>
                       </td>
 
-                      {/* Gender — Boy / Girl */}
+                      {/* Gender */}
                       <td className="px-4 py-3.5">
                         <span className={`inline-flex items-center text-xs font-bold px-2.5 py-1 rounded-lg whitespace-nowrap ${
                           r.gender === 'Male'
@@ -502,7 +543,9 @@ export default function AdmissionRegisterPage() {
                       </td>
 
                       {/* Parent */}
-                      <td className="px-4 py-3.5 text-[#334155] whitespace-nowrap text-sm">{r.parent_guardian}</td>
+                      <td className="px-4 py-3.5 text-[#334155] whitespace-nowrap text-sm">
+                        {r.parent_guardian}
+                      </td>
 
                       {/* Mobile */}
                       <td className="px-4 py-3.5">
@@ -514,11 +557,17 @@ export default function AdmissionRegisterPage() {
                         {r.vehicle_point || <span className="text-[#CBD5E1]">—</span>}
                       </td>
 
-                      {/* Login status */}
+                      {/* ── Login status badge ──────────────────────────────
+                          FIX: r is typed as AdmissionRecordWithAuth so
+                          parent_auth_user_id is available here without
+                          TypeScript stripping it.                          */}
                       <td className="px-4 py-3.5">
                         {r.parent_auth_user_id ? (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-[#15803D] bg-[#F0FDF4] border border-[#BBF7D0] px-2.5 py-1 rounded-lg uppercase tracking-wide">
-                            Active
+                          <span
+                            title={`Email: ${r.parent_email ?? r.admission_no + '@iqra.school'}`}
+                            className="inline-flex items-center gap-1 text-[10px] font-extrabold text-[#15803D] bg-[#F0FDF4] border border-[#BBF7D0] px-2.5 py-1 rounded-lg uppercase tracking-wide cursor-default"
+                          >
+                            ✓ Active
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-[#B45309] bg-[#FFFBEB] border border-[#FDE68A] px-2.5 py-1 rounded-lg uppercase tracking-wide">
@@ -605,7 +654,9 @@ export default function AdmissionRegisterPage() {
                   <p className="text-xs text-[#4C1D95] leading-relaxed">
                     A parent login will be <strong>automatically created</strong> when this student is added.
                     <br />
-                    Login: <strong>{form.admission_no || '<adm_no>'}@iqra.school</strong> &nbsp;/&nbsp; Password: <strong>{form.admission_no || '<adm_no>'}</strong>
+                    Login: <strong>{form.admission_no || '<adm_no>'}@iqra.school</strong>
+                    &nbsp;/&nbsp;
+                    Password: <strong>{form.admission_no || '<adm_no>'}</strong>
                   </p>
                 </div>
               )}
@@ -743,6 +794,12 @@ export default function AdmissionRegisterPage() {
               <p className="text-xs text-[#64748B] mt-1">
                 {deleteConfirm.admission_no} · {deleteConfirm.standard} · {genderLabel(deleteConfirm.gender)}
               </p>
+              {/* Show warning if parent login exists — deleting student won't remove auth account */}
+              {deleteConfirm.parent_auth_user_id && (
+                <p className="text-[10px] text-[#B45309] mt-2 bg-[#FFFBEB] border border-[#FDE68A] rounded-lg px-2 py-1">
+                  ⚠️ Parent login account will NOT be deleted automatically
+                </p>
+              )}
             </div>
 
             <div className="mb-5">

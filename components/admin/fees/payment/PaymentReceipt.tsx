@@ -157,7 +157,7 @@ export default function PaymentReceipt({
 
       {/* Success banner */}
       <div className="bg-teal-50 border border-teal-200 rounded-xl px-4 py-3 flex items-center gap-3">
-        <span className="text-2xl">✅</span>
+        <span className="text-2xl"></span>
         <div>
           <p className="text-sm font-semibold text-teal-700">Payment saved successfully!</p>
           <p className="text-xs text-teal-500 mt-0.5">Receipt No: {receiptNo}</p>
@@ -211,7 +211,7 @@ export default function PaymentReceipt({
           <div className="flex justify-between items-center mt-1">
             <span className="text-xs text-gray-400">Remaining Balance</span>
             <span className={`text-xs font-semibold ${remainingBalance > 0 ? 'text-red-400' : 'text-teal-500'}`}>
-              {remainingBalance > 0 ? `₹${remainingBalance.toLocaleString()}` : 'Fully Paid ✓'}
+              {remainingBalance > 0 ? `₹${remainingBalance.toLocaleString()}` : 'Fully Paid '}
             </span>
           </div>
         </div>

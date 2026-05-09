@@ -140,7 +140,7 @@ export default function HolidayManager() {
               </select>
             </div>
           </div>
-          {error && <p className="text-xs text-red-600">⚠️ {error}</p>}
+          {error && <p className="text-xs text-red-600">{error}</p>}
           <div className="flex gap-2">
             <button onClick={handleAdd} disabled={saving}
               className="h-8 flex items-center gap-1.5 px-4 text-xs font-semibold bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-60 transition-colors">

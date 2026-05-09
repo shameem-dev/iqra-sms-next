@@ -363,7 +363,7 @@ export default function PaymentPage({ preselectedStudent, onBack }: Props) {
               ${activeTab === 'individual'
                 ? 'bg-white text-teal-600 shadow-sm border border-gray-200'
                 : 'text-gray-500 hover:text-gray-700'}`}>
-            💳 Individual Payment
+             Individual Payment
           </button>
           <button
             onClick={() => {
@@ -374,7 +374,7 @@ export default function PaymentPage({ preselectedStudent, onBack }: Props) {
               ${activeTab === 'bulk'
                 ? 'bg-white text-teal-600 shadow-sm border border-gray-200'
                 : 'text-gray-500 hover:text-gray-700'}`}>
-            📋 Bulk Assign Fees
+             Bulk Assign Fees
           </button>
         </div>
       )}
