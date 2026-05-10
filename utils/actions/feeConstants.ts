@@ -101,7 +101,7 @@ export function getStatusConfig(status: 'paid' | 'partial' | 'pending') {
     case 'paid':
       return {
         label: 'PAID',
-        icon: '✅',
+        icon: '',
         bg: 'bg-teal-50',
         text: 'text-teal-600',
         border: 'border-teal-200',
@@ -109,7 +109,7 @@ export function getStatusConfig(status: 'paid' | 'partial' | 'pending') {
     case 'partial':
       return {
         label: 'PARTIAL',
-        icon: '⚠️',
+        icon: '',
         bg: 'bg-yellow-50',
         text: 'text-yellow-600',
         border: 'border-yellow-200',
@@ -117,7 +117,7 @@ export function getStatusConfig(status: 'paid' | 'partial' | 'pending') {
     case 'pending':
       return {
         label: 'PENDING',
-        icon: '❌',
+        icon: '',
         bg: 'bg-red-50',
         text: 'text-red-500',
         border: 'border-red-200',
