@@ -142,3 +142,32 @@ export async function deleteFeeRow(id: number) {
     .eq('id', id)
   if (error) throw error
 }
+
+
+
+
+export async function deleteStudentAndUser(
+  studentId: number,
+  authUserId: string   // the UUID from auth.users
+) {
+  // 1. Delete fee rows
+  await supabase.from('student_fees').delete().eq('student_id', studentId)
+
+  // 2. Delete fee payment history
+  await supabase.from('fee_payments').delete().eq('student_id', studentId)
+
+  // 3. Delete student record
+  await supabase.from('students_list').delete().eq('id', studentId)
+
+  // 4. Delete auth user (via server route)
+  const res = await fetch('/api/delete-parent-user', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId: authUserId }),
+  })
+
+  if (!res.ok) {
+    const { error } = await res.json()
+    throw new Error(`Auth user deletion failed: ${error}`)
+  }
+}
