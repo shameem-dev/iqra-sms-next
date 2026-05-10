@@ -1,7 +1,13 @@
 'use client';
 
+import { useState, useEffect, useMemo } from 'react';
 import { Staff } from '@/type/staff';
-import { X, Pencil, MapPin, Phone, Calendar, GraduationCap, Briefcase, Heart, BookOpen, FolderKanban } from 'lucide-react';
+import { createBrowserClient } from '@supabase/ssr';
+import {
+  X, Pencil, MapPin, Phone, Calendar, GraduationCap,
+  Briefcase, Heart, BookOpen, FolderKanban,
+  FileText, Download, Loader2, File, Eye,
+} from 'lucide-react';
 
 // ─────────────────────────────────────────────
 // CONSTANTS
@@ -10,13 +16,30 @@ const LEAVE_LABELS: Record<string, string> = {
   annual:    'Annual Leave',
   sick:      'Sick Leave',
   casual:    'Casual Leave',
+  commuted:  'Commuted Leave',
+  other:     'Other Leave',
   maternity: 'Maternity Leave',
   paternity: 'Paternity Leave',
   unpaid:    'Unpaid Leave',
   emergency: 'Emergency Leave',
 };
 
+// ─────────────────────────────────────────────
+// TYPES
+// ─────────────────────────────────────────────
+interface StaffDocument {
+  id: string;
+  staff_id: string;
+  title: string;
+  file_name: string;
+  file_path: string;
+  file_size: number;
+  uploaded_at: string;
+}
 
+// ─────────────────────────────────────────────
+// SUB-COMPONENTS
+// ─────────────────────────────────────────────
 function Section({
   icon: Icon,
   title,
@@ -59,6 +82,12 @@ function fmt(d: string | null) {
     : '—';
 }
 
+function formatBytes(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+
 // ─────────────────────────────────────────────
 // MAIN COMPONENT
 // ─────────────────────────────────────────────
@@ -69,12 +98,66 @@ interface Props {
 }
 
 export function StaffDetailDrawer({ staff, onClose, onEdit }: Props) {
+  const supabase = useMemo(() => createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!
+  ), []);
+
+  const [docs, setDocs]               = useState<StaffDocument[]>([]);
+  const [docsLoading, setDocsLoading] = useState(false);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [previewLoadingId, setPreviewLoadingId] = useState<string | null>(null);
+
+  // Fetch documents whenever the staff changes
+  useEffect(() => {
+    if (!staff?.id) return;
+    setDocsLoading(true);
+    supabase
+      .from('staff_documents')
+      .select('*')
+      .eq('staff_id', staff.id)
+      .order('uploaded_at', { ascending: false })
+      .then(({ data }) => {
+        setDocs(data ?? []);
+        setDocsLoading(false);
+      });
+  }, [staff?.id, supabase]);
+
+  // ── Preview handler ──
+  const handlePreview = async (doc: StaffDocument) => {
+    setPreviewLoadingId(doc.id);
+    const { data, error } = await supabase.storage
+      .from('staff-documents')
+      .createSignedUrl(doc.file_path, 300);
+
+    if (!error && data?.signedUrl) {
+      window.open(data.signedUrl, '_blank');
+    }
+    setPreviewLoadingId(null);
+  };
+
+  // ── Download handler ──
+  const handleDownload = async (doc: StaffDocument) => {
+    setDownloadingId(doc.id);
+    const { data, error } = await supabase.storage
+      .from('staff-documents')
+      .createSignedUrl(doc.file_path, 60);
+
+    if (!error && data?.signedUrl) {
+      const a = document.createElement('a');
+      a.href = data.signedUrl;
+      a.download = doc.file_name;
+      a.click();
+    }
+    setDownloadingId(null);
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
       <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-md bg-white shadow-2xl flex flex-col h-full overflow-hidden">
 
-        {/* Header */}
+        {/* ── Header ── */}
         <div className="bg-teal-600 px-6 py-5 text-white">
           <div className="flex items-start justify-between mb-4">
             <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-teal-500 transition-colors">
@@ -82,8 +165,7 @@ export function StaffDetailDrawer({ staff, onClose, onEdit }: Props) {
             </button>
             <button
               onClick={() => onEdit(staff)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-xs font-medium transition-colors"
-            >
+className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500 hover:bg-blue-400 rounded-lg text-xs font-medium transition-colors"            >
               <Pencil className="w-3.5 h-3.5" /> Edit
             </button>
           </div>
@@ -104,7 +186,7 @@ export function StaffDetailDrawer({ staff, onClose, onEdit }: Props) {
           )}
         </div>
 
-        {/* Body */}
+        {/* ── Body ── */}
         <div className="flex-1 overflow-y-auto px-6 py-5">
 
           <Section icon={MapPin} title="Personal Info">
@@ -117,9 +199,9 @@ export function StaffDetailDrawer({ staff, onClose, onEdit }: Props) {
                   : null
               }
             />
-            <Row label="Date of Birth"  value={fmt(staff.date_of_birth)} />
-            <Row label="Date Joined"    value={fmt(staff.date_joined)} />
-            <Row label="Date Left"      value={fmt(staff.date_left)} />
+            <Row label="Date of Birth" value={fmt(staff.date_of_birth)} />
+            <Row label="Date Joined"   value={fmt(staff.date_joined)} />
+            <Row label="Date Left"     value={fmt(staff.date_left)} />
           </Section>
 
           <Section icon={Briefcase} title="Financial Details">
@@ -190,7 +272,7 @@ export function StaffDetailDrawer({ staff, onClose, onEdit }: Props) {
               <div className="space-y-2">
                 {(staff.leaves || []).map(l => (
                   <div key={l.id} className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-2">
-                    <span className="text-xs text-slate-600">{LEAVE_LABELS[l.leave_type]}</span>
+                    <span className="text-xs text-slate-600">{LEAVE_LABELS[l.leave_type] ?? l.leave_type}</span>
                     <div className="flex items-center gap-2 text-xs">
                       <span className="text-orange-600">Used: {l.days_used}</span>
                       <span className="text-slate-300">|</span>
@@ -207,6 +289,76 @@ export function StaffDetailDrawer({ staff, onClose, onEdit }: Props) {
               <p className="text-xs text-slate-700 bg-slate-50 rounded-lg p-3 leading-relaxed">{staff.remarks}</p>
             </Section>
           )}
+
+          {/* ── Documents Section ── */}
+          <Section icon={FileText} title="Documents">
+            {docsLoading ? (
+              <div className="flex items-center gap-2 text-slate-400 text-xs py-3">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading documents…
+              </div>
+            ) : docs.length === 0 ? (
+              <div className="flex flex-col items-center py-5 text-slate-400 gap-2">
+                <File className="w-6 h-6 text-slate-300" />
+                <p className="text-xs">No documents uploaded yet.</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {docs.map(doc => (
+                  <div
+                    key={doc.id}
+                    className="flex items-center gap-3 p-2.5 bg-white border border-slate-200 rounded-xl group hover:border-teal-200 hover:shadow-sm transition-all"
+                  >
+                    {/* Visual Placeholder (mimics thumbnail from image_81c0dd.png) */}
+                    <div className="p-2 bg-red-50 border border-red-100 rounded-lg shrink-0">
+                      <FileText className="w-4 h-4 text-red-500" />
+                    </div>
+
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-slate-800 truncate">{doc.title}</p>
+                      <p className="text-[10px] text-slate-400 truncate mt-0.5">
+                        {formatBytes(doc.file_size)} • {new Date(doc.uploaded_at).toLocaleDateString('en-GB')}
+                      </p>
+                    </div>
+
+                   {/* Action Buttons */}
+<div className="flex items-center gap-1.5 shrink-0">
+  {/* View */}
+  <button
+    onClick={() => handlePreview(doc)}
+    disabled={previewLoadingId === doc.id}
+    title="View PDF"
+    className="p-1.5 bg-slate-800 text-white hover:bg-black border border-slate-700 rounded-lg transition-all disabled:opacity-50"
+  >
+    {previewLoadingId === doc.id
+      ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+      : <Eye className="w-3.5 h-3.5" />
+    }
+  </button>
+
+  {/* Download */}
+  <button
+    onClick={() => handleDownload(doc)}
+    disabled={downloadingId === doc.id}
+    title="Download"
+    className="p-1.5 bg-teal-50 text-teal-600 hover:bg-teal-600 hover:text-white border border-teal-100 rounded-lg transition-all disabled:opacity-50"
+  >
+    {downloadingId === doc.id
+      ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+      : <Download className="w-3.5 h-3.5" />
+    }
+  </button>
+</div>
+                  </div>
+                ))}
+
+                {/* Summary pill */}
+                <p className="text-[10px] text-slate-400 text-right pt-1 italic">
+                  {docs.length} document{docs.length !== 1 ? 's' : ''} • To upload/delete, use Edit
+                </p>
+              </div>
+            )}
+          </Section>
 
         </div>
       </div>
