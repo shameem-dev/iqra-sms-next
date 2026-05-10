@@ -1,13 +1,18 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import {
   X, Plus, Trash2, Save, Loader2, KeyRound, ShieldCheck,
-  CheckCircle2, School, BookOpen, Pencil
+  CheckCircle2, School, BookOpen, Pencil,
+  FileText, Upload, AlertCircle, Download, File, Eye,
 } from 'lucide-react';
 import { CERTIFICATE_OPTIONS, DEPARTMENTS, DESIGNATIONS, Staff, StaffFormData } from '@/type/staff';
 import { createStaff, updateStaff } from '@/utils/actions/staff-actions';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TYPES
+// ─────────────────────────────────────────────────────────────────────────────
 
 interface Props {
   staff: Staff | null;
@@ -15,12 +20,65 @@ interface Props {
   onSaved: () => void;
 }
 
+interface Subject { id: number; name: string; standard: string }
+
+interface SubjectAssignment {
+  standard: string;
+  subjectIds: number[];
+}
+
+interface StaffDocument {
+  id: string;
+  staff_id: string;
+  title: string;
+  file_name: string;
+  file_path: string;
+  file_size: number;
+  uploaded_at: string;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CONSTANTS
+// ─────────────────────────────────────────────────────────────────────────────
+
 const inputCls =
   'w-full px-3 py-2 text-sm text-slate-800 bg-white border border-slate-200 rounded-lg ' +
   'focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent placeholder:text-slate-400';
 const selectCls =
   'w-full px-3 py-2 text-sm text-slate-800 bg-white border border-slate-200 rounded-lg ' +
   'focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent';
+
+const EMPTY_FORM: StaffFormData = {
+  name: '', address: '', mobile: '', designation: '', department: '',
+  date_of_birth: '', date_joined: '', date_left: '',
+  basic_salary: 0, ta: 0, medical_used: 0, medical_remaining: 0,
+  edu_qualification: '', certificate_option: '', remarks: '',
+  trainings_outside: [''], trainings_iqrah: [''], projects: [''],
+  leaves: {
+    annual_used: 0, annual_remaining: 30, casual_used: 0, casual_remaining: 12,
+    commuted_used: 0, commuted_remaining: 15, sick_used: 0, sick_remaining: 15,
+    other_used: 0, other_remaining: 0,
+  },
+};
+
+const LEAVE_TYPES: [string, string][] = [
+  ['annual', 'Annual Leave'], ['casual', 'Casual Leave'],
+  ['commuted', 'Commuted Leave'], ['sick', 'Sick Leave'], ['other', 'Other Leave'],
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
+
+function formatBytes(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SMALL FIELD COMPONENTS
+// ─────────────────────────────────────────────────────────────────────────────
 
 interface InputFieldProps {
   label: string; value: string | number;
@@ -56,57 +114,37 @@ function SelectField({ label, value, onChange, options }: SelectFieldProps) {
   );
 }
 
-const EMPTY_FORM: StaffFormData = {
-  name: '', address: '', mobile: '', designation: '', department: '',
-  date_of_birth: '', date_joined: '', date_left: '',
-  basic_salary: 0, ta: 0, medical_used: 0, medical_remaining: 0,
-  edu_qualification: '', certificate_option: '', remarks: '',
-  trainings_outside: [''], trainings_iqrah: [''], projects: [''],
-  leaves: {
-    annual_used: 0, annual_remaining: 30, casual_used: 0, casual_remaining: 12,
-    commuted_used: 0, commuted_remaining: 15, sick_used: 0, sick_remaining: 15,
-    other_used: 0, other_remaining: 0,
-  },
-};
-
-const LEAVE_TYPES: [string, string][] = [
-  ['annual', 'Annual Leave'], ['casual', 'Casual Leave'],
-  ['commuted', 'Commuted Leave'], ['sick', 'Sick Leave'], ['other', 'Other Leave'],
-];
-
-interface Subject { id: number; name: string; standard: string }
-
-interface SubjectAssignment {
-  standard: string
-  subjectIds: number[]
-}
+// ─────────────────────────────────────────────────────────────────────────────
+// MAIN COMPONENT
+// ─────────────────────────────────────────────────────────────────────────────
 
 export function StaffModal({ staff, onClose, onSaved }: Props) {
   const supabase = useMemo(() => createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!
-  ), [])
+  ), []);
 
+  // ── Core form state ───────────────────────────────────────────────────────
   const [form, setForm]           = useState<StaffFormData>(EMPTY_FORM);
   const [activeTab, setActiveTab] = useState(0);
   const [saving, setSaving]       = useState(false);
   const [error, setError]         = useState<string | null>(null);
 
   // ── Login tab state ───────────────────────────────────────────────────────
-  const [loginEmail, setLoginEmail]           = useState('');
-  const [loginPassword, setLoginPassword]     = useState('');
-  const [loginLoading, setLoginLoading]       = useState(false);
-  const [loginSuccess, setLoginSuccess]       = useState('');
-  const [loginError, setLoginError]           = useState('');
+  const [loginEmail, setLoginEmail]       = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginLoading, setLoginLoading]   = useState(false);
+  const [loginSuccess, setLoginSuccess]   = useState('');
+  const [loginError, setLoginError]       = useState('');
   const [editingAssignments, setEditingAssignments] = useState(false);
-  const [assignSaving, setAssignSaving]       = useState(false);
+  const [assignSaving, setAssignSaving]   = useState(false);
 
   // Class teacher assignment
   const [classTeacherStandard, setClassTeacherStandard] = useState('');
 
   // Subject teacher assignments
   const [subjectAssignments, setSubjectAssignments] = useState<SubjectAssignment[]>([
-    { standard: '', subjectIds: [] }
+    { standard: '', subjectIds: [] },
   ]);
 
   // Subjects + standards from DB
@@ -116,61 +154,102 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
   // Existing assignments loaded from DB
   const [existingAssignments, setExistingAssignments] = useState<any[]>([]);
 
+  // ── Documents tab state ───────────────────────────────────────────────────
+  const fileInputRef                            = useRef<HTMLInputElement>(null);
+  const [docs, setDocs]                         = useState<StaffDocument[]>([]);
+  const [docsLoading, setDocsLoading]           = useState(false);
+  const [docTitle, setDocTitle]                 = useState('');
+  const [selectedFile, setSelectedFile]         = useState<File | null>(null);
+  const [uploading, setUploading]               = useState(false);
+  const [docError, setDocError]                 = useState('');
+  const [docSuccess, setDocSuccess]             = useState('');
+  const [deletingDocId, setDeletingDocId]       = useState<string | null>(null);
+  const [downloadingDocId, setDownloadingDocId] = useState<string | null>(null);
+  const [previewLoadingId, setPreviewLoadingId] = useState<string | null>(null);
+
+  // ── Derived ───────────────────────────────────────────────────────────────
   const hasLogin  = !!staff?.auth_user_id;
   const isTeacher = (staff?.designation || form.designation) === 'Teacher';
-  const TABS      = isTeacher
-    ? ['Personal', 'Financial', 'Education', 'Trainings', 'Leaves', 'Remarks', 'Login']
-    : ['Personal', 'Financial', 'Education', 'Trainings', 'Leaves', 'Remarks'];
+
+  const TABS = isTeacher
+    ? ['Personal', 'Financial', 'Education', 'Trainings', 'Leaves', 'Remarks', 'Documents', 'Login']
+    : ['Personal', 'Financial', 'Education', 'Trainings', 'Leaves', 'Remarks', 'Documents'];
+
+  const DOC_TAB_IDX   = 6;
+  const LOGIN_TAB_IDX = 7;
 
   // ── Load subjects ─────────────────────────────────────────────────────────
   useEffect(() => {
-    ;(async () => {
+    (async () => {
       const { data } = await supabase
         .from('subjects').select('id, name, standard')
-        .eq('is_active', true).order('standard')
+        .eq('is_active', true).order('standard');
       if (data) {
-        setSubjects(data)
-        setStandards([...new Set(data.map((s: Subject) => s.standard))])
+        setSubjects(data);
+        setStandards([...new Set(data.map((s: Subject) => s.standard))]);
       }
-    })()
-  }, [supabase])
+    })();
+  }, [supabase]);
+
+  // ── Load teacher assignments when Login tab opens ─────────────────────────
   useEffect(() => {
-    if (!staff?.id || activeTab !== 6) return
-    ;(async () => {
+    if (!staff?.id || activeTab !== LOGIN_TAB_IDX) return;
+    (async () => {
       const { data } = await supabase
         .from('teacher_assignments')
         .select('id, type, standard, subject_id, subjects(name)')
-        .eq('staff_id', staff.id)
+        .eq('staff_id', staff.id);
 
       if (data) {
-        setExistingAssignments(data)
-
-        const classTa = data.find((d: any) => d.type === 'class_teacher')
-        if (classTa) setClassTeacherStandard(classTa.standard)
-
-        const subjectTa = data.filter((d: any) => d.type === 'subject_teacher')
+        setExistingAssignments(data);
+        const classTa = data.find((d: any) => d.type === 'class_teacher');
+        if (classTa) setClassTeacherStandard(classTa.standard);
+        const subjectTa = data.filter((d: any) => d.type === 'subject_teacher');
         if (subjectTa.length > 0) {
-          const grouped: Record<string, number[]> = {}
+          const grouped: Record<string, number[]> = {};
           subjectTa.forEach((d: any) => {
-            if (!grouped[d.standard]) grouped[d.standard] = []
-            grouped[d.standard].push(d.subject_id)
-          })
+            if (!grouped[d.standard]) grouped[d.standard] = [];
+            grouped[d.standard].push(d.subject_id);
+          });
           setSubjectAssignments(
             Object.entries(grouped).map(([standard, subjectIds]) => ({ standard, subjectIds }))
-          )
+          );
         }
       }
-    })()
-  }, [staff, activeTab, supabase])
+    })();
+  }, [staff, activeTab, supabase]);
 
-  // ── Reset state when staff changes ───────────────────────────────────────
+  // ── Load documents when Documents tab opens ───────────────────────────────
   useEffect(() => {
+    if (!staff?.id || activeTab !== DOC_TAB_IDX) return;
+    fetchDocs();
+  }, [staff?.id, activeTab]); // eslint-disable-line
+
+  const fetchDocs = async () => {
+    if (!staff?.id) return;
+    setDocsLoading(true);
+    const { data } = await supabase
+      .from('staff_documents')
+      .select('*')
+      .eq('staff_id', staff.id)
+      .order('uploaded_at', { ascending: false });
+    if (data) setDocs(data);
+    setDocsLoading(false);
+  };
+
+  // ── Reset state when staff prop changes ───────────────────────────────────
+  useEffect(() => {
+    setDocTitle(''); setSelectedFile(null); setDocError(''); setDocSuccess('');
+    setDocs([]);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+
     if (!staff) { setForm(EMPTY_FORM); return; }
-    setLoginEmail(staff.email || '')
-    setLoginPassword(''); setLoginSuccess(''); setLoginError('')
-    setEditingAssignments(false)
-    setClassTeacherStandard('')
-    setSubjectAssignments([{ standard: '', subjectIds: [] }])
+
+    setLoginEmail(staff.email || '');
+    setLoginPassword(''); setLoginSuccess(''); setLoginError('');
+    setEditingAssignments(false);
+    setClassTeacherStandard('');
+    setSubjectAssignments([{ standard: '', subjectIds: [] }]);
 
     const outsideTrainings = (staff.trainings || []).filter(t => t.source === 'outside').map(t => t.training_name);
     const iqrahTrainings   = (staff.trainings || []).filter(t => t.source === 'iqrah').map(t => t.training_name);
@@ -207,16 +286,28 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
     });
   }, [staff]);
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // FORM HELPERS
+  // ─────────────────────────────────────────────────────────────────────────
+
   const set = <K extends keyof StaffFormData>(key: K, val: StaffFormData[K]) =>
     setForm(f => ({ ...f, [key]: val }));
+
   const setLeave = (key: keyof StaffFormData['leaves'], val: number) =>
     setForm(f => ({ ...f, leaves: { ...f.leaves, [key]: val } }));
+
   const addListItem = (key: 'trainings_outside' | 'trainings_iqrah' | 'projects') =>
     setForm(f => ({ ...f, [key]: [...f[key], ''] }));
+
   const updateListItem = (key: 'trainings_outside' | 'trainings_iqrah' | 'projects', idx: number, val: string) =>
     setForm(f => ({ ...f, [key]: f[key].map((v, i) => i === idx ? val : v) }));
+
   const removeListItem = (key: 'trainings_outside' | 'trainings_iqrah' | 'projects', idx: number) =>
     setForm(f => ({ ...f, [key]: f[key].filter((_, i) => i !== idx) }));
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // SAVE STAFF
+  // ─────────────────────────────────────────────────────────────────────────
 
   const handleSave = async () => {
     if (!form.name.trim()) { setError('Name is required'); return; }
@@ -230,17 +321,20 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
     } finally { setSaving(false); }
   };
 
-  // ── Subject assignment helpers ────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────────
+  // SUBJECT ASSIGNMENT HELPERS
+  // ─────────────────────────────────────────────────────────────────────────
+
   const addSubjectRow = () =>
-    setSubjectAssignments(prev => [...prev, { standard: '', subjectIds: [] }])
+    setSubjectAssignments(prev => [...prev, { standard: '', subjectIds: [] }]);
 
   const removeSubjectRow = (idx: number) =>
-    setSubjectAssignments(prev => prev.filter((_, i) => i !== idx))
+    setSubjectAssignments(prev => prev.filter((_, i) => i !== idx));
 
   const updateSubjectRowStandard = (idx: number, standard: string) =>
     setSubjectAssignments(prev => prev.map((r, i) =>
       i === idx ? { standard, subjectIds: [] } : r
-    ))
+    ));
 
   const toggleSubjectInRow = (idx: number, subjectId: number) =>
     setSubjectAssignments(prev => prev.map((r, i) =>
@@ -249,123 +343,202 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
             ? r.subjectIds.filter(s => s !== subjectId)
             : [...r.subjectIds, subjectId] }
         : r
-    ))
+    ));
 
-  // ── Create teacher login ──────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────────
+  // LOGIN ACTIONS
+  // ─────────────────────────────────────────────────────────────────────────
+
   async function handleCreateLogin() {
-    if (!staff) return
-    if (!loginEmail.trim() || !loginPassword.trim()) {
-      setLoginError('Email and password are required'); return
-    }
-    if (loginPassword.length < 6) {
-      setLoginError('Password must be at least 6 characters'); return
-    }
+    if (!staff) return;
+    if (!loginEmail.trim() || !loginPassword.trim()) { setLoginError('Email and password are required'); return; }
+    if (loginPassword.length < 6) { setLoginError('Password must be at least 6 characters'); return; }
 
-    const assignments: { type: string; standard: string; subject_id: number | null }[] = []
-    if (classTeacherStandard) {
-      assignments.push({ type: 'class_teacher', standard: classTeacherStandard, subject_id: null })
-    }
+    const assignments: { type: string; standard: string; subject_id: number | null }[] = [];
+    if (classTeacherStandard)
+      assignments.push({ type: 'class_teacher', standard: classTeacherStandard, subject_id: null });
     subjectAssignments.forEach(row => {
-      if (row.standard && row.subjectIds.length > 0) {
-        row.subjectIds.forEach(subjectId => {
+      if (row.standard && row.subjectIds.length > 0)
+        row.subjectIds.forEach(subjectId =>
           assignments.push({ type: 'subject_teacher', standard: row.standard, subject_id: subjectId })
-        })
-      }
-    })
+        );
+    });
 
-    if (assignments.length === 0) {
-      setLoginError('Please add at least one class or subject assignment'); return
-    }
+    if (assignments.length === 0) { setLoginError('Please add at least one class or subject assignment'); return; }
 
-    setLoginLoading(true); setLoginError(''); setLoginSuccess('')
-
-    const res = await fetch('/api/admin/create-staff-user', {
+    setLoginLoading(true); setLoginError(''); setLoginSuccess('');
+    const res  = await fetch('/api/admin/create-staff-user', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        email: loginEmail,
-        password: loginPassword,
-        staffId: staff.id,
-        staffName: staff.name,
-        role: 'teacher',
-        assignments,
+        email: loginEmail, password: loginPassword,
+        staffId: staff.id, staffName: staff.name,
+        role: 'teacher', assignments,
       }),
-    })
-
-    const json = await res.json()
-    if (!res.ok) { setLoginError(json.error || 'Failed to create login') }
+    });
+    const json = await res.json();
+    if (!res.ok) { setLoginError(json.error || 'Failed to create login'); }
     else {
-      setLoginSuccess(`Teacher login created! ${staff.name} can now sign in with ${loginEmail}`)
-      setLoginPassword('')
-      onSaved()
+      setLoginSuccess(`Teacher login created! ${staff.name} can now sign in with ${loginEmail}`);
+      setLoginPassword('');
+      onSaved();
     }
-    setLoginLoading(false)
+    setLoginLoading(false);
   }
 
-  // ── Reset password ────────────────────────────────────────────────────────
   async function handleResetPassword() {
-    if (!staff?.auth_user_id) return
-    if (loginPassword.length < 6) { setLoginError('Password must be at least 6 characters'); return }
-    setLoginLoading(true); setLoginError(''); setLoginSuccess('')
-
-    const res = await fetch('/api/admin/reset-password', {
+    if (!staff?.auth_user_id) return;
+    if (loginPassword.length < 6) { setLoginError('Password must be at least 6 characters'); return; }
+    setLoginLoading(true); setLoginError(''); setLoginSuccess('');
+    const res  = await fetch('/api/admin/reset-password', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId: staff.auth_user_id, password: loginPassword }),
-    })
-
-    const json = await res.json()
-    if (!res.ok) { setLoginError(json.error || 'Failed to reset password') }
-    else { setLoginSuccess('Password updated successfully!'); setLoginPassword('') }
-    setLoginLoading(false)
+    });
+    const json = await res.json();
+    if (!res.ok) { setLoginError(json.error || 'Failed to reset password'); }
+    else { setLoginSuccess('Password updated successfully!'); setLoginPassword(''); }
+    setLoginLoading(false);
   }
 
-  // ── Save edited assignments ───────────────────────────────────────────────
   async function handleSaveAssignments() {
-    if (!staff) return
-    setAssignSaving(true); setLoginError(''); setLoginSuccess('')
+    if (!staff) return;
+    setAssignSaving(true); setLoginError(''); setLoginSuccess('');
 
-    const assignments: { type: string; standard: string; subject_id: number | null }[] = []
-    if (classTeacherStandard) {
-      assignments.push({ type: 'class_teacher', standard: classTeacherStandard, subject_id: null })
-    }
+    const assignments: { type: string; standard: string; subject_id: number | null }[] = [];
+    if (classTeacherStandard)
+      assignments.push({ type: 'class_teacher', standard: classTeacherStandard, subject_id: null });
     subjectAssignments.forEach(row => {
-      if (row.standard && row.subjectIds.length > 0) {
-        row.subjectIds.forEach(subjectId => {
+      if (row.standard && row.subjectIds.length > 0)
+        row.subjectIds.forEach(subjectId =>
           assignments.push({ type: 'subject_teacher', standard: row.standard, subject_id: subjectId })
-        })
-      }
-    })
+        );
+    });
 
-    // Delete old assignments then insert new
     const { error: delError } = await supabase
-      .from('teacher_assignments')
-      .delete()
-      .eq('staff_id', staff.id)
-
-    if (delError) { setLoginError(delError.message); setAssignSaving(false); return }
+      .from('teacher_assignments').delete().eq('staff_id', staff.id);
+    if (delError) { setLoginError(delError.message); setAssignSaving(false); return; }
 
     if (assignments.length > 0) {
       const { error: insError } = await supabase
         .from('teacher_assignments')
-        .insert(assignments.map(a => ({ ...a, staff_id: staff.id })))
-      if (insError) { setLoginError(insError.message); setAssignSaving(false); return }
+        .insert(assignments.map(a => ({ ...a, staff_id: staff.id })));
+      if (insError) { setLoginError(insError.message); setAssignSaving(false); return; }
     }
 
-    // Reload assignments into banner
     const { data } = await supabase
       .from('teacher_assignments')
       .select('id, type, standard, subject_id, subjects(name)')
-      .eq('staff_id', staff.id)
-    if (data) setExistingAssignments(data)
+      .eq('staff_id', staff.id);
+    if (data) setExistingAssignments(data);
 
-    setLoginSuccess('Assignments updated successfully!')
-    setEditingAssignments(false)
-    setAssignSaving(false)
-    onSaved()
+    setLoginSuccess('Assignments updated successfully!');
+    setEditingAssignments(false);
+    setAssignSaving(false);
+    onSaved();
   }
 
-  // ── Shared assignment form JSX (inline, not a component — avoids remount issues) ──
+  // ─────────────────────────────────────────────────────────────────────────
+  // DOCUMENTS ACTIONS
+  // ─────────────────────────────────────────────────────────────────────────
+
+  const handleFilePick = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.type !== 'application/pdf') { setDocError('Only PDF files are supported.'); return; }
+    if (file.size > 50 * 1024 * 1024)   { setDocError('File must be under 50 MB.'); return; }
+    setSelectedFile(file);
+    setDocError('');
+    setDocSuccess('');
+  };
+
+  const handleDocUpload = async () => {
+    if (!staff?.id)       { setDocError('Save the staff member first before uploading documents.'); return; }
+    if (!selectedFile)    { setDocError('Please select a PDF file.'); return; }
+    if (!docTitle.trim()) { setDocError('Please enter a document title.'); return; }
+
+    setUploading(true); setDocError(''); setDocSuccess('');
+    try {
+      const originalSize = selectedFile.size;
+
+      // Send to ilovepdf compression API route
+      const form = new FormData();
+      form.append('file', selectedFile);
+      const res = await fetch('/api/compress-pdf', { method: 'POST', body: form });
+
+      // Use compressed blob only if smaller
+      let uploadBlob: Blob = selectedFile;
+      if (res.ok) {
+        const compressed = await res.blob();
+        if (compressed.size < originalSize) uploadBlob = compressed;
+      }
+
+      const filePath = `${staff.id}/${Date.now()}_${selectedFile.name.replace(/[^a-z0-9._-]/gi, '_')}`;
+
+      const { error: uploadErr } = await supabase.storage
+        .from('staff-documents')
+        .upload(filePath, uploadBlob, { contentType: 'application/pdf', upsert: false });
+      if (uploadErr) throw new Error(uploadErr.message);
+
+      const { error: dbErr } = await supabase.from('staff_documents').insert({
+        staff_id: staff.id, title: docTitle.trim(),
+        file_name: selectedFile.name, file_path: filePath,
+        file_size: uploadBlob.size, mime_type: 'application/pdf',
+      });
+      if (dbErr) {
+        await supabase.storage.from('staff-documents').remove([filePath]);
+        throw new Error(dbErr.message);
+      }
+
+      const saved = Math.round((1 - uploadBlob.size / originalSize) * 100);
+      setDocSuccess(
+        uploadBlob.size < originalSize
+          ? `Uploaded & compressed! ${formatBytes(originalSize)} → ${formatBytes(uploadBlob.size)} (${saved}% saved)`
+          : `Uploaded successfully! (${formatBytes(uploadBlob.size)})`
+      );
+
+      setDocTitle(''); setSelectedFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      fetchDocs();
+    } catch (err: unknown) {
+      setDocError(err instanceof Error ? err.message : 'Upload failed');
+    } finally { setUploading(false); }
+  };
+
+  const handleDocPreview = async (doc: StaffDocument) => {
+    setPreviewLoadingId(doc.id);
+    const { data, error } = await supabase.storage
+      .from('staff-documents')
+      .createSignedUrl(doc.file_path, 300);
+    if (!error && data?.signedUrl) window.open(data.signedUrl, '_blank');
+    setPreviewLoadingId(null);
+  };
+
+  const handleDocDownload = async (doc: StaffDocument) => {
+    setDownloadingDocId(doc.id);
+    const { data, error } = await supabase.storage
+      .from('staff-documents').createSignedUrl(doc.file_path, 60);
+    if (!error && data?.signedUrl) {
+      const a = document.createElement('a');
+      a.href = data.signedUrl; a.download = doc.file_name; a.click();
+    }
+    setDownloadingDocId(null);
+  };
+
+  const handleDocDelete = async (doc: StaffDocument) => {
+    if (!confirm(`Delete "${doc.title}"? This cannot be undone.`)) return;
+    setDeletingDocId(doc.id);
+    const { error: storageErr } = await supabase.storage
+      .from('staff-documents').remove([doc.file_path]);
+    if (!storageErr) await supabase.from('staff_documents').delete().eq('id', doc.id);
+    setDeletingDocId(null);
+    fetchDocs();
+  };
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // SHARED JSX — Assignment form
+  // ─────────────────────────────────────────────────────────────────────────
+
   const assignmentFormJSX = (
     <div className="space-y-3">
       {/* Class Teacher */}
@@ -375,9 +548,7 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
           <p className="text-xs font-bold text-blue-800 uppercase tracking-wide">Class Teacher</p>
         </div>
         <p className="text-xs text-blue-600">Gives attendance access for this class</p>
-        <select value={classTeacherStandard}
-          onChange={e => setClassTeacherStandard(e.target.value)}
-          className={selectCls}>
+        <select value={classTeacherStandard} onChange={e => setClassTeacherStandard(e.target.value)} className={selectCls}>
           <option value="">— None (not a class teacher) —</option>
           {standards.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
@@ -400,8 +571,7 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
         {subjectAssignments.map((row, idx) => (
           <div key={idx} className="bg-white rounded-lg border border-violet-200 p-2 space-y-2">
             <div className="flex items-center gap-2">
-              <select value={row.standard}
-                onChange={e => updateSubjectRowStandard(idx, e.target.value)}
+              <select value={row.standard} onChange={e => updateSubjectRowStandard(idx, e.target.value)}
                 className={`flex-1 ${selectCls}`}>
                 <option value="">Select class…</option>
                 {standards.map(s => <option key={s} value={s}>{s}</option>)}
@@ -416,8 +586,7 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
             {row.standard && (
               <div className="flex flex-wrap gap-1.5">
                 {subjects.filter(s => s.standard === row.standard).map(s => (
-                  <button key={s.id}
-                    onClick={() => toggleSubjectInRow(idx, s.id)}
+                  <button key={s.id} onClick={() => toggleSubjectInRow(idx, s.id)}
                     className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-all ${
                       row.subjectIds.includes(s.id)
                         ? 'bg-violet-600 text-white border-violet-600'
@@ -435,13 +604,17 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
         ))}
       </div>
     </div>
-  )
+  );
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // RENDER
+  // ─────────────────────────────────────────────────────────────────────────
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
 
-        {/* Header */}
+        {/* ── Header ── */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0">
           <h2 className="text-base font-semibold text-slate-800">
             {staff ? `Edit: ${staff.name}` : 'Add New Staff Member'}
@@ -451,7 +624,7 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
           </button>
         </div>
 
-        {/* Tabs */}
+        {/* ── Tabs ── */}
         <div className="flex gap-0 px-6 border-b border-slate-100 overflow-x-auto shrink-0">
           {TABS.map((tab, i) => (
             <button key={tab} onClick={() => setActiveTab(i)}
@@ -467,7 +640,7 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
           ))}
         </div>
 
-        {/* Body */}
+        {/* ── Body ── */}
         <div className="flex-1 overflow-y-auto px-6 py-5">
           {error && (
             <div className="mb-4 flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
@@ -475,7 +648,7 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
             </div>
           )}
 
-          {/* ── Personal ── */}
+          {/* ── Tab 0: Personal ── */}
           {activeTab === 0 && (
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
@@ -495,7 +668,7 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
             </div>
           )}
 
-          {/* ── Financial ── */}
+          {/* ── Tab 1: Financial ── */}
           {activeTab === 1 && (
             <div className="grid grid-cols-2 gap-4">
               <InputField label="Basic Salary (₹)" value={form.basic_salary} onChange={v => set('basic_salary', v as number)} type="number" />
@@ -519,7 +692,7 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
             </div>
           )}
 
-          {/* ── Education ── */}
+          {/* ── Tab 2: Education ── */}
           {activeTab === 2 && (
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
@@ -531,7 +704,7 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
             </div>
           )}
 
-          {/* ── Trainings ── */}
+          {/* ── Tab 3: Trainings ── */}
           {activeTab === 3 && (
             <div className="space-y-6">
               {(
@@ -539,7 +712,7 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
                   ['trainings_outside', 'Trainings Achieved (Outside Iqrah)', 'Training name…'],
                   ['trainings_iqrah',   'Trainings (Through Iqrah)',           'Training name…'],
                   ['projects',          'Projects Done',                       'Project name…'],
-                ] as [('trainings_outside' | 'trainings_iqrah' | 'projects'), string, string][]
+                ] as ['trainings_outside' | 'trainings_iqrah' | 'projects', string, string][]
               ).map(([key, heading, placeholder]) => (
                 <div key={key}>
                   <div className="flex items-center justify-between mb-2">
@@ -567,7 +740,7 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
             </div>
           )}
 
-          {/* ── Leaves ── */}
+          {/* ── Tab 4: Leaves ── */}
           {activeTab === 4 && (
             <div className="space-y-3">
               <p className="text-xs text-slate-400">Enter leave days for the current year ({new Date().getFullYear()})</p>
@@ -595,7 +768,7 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
             </div>
           )}
 
-          {/* ── Remarks ── */}
+          {/* ── Tab 5: Remarks ── */}
           {activeTab === 5 && (
             <div>
               <label className="block text-xs font-medium text-slate-600 mb-1">Remarks</label>
@@ -605,8 +778,184 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
             </div>
           )}
 
-          {/* ── Login Tab (Teachers only) ── */}
-          {activeTab === 6 && isTeacher && (
+          {/* ── Tab 6: Documents ── */}
+          {activeTab === DOC_TAB_IDX && (
+            <div className="space-y-5">
+              {!staff ? (
+                <div className="flex flex-col items-center justify-center py-10 text-slate-400 gap-3">
+                  <FileText className="w-8 h-8 text-slate-300" />
+                  <p className="text-sm text-center">Save the staff member first, then upload documents.</p>
+                </div>
+              ) : (
+                <>
+                  {/* ── Upload card ── */}
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+                    <p className="text-sm font-semibold text-slate-700">Upload Document</p>
+
+                    {/* Title */}
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 mb-1">
+                        Document Title <span className="text-red-500">*</span>
+                      </label>
+                      <input type="text" value={docTitle} onChange={e => setDocTitle(e.target.value)}
+                        placeholder="e.g. Appointment Letter, Certificate…"
+                        className={inputCls} />
+                    </div>
+
+                    {/* File picker */}
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 mb-1">
+                        PDF File <span className="text-red-500">*</span>
+                      </label>
+                      <div
+                        onClick={() => fileInputRef.current?.click()}
+                        className="flex items-center gap-3 px-4 py-3 border-2 border-dashed border-slate-300 rounded-xl cursor-pointer hover:border-teal-400 hover:bg-teal-50 transition-colors group"
+                      >
+                        <Upload className="w-4 h-4 text-slate-400 group-hover:text-teal-500 transition-colors shrink-0" />
+                        <span className="text-sm text-slate-500 group-hover:text-teal-600 truncate">
+                          {selectedFile
+                            ? `${selectedFile.name} (${formatBytes(selectedFile.size)})`
+                            : 'Click to choose a PDF (max 50 MB)'}
+                        </span>
+                        {selectedFile && (
+                          <button
+                            onClick={e => {
+                              e.stopPropagation();
+                              setSelectedFile(null);
+                              if (fileInputRef.current) fileInputRef.current.value = '';
+                            }}
+                            className="ml-auto p-0.5 text-slate-400 hover:text-red-500"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                      <input ref={fileInputRef} type="file" accept="application/pdf"
+                        className="hidden" onChange={handleFilePick} />
+                    </div>
+
+                    {/* Doc error */}
+                    {docError && (
+                      <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-xs">
+                        <AlertCircle className="w-3.5 h-3.5 shrink-0" />{docError}
+                      </div>
+                    )}
+
+                    {/* Doc success — shows compression result after upload */}
+                    {docSuccess && (
+                      <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-xs">
+                        <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />{docSuccess}
+                      </div>
+                    )}
+
+                    {/* Upload button */}
+                    <button
+                      onClick={handleDocUpload}
+                      disabled={uploading || !selectedFile || !docTitle.trim()}
+                      className="w-full h-9 flex items-center justify-center gap-2 text-sm font-semibold bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {uploading
+                        ? <><Loader2 className="w-4 h-4 animate-spin" />Compressing & Uploading…</>
+                        : <><Upload className="w-4 h-4" />Upload & Compress</>
+                      }
+                    </button>
+                  </div>
+
+                  {/* ── Document list ── */}
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-slate-700">
+                      Uploaded Documents
+                      {docs.length > 0 && (
+                        <span className="ml-2 text-xs font-normal text-slate-400">({docs.length})</span>
+                      )}
+                    </p>
+
+                    {docsLoading && (
+                      <div className="flex items-center gap-2 text-slate-400 text-sm py-4 justify-center">
+                        <Loader2 className="w-4 h-4 animate-spin" /> Loading…
+                      </div>
+                    )}
+
+                    {!docsLoading && docs.length === 0 && (
+                      <div className="flex flex-col items-center py-8 text-slate-400 gap-2">
+                        <File className="w-7 h-7 text-slate-300" />
+                        <p className="text-sm">No documents uploaded yet.</p>
+                      </div>
+                    )}
+
+                    {!docsLoading && docs.map(doc => (
+                      <div key={doc.id}
+                        className="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-xl hover:shadow-sm transition-all"
+                      >
+                        {/* Icon */}
+                        <div className="p-3 bg-red-50 rounded-xl shrink-0 border border-red-100">
+                          <FileText className="w-6 h-6 text-red-500" />
+                        </div>
+
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold text-slate-800 truncate">{doc.title}</p>
+                          <p className="text-xs text-slate-500 truncate">{doc.file_name}</p>
+                          <p className="text-[10px] text-slate-400 mt-0.5">
+                            {formatBytes(doc.file_size)} • {new Date(doc.uploaded_at).toLocaleDateString('en-IN', {
+                              day: '2-digit', month: 'short', year: 'numeric',
+                            })}
+                          </p>
+                        </div>
+
+                        {/* Actions — always visible */}
+                        <div className="flex items-center gap-1.5 shrink-0">
+
+                          {/* View — black */}
+                          <button
+                            onClick={() => handleDocPreview(doc)}
+                            disabled={previewLoadingId === doc.id}
+                            title="View PDF"
+                            className="p-2 bg-slate-800 text-white hover:bg-black rounded-lg transition-all border border-slate-700 disabled:opacity-50"
+                          >
+                            {previewLoadingId === doc.id
+                              ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              : <Eye className="w-3.5 h-3.5" />
+                            }
+                          </button>
+
+                          {/* Download — teal */}
+                          <button
+                            onClick={() => handleDocDownload(doc)}
+                            disabled={downloadingDocId === doc.id}
+                            title="Download"
+                            className="p-2 bg-teal-50 text-teal-600 hover:bg-teal-600 hover:text-white rounded-lg transition-all border border-teal-100 disabled:opacity-50"
+                          >
+                            {downloadingDocId === doc.id
+                              ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              : <Download className="w-3.5 h-3.5" />
+                            }
+                          </button>
+
+                          {/* Delete — red */}
+                          <button
+                            onClick={() => handleDocDelete(doc)}
+                            disabled={deletingDocId === doc.id}
+                            title="Delete"
+                            className="p-2 bg-red-500 text-white hover:bg-red-600 rounded-lg transition-all border border-red-500 disabled:opacity-50"
+                          >
+                            {deletingDocId === doc.id
+                              ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              : <Trash2 className="w-3.5 h-3.5" />
+                            }
+                          </button>
+
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* ── Tab 7: Login (Teachers only) ── */}
+          {activeTab === LOGIN_TAB_IDX && isTeacher && (
             <div className="space-y-5">
               {!staff ? (
                 <div className="flex flex-col items-center justify-center py-10 text-slate-400 gap-3">
@@ -615,11 +964,9 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
                 </div>
               ) : (
                 <>
-                  {/* ── Status banner ── */}
+                  {/* Status banner */}
                   {hasLogin ? (
                     <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 space-y-3">
-
-                      {/* Top row: info + edit button */}
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-start gap-3">
                           <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
@@ -642,8 +989,6 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
                             ))}
                           </div>
                         </div>
-
-                        {/* Edit Assignments toggle */}
                         <button
                           onClick={() => setEditingAssignments(e => !e)}
                           className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
@@ -657,7 +1002,6 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
                         </button>
                       </div>
 
-                      {/* Inline edit form */}
                       {editingAssignments && (
                         <div className="pt-3 border-t border-emerald-200 space-y-3">
                           {assignmentFormJSX}
@@ -682,7 +1026,6 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
                     </div>
                   )}
 
-                  {/* Success / Error messages */}
                   {loginSuccess && (
                     <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">
                       <CheckCircle2 className="w-4 h-4 shrink-0" />{loginSuccess}
@@ -694,21 +1037,17 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
                     </div>
                   )}
 
-                  {/* ── Assignment form (only when creating) ── */}
                   {!hasLogin && assignmentFormJSX}
 
-                  {/* ── Email + Password ── */}
+                  {/* Email + Password */}
                   <div className="space-y-3">
                     <div>
                       <label className="block text-xs font-medium text-slate-600 mb-1">
                         Email Address <span className="text-red-500">*</span>
                       </label>
-                      <input type="email" value={loginEmail}
-                        onChange={e => setLoginEmail(e.target.value)}
-                        disabled={hasLogin}
-                        placeholder="teacher@school.com"
-                        className={`${inputCls} ${hasLogin ? 'opacity-60 cursor-not-allowed bg-slate-50' : ''}`}
-                      />
+                      <input type="email" value={loginEmail} onChange={e => setLoginEmail(e.target.value)}
+                        disabled={hasLogin} placeholder="teacher@school.com"
+                        className={`${inputCls} ${hasLogin ? 'opacity-60 cursor-not-allowed bg-slate-50' : ''}`} />
                       {hasLogin && (
                         <p className="text-xs text-slate-400 mt-1">Email cannot be changed after login is created.</p>
                       )}
@@ -718,11 +1057,9 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
                       <label className="block text-xs font-medium text-slate-600 mb-1">
                         {hasLogin ? 'New Password' : 'Password'} <span className="text-red-500">*</span>
                       </label>
-                      <input type="password" value={loginPassword}
-                        onChange={e => setLoginPassword(e.target.value)}
+                      <input type="password" value={loginPassword} onChange={e => setLoginPassword(e.target.value)}
                         placeholder={hasLogin ? 'Enter new password…' : 'Min 6 characters'}
-                        className={inputCls}
-                      />
+                        className={inputCls} />
                     </div>
 
                     <button
@@ -740,24 +1077,33 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
           )}
         </div>
 
-        {/* Footer */}
+        {/* ── Footer ── */}
         <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-slate-50 rounded-b-2xl shrink-0">
+          {/* Dot navigation */}
           <div className="flex gap-1.5">
             {TABS.map((_, i) => (
               <button key={i} onClick={() => setActiveTab(i)}
-                className={`w-2 h-2 rounded-full transition-colors ${activeTab === i ? 'bg-teal-600' : 'bg-slate-300 hover:bg-slate-400'}`} />
+                className={`w-2 h-2 rounded-full transition-colors ${
+                  activeTab === i ? 'bg-teal-600' : 'bg-slate-300 hover:bg-slate-400'
+                }`} />
             ))}
           </div>
+
           <div className="flex gap-2">
             <button onClick={onClose} className="h-9 px-4 text-sm text-slate-600 rounded-lg border border-slate-200 hover:bg-slate-100 transition-colors">
               Cancel
             </button>
+
+            {/* Next button — not on last tab */}
             {activeTab < TABS.length - 1 && (
-              <button onClick={() => setActiveTab(t => t + 1)} className="h-9 px-4 text-sm text-teal-700 bg-teal-50 border border-teal-200 hover:bg-teal-100 rounded-lg transition-colors">
+              <button onClick={() => setActiveTab(t => t + 1)}
+                className="h-9 px-4 text-sm text-teal-700 bg-teal-50 border border-teal-200 hover:bg-teal-100 rounded-lg transition-colors">
                 Next →
               </button>
             )}
-            {activeTab !== 6 && (
+
+            {/* Save Staff — hidden on Documents and Login tabs */}
+            {activeTab !== DOC_TAB_IDX && activeTab !== LOGIN_TAB_IDX && (
               <button onClick={handleSave} disabled={saving}
                 className="h-9 flex items-center gap-2 px-5 text-sm font-semibold bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-60 transition-colors">
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
@@ -766,6 +1112,7 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
             )}
           </div>
         </div>
+
       </div>
     </div>
   );
