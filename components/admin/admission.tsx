@@ -291,7 +291,7 @@ export default function AdmissionRegisterPage() {
           <div className="border-2 border-slate-800 p-8 max-w-2xl mx-auto rounded-2xl">
             <div className="text-center mb-6 border-b pb-4 border-slate-300">
               <h1 className="text-2xl font-bold tracking-wide uppercase">Admission Extract</h1>
-              <p className="text-sm text-slate-500 mt-1">Iqra School Management System</p>
+              <p className="text-sm text-slate-500 mt-1">Iqrah School Management System</p>
             </div>
             <div className="grid grid-cols-2 gap-x-8 gap-y-4 text-sm">
               {([
@@ -567,7 +567,7 @@ export default function AdmissionRegisterPage() {
                             title={`Email: ${r.parent_email ?? r.admission_no + '@iqra.school'}`}
                             className="inline-flex items-center gap-1 text-[10px] font-extrabold text-[#15803D] bg-[#F0FDF4] border border-[#BBF7D0] px-2.5 py-1 rounded-lg uppercase tracking-wide cursor-default"
                           >
-                            ✓ Active
+                             Active
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-[#B45309] bg-[#FFFBEB] border border-[#FDE68A] px-2.5 py-1 rounded-lg uppercase tracking-wide">
