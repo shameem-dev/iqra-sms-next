@@ -231,10 +231,10 @@ export default function StaffUI() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[920px]">
+            <table className="w-full text-sm min-w-230">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50">
-                  <th className="w-10 px-4 py-3 text-left text-xs font-medium text-slate-400 select-none">#</th>
+                  <th className="w-10 px-4 py-3 text-left text-xs font-medium text-slate-400 select-none">s/no.</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 cursor-pointer hover:text-slate-800 select-none whitespace-nowrap" onClick={() => handleSort('name')}>
                     <span className="inline-flex items-center">Name <SortIcon col="name" /></span>
                   </th>
@@ -271,9 +271,7 @@ export default function StaffUI() {
                       {/* Name */}
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2.5 min-w-0">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold shrink-0 ${avatarColor(s.name)}`}>
-                            {initials(s.name)}
-                          </div>
+                          
                           <div className="min-w-0">
                             <p className="font-medium text-slate-800 truncate">{s.name}</p>
                             {s.edu_qualification && (
