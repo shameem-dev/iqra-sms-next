@@ -33,10 +33,16 @@ const ACTIVE_STATUS_COLOR: Record<string, string> = {
 const FIXED_FEE_TYPES   = ['Admission Fee', 'Welfare Fee', 'Book Fee', 'Exam Fee', 'Others']
 const TUITION_FEE_TYPES = ['Tuition Fee 1', 'Tuition Fee 2', 'Tuition Fee 3', 'Tuition Fee 4']
 const VEHICLE_FEE_TYPES = [
-  'Vehicle Fee Term 1', 'Vehicle Fee Term 2', 'Vehicle Fee Term 3',
-  'Vehicle Fee Term 4', 'Vehicle Fee Term 5', 'Vehicle Fee Term 6',
-  'Vehicle Fee Term 7', 'Vehicle Fee Term 8', 'Vehicle Fee Term 9',
-  'Vehicle Fee Term 10',
+  'Vehicle Fee - June',
+  'Vehicle Fee - July',
+  'Vehicle Fee - August',
+  'Vehicle Fee - September',
+  'Vehicle Fee - October',
+  'Vehicle Fee - November',
+  'Vehicle Fee - December',
+  'Vehicle Fee - January',
+  'Vehicle Fee - February',
+  'Vehicle Fee - March',
 ]
 
 export default function FeeFilters({
