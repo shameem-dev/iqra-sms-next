@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
-import { Save, Loader2, CheckCircle2 } from 'lucide-react'
+import { Save, Loader2, CheckCircle2, BookOpen, ChevronRight } from 'lucide-react'
 
 interface Props {
   subjectAssignments: any[]
@@ -12,14 +12,38 @@ interface Props {
 const ACADEMIC_YEAR = '2025-2026'
 
 const EXAM_FIELDS = [
-  { key: 'ut1',         label: 'UT 1',        maxKey: 'max_ut1' },
-  { key: 'ut2',         label: 'UT 2',        maxKey: 'max_ut2' },
-  { key: 'ut3',         label: 'UT 3',        maxKey: 'max_ut3' },
-  { key: 'ut4',         label: 'UT 4',        maxKey: 'max_ut4' },
-  { key: 'mid_term',    label: 'Mid Term',    maxKey: 'max_mid_term' },
-  { key: 'half_yearly', label: 'Half Yearly', maxKey: 'max_half_yearly' },
-  { key: 'final',       label: 'Final',       maxKey: 'max_final' },
+  { key: 'ut1',         label: 'UT 1',        maxKey: 'max_ut1',         color: 'blue' },
+  { key: 'ut2',         label: 'UT 2',        maxKey: 'max_ut2',         color: 'blue' },
+  { key: 'ut3',         label: 'UT 3',        maxKey: 'max_ut3',         color: 'blue' },
+  { key: 'ut4',         label: 'UT 4',        maxKey: 'max_ut4',         color: 'blue' },
+  { key: 'mid_term',    label: 'Mid Term',    maxKey: 'max_mid_term',    color: 'amber' },
+  { key: 'half_yearly', label: 'Half Yearly', maxKey: 'max_half_yearly', color: 'amber' },
+  { key: 'final',       label: 'Final',       maxKey: 'max_final',       color: 'teal' },
 ]
+
+const COLOR_MAP: Record<string, { filled: string; ring: string; label: string }> = {
+  blue:  { filled: 'bg-blue-50 border-blue-200 text-blue-700',   ring: 'focus:ring-blue-400',   label: 'text-blue-400' },
+  amber: { filled: 'bg-amber-50 border-amber-200 text-amber-700', ring: 'focus:ring-amber-400', label: 'text-amber-400' },
+  teal:  { filled: 'bg-teal-50 border-teal-200 text-teal-700',   ring: 'focus:ring-teal-400',   label: 'text-teal-500' },
+}
+
+function getScorePercent(val: any, max: any): number | null {
+  if (val == null || val === '' || !max) return null
+  return Math.round((Number(val) / Number(max)) * 100)
+}
+
+function ScoreBadge({ pct }: { pct: number | null }) {
+  if (pct === null) return null
+  const color =
+    pct >= 80 ? 'bg-emerald-100 text-emerald-700' :
+    pct >= 50 ? 'bg-amber-100 text-amber-700' :
+                'bg-rose-100 text-rose-700'
+  return (
+    <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full ${color}`}>
+      {pct}%
+    </span>
+  )
+}
 
 export default function TeacherMarks({ subjectAssignments, userId }: Props) {
   const supabase = createBrowserClient(
@@ -29,14 +53,14 @@ export default function TeacherMarks({ subjectAssignments, userId }: Props) {
 
   const standards = [...new Set(subjectAssignments.map(a => a.standard))]
 
-  const [selectedStandard, setSelectedStandard]     = useState(standards[0] || '')
-  const [selectedSubjectId, setSelectedSubjectId]   = useState<number | null>(null)
-  const [students, setStudents]                     = useState<any[]>([])
-  const [marks, setMarks]                           = useState<Record<number, any>>({})
-  const [loading, setLoading]                       = useState(false)
-  const [saving, setSaving]                         = useState(false)
-  const [saved, setSaved]                           = useState(false)
-  const [error, setError]                           = useState('')
+  const [selectedStandard, setSelectedStandard]   = useState(standards[0] || '')
+  const [selectedSubjectId, setSelectedSubjectId] = useState<number | null>(null)
+  const [students, setStudents]                   = useState<any[]>([])
+  const [marks, setMarks]                         = useState<Record<number, any>>({})
+  const [loading, setLoading]                     = useState(false)
+  const [saving, setSaving]                       = useState(false)
+  const [saved, setSaved]                         = useState(false)
+  const [error, setError]                         = useState('')
 
   const subjectsInStandard = subjectAssignments.filter(a => a.standard === selectedStandard)
   const selectedAssignment = subjectAssignments.find(a => a.subject_id === selectedSubjectId)
@@ -118,40 +142,73 @@ export default function TeacherMarks({ subjectAssignments, userId }: Props) {
   }
 
   return (
-    <div className="flex flex-col min-h-0">
+    <div className="flex flex-col gap-0 pt-4">
 
-      {/* ── Sticky selector + save bar ── */}
-      <div className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 px-4 pt-4 pb-3 space-y-3">
+      {/* ── Sticky Selector Bar ── */}
+      <div className="sticky top-0 z-10 bg-slate-50 pb-3 space-y-3">
 
-        {/* Class pills */}
+        {/* Header row */}
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-[10px] font-black tracking-[0.2em] uppercase text-slate-400">
+              Marks Entry
+            </p>
+            <h1 className="text-2xl font-black text-slate-900 leading-tight tracking-tight">
+              {subject?.name || 'Select Subject'}
+            </h1>
+          </div>
+
+          {students.length > 0 && (
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="inline-flex items-center gap-1.5 h-10 px-5 bg-teal-700 text-white rounded-xl text-[11px] font-bold tracking-wide active:scale-95 disabled:opacity-50 transition-all shadow-lg shadow-teal-100"
+            >
+              {saving
+                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                : saved
+                  ? <CheckCircle2 className="w-3.5 h-3.5" />
+                  : <Save className="w-3.5 h-3.5" />}
+              {saved ? 'Saved!' : 'Save'}
+            </button>
+          )}
+        </div>
+
+        {/* Class selector */}
         <div>
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Class</p>
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Class</p>
           <div className="flex flex-wrap gap-2">
             {standards.map(std => (
-              <button key={std} onClick={() => setSelectedStandard(std)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all active:scale-95 ${
+              <button
+                key={std}
+                onClick={() => setSelectedStandard(std)}
+                className={`px-4 py-2 rounded-xl text-[12px] font-black tracking-wide border transition-all active:scale-95 ${
                   selectedStandard === std
-                    ? 'bg-teal-600 text-white border-teal-600 shadow-sm'
-                    : 'bg-white text-slate-600 border-slate-200'
-                }`}>
+                    ? 'bg-teal-700 text-white border-teal-700 shadow-md shadow-teal-100'
+                    : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'
+                }`}
+              >
                 {std}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Subject pills */}
+        {/* Subject selector */}
         {selectedStandard && (
           <div>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Subject</p>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Subject</p>
             <div className="flex flex-wrap gap-2">
               {subjectsInStandard.map(a => (
-                <button key={a.subject_id} onClick={() => setSelectedSubjectId(a.subject_id)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all active:scale-95 ${
+                <button
+                  key={a.subject_id}
+                  onClick={() => setSelectedSubjectId(a.subject_id)}
+                  className={`px-4 py-2 rounded-xl text-[12px] font-black tracking-wide border transition-all active:scale-95 ${
                     selectedSubjectId === a.subject_id
-                      ? 'bg-violet-600 text-white border-violet-600 shadow-sm'
-                      : 'bg-white text-slate-600 border-slate-200'
-                  }`}>
+                      ? 'bg-slate-800 text-white border-slate-800 shadow-md'
+                      : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'
+                  }`}
+                >
                   {a.subjects?.name}
                 </button>
               ))}
@@ -159,90 +216,132 @@ export default function TeacherMarks({ subjectAssignments, userId }: Props) {
           </div>
         )}
 
-        {/* Save button + feedback */}
-        {students.length > 0 && (
-          <div className="flex items-center gap-3">
-            <button onClick={handleSave} disabled={saving}
-              className="flex items-center gap-2 h-10 px-5 text-sm font-bold bg-teal-600 text-white rounded-xl active:scale-95 disabled:opacity-50 transition-all shadow-sm">
-              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-              {saving ? 'Saving…' : 'Save Marks'}
-            </button>
-            {saved && (
-              <span className="flex items-center gap-1.5 text-xs font-medium text-green-600">
-                <CheckCircle2 className="w-4 h-4" /> Saved!
-              </span>
-            )}
-            {error && (
-              <span className="text-xs text-red-600">⚠️ {error}</span>
-            )}
+        {/* Error */}
+        {error && (
+          <div className="bg-rose-50 border border-rose-100 rounded-xl px-4 py-2.5 text-[12px] text-rose-600 font-bold">
+            ⚠️ {error}
           </div>
         )}
+
+        {/* Divider */}
+        <div className="h-px bg-slate-200" />
       </div>
 
-      {/* ── Content ── */}
-      <div className="px-4 py-3 space-y-3">
+      {/* ── Student List ── */}
+      <div className="space-y-3 pt-3 pb-6">
         {loading ? (
-          <div className="flex items-center justify-center py-16 text-slate-400 gap-2">
-            <Loader2 className="w-5 h-5 animate-spin" />
-            <span className="text-sm">Loading students…</span>
+          <div className="bg-white rounded-2xl border border-slate-200 py-20 flex items-center justify-center gap-3 text-slate-400 shadow-sm">
+            <Loader2 className="w-5 h-5 animate-spin text-teal-500" />
+            <span className="text-[13px] font-medium tracking-wide uppercase">Loading Students…</span>
           </div>
         ) : students.length === 0 ? (
-          <div className="text-center py-16 text-slate-400 text-sm">
-            No students found in {selectedStandard}
+          <div className="bg-white rounded-2xl border border-slate-200 py-20 text-center shadow-sm">
+            <BookOpen className="w-8 h-8 text-slate-200 mx-auto mb-3" />
+            <p className="text-[13px] font-bold text-slate-400">No students in {selectedStandard}</p>
           </div>
         ) : (
-          students.map((student, i) => (
-            <div key={student.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-              {/* Student header */}
-              <div className="flex items-center gap-3 px-4 py-3 bg-slate-50 border-b border-slate-100">
-                <div className="w-7 h-7 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center text-xs font-bold shrink-0">
-                  {i + 1}
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-bold text-slate-800 truncate">{student.name}</p>
-                  <p className="text-xs text-slate-400">{student.admission_no}</p>
-                </div>
-              </div>
+          students.map((student, i) => {
+            const studentMarks = marks[student.id] || {}
 
-              {/* Marks grid — 2 columns on mobile, more on wider screens */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-px bg-slate-100">
-                {EXAM_FIELDS.map(f => {
-                  const max = subject?.[f.maxKey]
-                  const val = marks[student.id]?.[f.key]
-                  const filled = val !== null && val !== undefined && val !== ''
-                  return (
-                    <div key={f.key} className="bg-white px-3 py-2.5 flex flex-col gap-1">
-                      <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">
-                        {f.label}{max ? ` /${max}` : ''}
-                      </label>
-                      <input
-                        type="number"
-                        inputMode="numeric"
-                        min="0"
-                        max={max || undefined}
-                        value={val ?? ''}
-                        onChange={e => updateMark(student.id, f.key, e.target.value)}
-                        placeholder="—"
-                        className={`w-full h-10 text-center rounded-xl border text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-teal-500 transition-colors ${
-                          filled
-                            ? 'border-teal-200 bg-teal-50 text-teal-700'
-                            : 'border-slate-200 bg-white text-slate-700'
-                        }`}
-                      />
+            // Calculate overall filled count
+            const filledCount = EXAM_FIELDS.filter(f =>
+              studentMarks[f.key] !== null && studentMarks[f.key] !== undefined && studentMarks[f.key] !== ''
+            ).length
+
+            return (
+              <div
+                key={student.id}
+                className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden"
+              >
+                {/* Student header */}
+                <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white">
+                  <div className="w-8 h-8 rounded-xl bg-teal-700 text-white flex items-center justify-center text-[11px] font-black shrink-0">
+                    {String(i + 1).padStart(2, '0')}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[14px] font-black text-slate-900 leading-tight truncate">{student.name}</p>
+                    <p className="text-[11px] text-slate-400 font-mono tracking-tighter uppercase">{student.admission_no}</p>
+                  </div>
+                  {/* Progress indicator */}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <div className="flex gap-0.5">
+                      {EXAM_FIELDS.map(f => {
+                        const filled = studentMarks[f.key] !== null && studentMarks[f.key] !== undefined && studentMarks[f.key] !== ''
+                        return (
+                          <div
+                            key={f.key}
+                            className={`w-1.5 h-4 rounded-full transition-colors ${
+                              filled ? 'bg-teal-500' : 'bg-slate-100'
+                            }`}
+                          />
+                        )
+                      })}
                     </div>
-                  )
-                })}
+                    <span className="text-[10px] font-black text-slate-300 ml-1">{filledCount}/{EXAM_FIELDS.length}</span>
+                  </div>
+                </div>
+
+                {/* Marks grid */}
+                <div className="p-3 grid grid-cols-2 gap-2">
+                  {EXAM_FIELDS.map(f => {
+                    const max = subject?.[f.maxKey]
+                    const val = studentMarks[f.key]
+                    const filled = val !== null && val !== undefined && val !== ''
+                    const pct = getScorePercent(val, max)
+                    const colors = COLOR_MAP[f.color] || COLOR_MAP.blue
+
+                    return (
+                      <div
+                        key={f.key}
+                        className={`relative rounded-xl border px-3 pt-2 pb-2.5 transition-all ${
+                          filled ? colors.filled : 'bg-slate-50 border-slate-200'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1.5">
+                          <label className={`text-[10px] font-black uppercase tracking-widest ${
+                            filled ? colors.label : 'text-slate-400'
+                          }`}>
+                            {f.label}
+                            {max ? <span className="font-medium opacity-70"> /{max}</span> : ''}
+                          </label>
+                          <ScoreBadge pct={pct} />
+                        </div>
+                        <input
+                          type="number"
+                          inputMode="numeric"
+                          min="0"
+                          max={max || undefined}
+                          value={val ?? ''}
+                          onChange={e => updateMark(student.id, f.key, e.target.value)}
+                          placeholder="—"
+                          className={`w-full h-9 text-center rounded-lg border text-[15px] font-black focus:outline-none focus:ring-2 transition-colors bg-white ${
+                            filled
+                              ? `border-transparent ${colors.ring}`
+                              : `border-slate-200 focus:ring-slate-300 text-slate-400`
+                          } ${filled ? (
+                            f.color === 'blue'  ? 'text-blue-700' :
+                            f.color === 'amber' ? 'text-amber-700' :
+                                                  'text-teal-700'
+                          ) : ''}`}
+                        />
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
-            </div>
-          ))
+            )
+          })
         )}
 
-        {/* Bottom save button for long lists */}
+        {/* Bottom save for long lists */}
         {students.length > 3 && (
-          <button onClick={handleSave} disabled={saving}
-            className="w-full h-14 flex items-center justify-center gap-2 text-base font-bold bg-teal-600 text-white rounded-2xl active:scale-95 disabled:opacity-50 transition-all shadow-md mb-4">
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="w-full h-14 flex items-center justify-center gap-2 text-[13px] font-black tracking-wide bg-teal-700 text-white rounded-2xl active:scale-95 disabled:opacity-50 transition-all shadow-lg shadow-teal-100"
+          >
             {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-            {saving ? 'Saving…' : 'Save Marks'}
+            {saving ? 'Saving…' : 'Save All Marks'}
           </button>
         )}
       </div>
