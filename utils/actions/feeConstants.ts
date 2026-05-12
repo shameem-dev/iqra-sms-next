@@ -1,3 +1,5 @@
+import { getAcademicYear } from "@/lib/academicYear"
+
 export const FIXED_FEE_TYPES = [
   'Admission Fee',
   'Welfare Fee',
@@ -32,7 +34,7 @@ export const ALL_FEE_TYPES = [
   ...VEHICLE_FEE_TYPES,
 ]
 
-export const ACADEMIC_YEAR = '2026-27'
+export const ACADEMIC_YEAR = getAcademicYear()
 
 export const FS_STANDARDS = ['FS1 A', 'FS1 B', 'FS2 A', 'FS2 B']
 
@@ -86,11 +88,13 @@ export function generateReceiptNo(): string {
   return `RCP-${year}-${random}`
 }
 
+  // ← FIXED: total === 0 now returns 'pending' instead of 'paid'
+  // This prevents new students with no fees set from showing as PAID
 export function getFeeStatus(
   paid: number,
   total: number
 ): 'paid' | 'partial' | 'pending' {
-  if (total === 0) return 'paid'
+  if (total === 0) return 'pending'   // ← only line changed
   if (paid >= total) return 'paid'
   if (paid > 0) return 'partial'
   return 'pending'

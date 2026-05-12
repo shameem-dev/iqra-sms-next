@@ -1,51 +1,82 @@
 import { createClient } from '@/utils/supabase/client'
 import { FeeRow, Student } from '@/type/fees'
+import {
+  FIXED_FEE_TYPES,
+  TUITION_FEE_TYPES,
+  VEHICLE_FEE_TYPES,
+  getDefaultAmount,
+} from '@/utils/actions/feeConstants'
+import { getAcademicYear } from '@/lib/academicYear'
 
 const supabase = createClient()
 
 export const FEE_TYPES = [
-  { key: 'admission', label: 'Admission fee',        defaultAmount: 2000 },
-  { key: 'welfare',   label: 'Welfare fee',          defaultAmount: 500  },
-  { key: 'book',      label: 'Book fee',             defaultAmount: 1500 },
-  { key: 'vehicle',   label: 'Vehicle fee',          defaultAmount: 1200 },
-  { key: 'exam',      label: 'Exam fee',             defaultAmount: 800  },
-  { key: 'tuition1',  label: 'Tuition fee 1st term', defaultAmount: 3000 },
-  { key: 'tuition2',  label: 'Tuition fee 2nd term', defaultAmount: 3000 },
-  { key: 'tuition3',  label: 'Tuition fee 3rd term', defaultAmount: 3000 },
-  { key: 'tuition4',  label: 'Tuition fee 4th term', defaultAmount: 3000 },
-  { key: 'others',    label: 'Other fees',           defaultAmount: 0    },
+  { key: 'Admission Fee',       label: 'Admission Fee'       },
+  { key: 'Welfare Fee',         label: 'Welfare Fee'         },
+  { key: 'Book Fee',            label: 'Book Fee'            },
+  { key: 'Exam Fee',            label: 'Exam Fee'            },
+  { key: 'Others',              label: 'Others'              },
+  { key: 'Tuition Fee 1',       label: 'Tuition Fee 1'       },
+  { key: 'Tuition Fee 2',       label: 'Tuition Fee 2'       },
+  { key: 'Tuition Fee 3',       label: 'Tuition Fee 3'       },
+  { key: 'Tuition Fee 4',       label: 'Tuition Fee 4'       },
+  { key: 'Vehicle Fee Term 1',  label: 'Vehicle Fee Term 1'  },
+  { key: 'Vehicle Fee Term 2',  label: 'Vehicle Fee Term 2'  },
+  { key: 'Vehicle Fee Term 3',  label: 'Vehicle Fee Term 3'  },
+  { key: 'Vehicle Fee Term 4',  label: 'Vehicle Fee Term 4'  },
+  { key: 'Vehicle Fee Term 5',  label: 'Vehicle Fee Term 5'  },
+  { key: 'Vehicle Fee Term 6',  label: 'Vehicle Fee Term 6'  },
+  { key: 'Vehicle Fee Term 7',  label: 'Vehicle Fee Term 7'  },
+  { key: 'Vehicle Fee Term 8',  label: 'Vehicle Fee Term 8'  },
+  { key: 'Vehicle Fee Term 9',  label: 'Vehicle Fee Term 9'  },
+  { key: 'Vehicle Fee Term 10', label: 'Vehicle Fee Term 10' },
 ]
 
-// FIX: shared select string so gender is never accidentally omitted again
 const STUDENT_SELECT =
   'id, admission_no, name, standard, gender, parent_guardian, mobile_no, address, vehicle_point, date_of_birth, aadhar_no'
 
-// getAllStudents
 export async function getAllStudents(): Promise<Student[]> {
   const { data, error } = await supabase
     .from('students_list')
-    .select(STUDENT_SELECT)   // FIX: added gender
+    .select(STUDENT_SELECT)
     .order('admission_no')
   if (error) throw error
   return (data ?? []) as Student[]
 }
 
-// searchStudents
 export async function searchStudents(query: string): Promise<Student[]> {
   const { data, error } = await supabase
     .from('students_list')
-    .select(STUDENT_SELECT)   // FIX: added gender
+    .select(STUDENT_SELECT)
     .or(`admission_no.ilike.%${query}%,name.ilike.%${query}%`)
     .limit(10)
   if (error) throw error
   return (data ?? []) as Student[]
 }
 
-// Get or create fee rows for a student
+// ─── getOrCreateFeeRows ───────────────────────────────────────────────────────
+// Only scaffolds FIXED fees (Admission, Welfare, Book, Exam, Others)
+// with default amounts based on student's standard (FS or Grade).
+// Tuition and Vehicle fees are NOT scaffolded — admin adds them manually.
+// ─────────────────────────────────────────────────────────────────────────────
 export async function getOrCreateFeeRows(
   studentId: number,
-  year = '2024-25'
+  standard?: string
 ): Promise<FeeRow[]> {
+  const year = getAcademicYear()
+
+  // Fetch student's standard if not passed in
+  let studentStandard = standard
+  if (!studentStandard) {
+    const { data: student } = await supabase
+      .from('students_list')
+      .select('standard')
+      .eq('id', studentId)
+      .single()
+    studentStandard = student?.standard ?? ''
+  }
+
+  // Fetch existing fee rows for this student + year
   const { data: existing } = await supabase
     .from('student_fees')
     .select('*')
@@ -53,20 +84,23 @@ export async function getOrCreateFeeRows(
     .eq('academic_year', year)
 
   const existingKeys = existing?.map((r: FeeRow) => r.fee_type) || []
-  const missing = FEE_TYPES.filter(f => !existingKeys.includes(f.key))
 
-  if (missing.length > 0) {
+  // Only scaffold missing FIXED fees — tuition and vehicle are added manually
+  const missingFixed = FIXED_FEE_TYPES.filter(ft => !existingKeys.includes(ft))
+
+  if (missingFixed.length > 0) {
     await supabase.from('student_fees').insert(
-      missing.map(f => ({
+      missingFixed.map(ft => ({
         student_id:    studentId,
-        fee_type:      f.key,
-        total_amount:  f.defaultAmount,
+        fee_type:      ft,
+        total_amount:  getDefaultAmount(ft, studentStandard!),
         paid_amount:   0,
         academic_year: year,
       }))
     )
   }
 
+  // Return all existing rows (fixed + any tuition/vehicle already added manually)
   const { data: all, error } = await supabase
     .from('student_fees')
     .select('*')
@@ -77,7 +111,79 @@ export async function getOrCreateFeeRows(
   return all || []
 }
 
-// Update total amount
+// ─── addTuitionFeeRow ─────────────────────────────────────────────────────────
+// Called when admin clicks Add Tuition Fee in the UI.
+// Only adds if that term doesn't already exist for this student + year.
+// ─────────────────────────────────────────────────────────────────────────────
+export async function addTuitionFeeRow(
+  studentId: number,
+  feeType: typeof TUITION_FEE_TYPES[number],
+  standard: string
+): Promise<FeeRow> {
+  const year = getAcademicYear()
+
+  const { data: existing } = await supabase
+    .from('student_fees')
+    .select('id')
+    .eq('student_id', studentId)
+    .eq('fee_type', feeType)
+    .eq('academic_year', year)
+    .single()
+
+  if (existing) throw new Error(`${feeType} already exists for this student`)
+
+  const { data, error } = await supabase
+    .from('student_fees')
+    .insert({
+      student_id:    studentId,
+      fee_type:      feeType,
+      total_amount:  getDefaultAmount(feeType, standard),
+      paid_amount:   0,
+      academic_year: year,
+    })
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+// ─── addVehicleFeeRow ─────────────────────────────────────────────────────────
+// Called when admin clicks Add Vehicle Fee in the UI.
+// Vehicle fees always default to 0 — admin sets amount manually.
+// ─────────────────────────────────────────────────────────────────────────────
+export async function addVehicleFeeRow(
+  studentId: number,
+  feeType: typeof VEHICLE_FEE_TYPES[number]
+): Promise<FeeRow> {
+  const year = getAcademicYear()
+
+  const { data: existing } = await supabase
+    .from('student_fees')
+    .select('id')
+    .eq('student_id', studentId)
+    .eq('fee_type', feeType)
+    .eq('academic_year', year)
+    .single()
+
+  if (existing) throw new Error(`${feeType} already exists for this student`)
+
+  const { data, error } = await supabase
+    .from('student_fees')
+    .insert({
+      student_id:    studentId,
+      fee_type:      feeType,
+      total_amount:  0,
+      paid_amount:   0,
+      academic_year: year,
+    })
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
 export async function updateTotal(id: number, total: number) {
   const { error } = await supabase
     .from('student_fees')
@@ -86,12 +192,11 @@ export async function updateTotal(id: number, total: number) {
   if (error) throw error
 }
 
-// Save payment
 export async function savePayment(
   studentId: number,
-  payments: { id: number; fee_type: string; payNow: number }[],
-  year = '2024-25'
+  payments: { id: number; fee_type: string; payNow: number }[]
 ) {
+  const year = getAcademicYear()
   const paymentRows = payments.filter(p => p.payNow > 0)
   if (paymentRows.length === 0) return null
 
@@ -105,8 +210,8 @@ export async function savePayment(
     await supabase
       .from('student_fees')
       .update({
-        paid_amount:  (current?.paid_amount || 0) + p.payNow,
-        updated_at:   new Date().toISOString(),
+        paid_amount: (current?.paid_amount || 0) + p.payNow,
+        updated_at:  new Date().toISOString(),
       })
       .eq('id', p.id)
   }
@@ -143,23 +248,14 @@ export async function deleteFeeRow(id: number) {
   if (error) throw error
 }
 
-
-
-
 export async function deleteStudentAndUser(
   studentId: number,
-  authUserId: string   // the UUID from auth.users
+  authUserId: string
 ) {
-  // 1. Delete fee rows
   await supabase.from('student_fees').delete().eq('student_id', studentId)
-
-  // 2. Delete fee payment history
   await supabase.from('fee_payments').delete().eq('student_id', studentId)
-
-  // 3. Delete student record
   await supabase.from('students_list').delete().eq('id', studentId)
 
-  // 4. Delete auth user (via server route)
   const res = await fetch('/api/delete-parent-user', {
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json' },

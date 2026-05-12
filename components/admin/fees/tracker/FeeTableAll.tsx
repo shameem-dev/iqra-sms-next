@@ -64,26 +64,24 @@ export default function FeeTableAll({ students, onSelectStudent, loading, feeTyp
               onClick={() => onSelectStudent(student)}
               className="w-full bg-white border border-gray-200 rounded-xl p-4 text-left hover:border-teal-400 hover:shadow-sm transition-all group"
             >
-              {/* Student info */}
               <div className="flex justify-between items-start gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                     <p className="text-sm font-semibold text-gray-700 truncate">{student.name}</p>
-                    <span className={`text-xs font-semibold rounded-full px-2 py-0.5 border flex-shrink-0 ${config.text} ${config.border} ${config.bg}`}>
-                      {config.icon} {config.label}
-                    </span>
+                    {total > 0 && (
+                      <span className={`text-xs font-semibold rounded-full px-2 py-0.5 border flex-shrink-0 ${config.text} ${config.border} ${config.bg}`}>
+                        {config.icon} {config.label}
+                      </span>
+                    )}
                   </div>
                   <p className="text-xs text-gray-400">
                     Adm: {student.admission_no} · {student.standard}
                   </p>
-
-                  {/* Fee type label badge */}
                   <span className="inline-block mt-1.5 text-xs bg-teal-50 border border-teal-200 text-teal-600 rounded-full px-2 py-0.5 font-medium">
                     {feeTypeFilter}
                   </span>
                 </div>
 
-                {/* Amounts for this fee only */}
                 <div className="text-right shrink-0">
                   {total > 0 ? (
                     <>
@@ -99,7 +97,6 @@ export default function FeeTableAll({ students, onSelectStudent, loading, feeTyp
                 </div>
               </div>
 
-              {/* Fee amounts row */}
               <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-gray-100 text-center">
                 <div>
                   <p className="text-xs text-gray-400">Total</p>
@@ -117,7 +114,6 @@ export default function FeeTableAll({ students, onSelectStudent, loading, feeTyp
                 </div>
               </div>
 
-              {/* Progress bar */}
               <div className="mt-3">
                 <div className="w-full bg-gray-100 rounded-full h-1.5">
                   <div
@@ -140,8 +136,9 @@ export default function FeeTableAll({ students, onSelectStudent, loading, feeTyp
         }
 
         // ── Normal mode (grand total) ──────────────────────────────
-        const config  = getStatusConfig(student.status)
-        const percent = student.totalAmount === 0
+        const hasFeesSet = student.totalAmount > 0
+        const config     = getStatusConfig(student.status)
+        const percent    = student.totalAmount === 0
           ? 0
           : Math.min((student.totalPaid / student.totalAmount) * 100, 100)
 
@@ -155,9 +152,12 @@ export default function FeeTableAll({ students, onSelectStudent, loading, feeTyp
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                   <p className="text-sm font-semibold text-gray-700 truncate">{student.name}</p>
-                  <span className={`text-xs font-semibold rounded-full px-2 py-0.5 border flex-shrink-0 ${config.text} ${config.border} ${config.bg}`}>
-                    {config.icon} {config.label}
-                  </span>
+                  {/* Only show badge when fees are actually set */}
+                  {hasFeesSet && (
+                    <span className={`text-xs font-semibold rounded-full px-2 py-0.5 border flex-shrink-0 ${config.text} ${config.border} ${config.bg}`}>
+                      {config.icon} {config.label}
+                    </span>
+                  )}
                 </div>
                 <p className="text-xs text-gray-400">
                   Adm: {student.admission_no} · {student.standard}
@@ -174,7 +174,7 @@ export default function FeeTableAll({ students, onSelectStudent, loading, feeTyp
               </div>
 
               <div className="text-right ml-4 shrink-0">
-                {student.totalAmount > 0 ? (
+                {hasFeesSet ? (
                   <>
                     <p className="text-xs text-gray-400">Balance</p>
                     <p className={`text-sm font-bold ${student.totalBalance > 0 ? 'text-red-500' : 'text-teal-600'}`}>
@@ -190,10 +190,12 @@ export default function FeeTableAll({ students, onSelectStudent, loading, feeTyp
 
             <div className="flex justify-between mt-2">
               <div className="flex gap-3">
-                <span className="text-xs text-gray-400">
-                  Paid: <span className="text-teal-600 font-medium">₹{student.totalPaid.toLocaleString()}</span>
-                </span>
-                {student.totalBalance > 0 && (
+                {hasFeesSet && (
+                  <span className="text-xs text-gray-400">
+                    Paid: <span className="text-teal-600 font-medium">₹{student.totalPaid.toLocaleString()}</span>
+                  </span>
+                )}
+                {hasFeesSet && student.totalBalance > 0 && (
                   <span className="text-xs text-gray-400">
                     Due: <span className="text-red-400 font-medium">₹{student.totalBalance.toLocaleString()}</span>
                   </span>
