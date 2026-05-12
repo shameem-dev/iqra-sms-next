@@ -16,16 +16,17 @@ export const TUITION_FEE_TYPES = [
 ] as const
 
 export const VEHICLE_FEE_TYPES = [
-  'Vehicle Fee Term 1',
-  'Vehicle Fee Term 2',
-  'Vehicle Fee Term 3',
-  'Vehicle Fee Term 4',
-  'Vehicle Fee Term 5',
-  'Vehicle Fee Term 6',
-  'Vehicle Fee Term 7',
-  'Vehicle Fee Term 8',
-  'Vehicle Fee Term 9',
-  'Vehicle Fee Term 10',
+  
+  'Vehicle Fee - June',
+  'Vehicle Fee - July',
+  'Vehicle Fee - August',
+  'Vehicle Fee - September',
+  'Vehicle Fee - October',
+  'Vehicle Fee - November',
+  'Vehicle Fee - December',
+  'Vehicle Fee - January',
+  'Vehicle Fee - February',
+  'Vehicle Fee - March',
 ] as const
 
 export const ALL_FEE_TYPES = [
