@@ -1,3 +1,5 @@
+import { getAcademicYear } from "@/lib/academicYear"
+
 export const FIXED_FEE_TYPES = [
   'Admission Fee',
   'Welfare Fee',
@@ -14,16 +16,17 @@ export const TUITION_FEE_TYPES = [
 ] as const
 
 export const VEHICLE_FEE_TYPES = [
-  'Vehicle Fee Term 1',
-  'Vehicle Fee Term 2',
-  'Vehicle Fee Term 3',
-  'Vehicle Fee Term 4',
-  'Vehicle Fee Term 5',
-  'Vehicle Fee Term 6',
-  'Vehicle Fee Term 7',
-  'Vehicle Fee Term 8',
-  'Vehicle Fee Term 9',
-  'Vehicle Fee Term 10',
+  
+  'Vehicle Fee - June',
+  'Vehicle Fee - July',
+  'Vehicle Fee - August',
+  'Vehicle Fee - September',
+  'Vehicle Fee - October',
+  'Vehicle Fee - November',
+  'Vehicle Fee - December',
+  'Vehicle Fee - January',
+  'Vehicle Fee - February',
+  'Vehicle Fee - March',
 ] as const
 
 export const ALL_FEE_TYPES = [
@@ -32,7 +35,7 @@ export const ALL_FEE_TYPES = [
   ...VEHICLE_FEE_TYPES,
 ]
 
-export const ACADEMIC_YEAR = '2026-27'
+export const ACADEMIC_YEAR = getAcademicYear()
 
 export const FS_STANDARDS = ['FS1 A', 'FS1 B', 'FS2 A', 'FS2 B']
 
@@ -86,11 +89,13 @@ export function generateReceiptNo(): string {
   return `RCP-${year}-${random}`
 }
 
+  // ← FIXED: total === 0 now returns 'pending' instead of 'paid'
+  // This prevents new students with no fees set from showing as PAID
 export function getFeeStatus(
   paid: number,
   total: number
 ): 'paid' | 'partial' | 'pending' {
-  if (total === 0) return 'paid'
+  if (total === 0) return 'pending'   // ← only line changed
   if (paid >= total) return 'paid'
   if (paid > 0) return 'partial'
   return 'pending'
