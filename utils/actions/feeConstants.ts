@@ -4,7 +4,7 @@ export const FIXED_FEE_TYPES = [
   'Admission Fee',
   'Welfare Fee',
   'Book Fee',
-  'Exam Fee',
+  'Uniform Fee',
   'Others',
 ] as const
 
@@ -53,7 +53,7 @@ export const FS_FEES: Record<string, number> = {
   'Admission Fee':  500,
   'Welfare Fee':    200,
   'Book Fee':       300,
-  'Exam Fee':       100,
+  'Uniform Fee':    100,
   'Tuition Fee 1': 1000,
   'Tuition Fee 2': 1000,
   'Tuition Fee 3': 1000,
@@ -65,7 +65,6 @@ export const GRADE_FEES: Record<string, number> = {
   'Admission Fee':  750,
   'Welfare Fee':    200,
   'Book Fee':       400,
-  'Exam Fee':       150,
   'Tuition Fee 1': 1200,
   'Tuition Fee 2': 1200,
   'Tuition Fee 3': 1200,

@@ -28,7 +28,7 @@ interface Props {
   showPaymentForm: boolean
 }
 
-const FIXED_FEE_ORDER = ['Admission Fee', 'Welfare Fee', 'Book Fee', 'Exam Fee', 'Others']
+const FIXED_FEE_ORDER = ['Admission Fee', 'Welfare Fee', 'Book Fee', 'Uniform Fee', 'Others']
 
 export default function StudentFeeSummary({
   student, fixedFees, tuitionFees, vehicleFees,

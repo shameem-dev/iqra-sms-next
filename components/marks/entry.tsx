@@ -20,6 +20,7 @@ import SubjectTabs from '@/components/marks/SubjectTabs'
 import MarksTable from '@/components/marks/MarksTable'
 import TopScorers from '@/components/marks/TopScorers'
 import ClassTopper from '@/components/marks/ClassTopper'
+import { getAcademicYear } from '@/lib/academicYear'
 
 const STANDARDS = [
   'FS1 A', 'FS1 B',
@@ -31,7 +32,7 @@ const STANDARDS = [
 ]
 
 const DEFAULT_STANDARD = 'FS1 A'
-const ACADEMIC_YEAR = '2026-27'
+const ACADEMIC_YEAR =  getAcademicYear()
 
 const examColumns: { label: string; field: keyof Omit<MarkFormData, 'id'>; maxKey: keyof Subject }[] = [
   { label: 'UT1',        field: 'ut1',        maxKey: 'max_ut1' },
@@ -338,7 +339,10 @@ export default function MarksEntryPage() {
   }
 
   function handleMarkChange(studentId: number, field: keyof Omit<MarkFormData, 'id'>, value: string) {
-    const num = value === '' ? null : parseInt(value, 10)
+      const num =
+      value.trim() === ''
+        ? null
+        : Number(value)
     setMarksData(prev =>
       prev.map(row =>
         row.student_id === studentId
@@ -377,32 +381,33 @@ export default function MarksEntryPage() {
     const upsertData = marksData.map(row => {
       // Base payload — never includes id for new rows
       const payload: Record<string, unknown> = {
-        student_id:    row.student_id,
-        subject_id:    activeSubject!.id,
+        student_id: row.student_id,
+        subject_id: activeSubject!.id,
         academic_year: ACADEMIC_YEAR,
-        ut1:           row.marks.ut1,
-        ut2:           row.marks.ut2,
-        ut3:           row.marks.ut3,
-        ut4:           row.marks.ut4,
-        mid_term:      row.marks.mid_term,
-        half_yearly:   row.marks.half_yearly,
-        final:         row.marks.final,
-        updated_at:    new Date().toISOString(),
+        ut1: row.marks.ut1,
+        ut2: row.marks.ut2,
+        ut3: row.marks.ut3,
+        ut4: row.marks.ut4,
+        mid_term: row.marks.mid_term,
+        half_yearly: row.marks.half_yearly,
+        final: row.marks.final,
+        updated_at: new Date().toISOString(),
       }
 
-      // Only add id if this row already exists in DB
-      // This lets upsert match by id for updates,
-      // while new rows rely on the onConflict columns instead
-      if (row.marks.id !== undefined) {
-        payload.id = row.marks.id
-      }
 
       return payload
     })
 
-    const { error } = await supabase
+
+    const { data, error } = await supabase
       .from('marks')
-      .upsert(upsertData, { onConflict: 'student_id,subject_id,academic_year' })
+      .upsert(upsertData, {
+      onConflict: 'student_id,subject_id,academic_year'
+      })
+      .select()
+
+      console.log(data)
+      console.log(error)
 
     if (error) {
       setError(error.message)
@@ -488,10 +493,9 @@ export default function MarksEntryPage() {
     <div className="min-h-screen bg-slate-50 w-full">
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <header className="bg-white border-b border-slate-100 sticky top-0 z-30 shadow-sm w-full">
-        <div className="w-full px-6 py-4 flex items-center justify-between gap-4">
+      <header className="bg-white border-b border-slate-100 sticky top-0 z-30 shadow-sm w-full rounded-lg">
+        <div className="w-full px-6 py-4 flex items-center justify-between gap-4 " >
           <div className="leading-tight">
-            <p className="text-sm font-bold text-slate-800">Marks Entry</p>
             <p className="text-xs text-slate-400">Academic Year {ACADEMIC_YEAR}</p>
           </div>
           <div className="flex items-center gap-2">
@@ -627,10 +631,10 @@ export default function MarksEntryPage() {
           <EmptyState icon={Users} message={`No students found in ${selectedStandard}.`} />
         )}
 
-        {/* ── Analytics ───────────────────────────────────────────────────── */}
+        {/* ── Ana  lytics ───────────────────────────────────────────────────── */}
         {!loading && marksData.length > 0 && activeSubject && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            <div className="bg-white border border-slate-100 rounded-2xl shadow-sm p-5">
+          <div className=" lg:grid-cols-2 gap-5">
+            <div className="bg-white border border-slate-100 rounded-2xl shadow-sm p-5 mb-4">
               <SectionHeader title="Top Scorers" subtitle={`By exam · ${activeSubject.name}`} />
               <TopScorers
                 activeSubject={activeSubject}
@@ -646,6 +650,7 @@ export default function MarksEntryPage() {
                 loading={toppersLoading}
               />
             </div>
+
           </div>
         )}
       </main>

@@ -14,7 +14,7 @@ interface Props {
   }) => void
 }
 
-const FIXED_FEE_ORDER = ['Admission Fee', 'Welfare Fee', 'Book Fee', 'Exam Fee', 'Others']
+const FIXED_FEE_ORDER = ['Admission Fee', 'Welfare Fee', 'Book Fee', 'Uniform Fee', 'Others']
 
 export default function FeeTableSingle({ student, onClose, onGoToPayment }: Props) {
   const overallConfig = getStatusConfig(student.status)
