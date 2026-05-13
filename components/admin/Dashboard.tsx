@@ -5,7 +5,7 @@ import { Chart, ArcElement, Tooltip, Legend, PieController } from 'chart.js';
 import { Users, GraduationCap, Wallet, RefreshCw, TrendingUp, AlertTriangle } from 'lucide-react';
 import { getAllStaff } from '@/utils/actions/staff-actions';
 import { getAdmissions } from '@/utils/actions/admissions';
-import { fetchTotals, fetchCategorySummary } from '@/utils/actions/Accounts';
+import { fetchTotals, fetchCategorySummary, fetchEntries } from '@/utils/actions/Accounts';
 
 Chart.register(PieController, ArcElement, Tooltip, Legend);
 
@@ -92,10 +92,7 @@ function StudentsPieChart({ classes }: { classes: { s: string; c: number }[] }) 
 
   useEffect(() => {
     if (!canvasRef.current || !classes.length) return;
-
-    if (chartRef.current) {
-      chartRef.current.destroy();
-    }
+    if (chartRef.current) chartRef.current.destroy();
 
     const total = classes.reduce((sum, c) => sum + c.c, 0);
 
@@ -103,15 +100,13 @@ function StudentsPieChart({ classes }: { classes: { s: string; c: number }[] }) 
       type: 'pie',
       data: {
         labels: classes.map((c) => `Grade ${c.s}`),
-        datasets: [
-          {
-            data: classes.map((c) => c.c),
-            backgroundColor: classes.map((_, i) => SLICE_COLORS[i % SLICE_COLORS.length]),
-            borderColor: '#ffffff',
-            borderWidth: 2,
-            hoverOffset: 6,
-          },
-        ],
+        datasets: [{
+          data: classes.map((c) => c.c),
+          backgroundColor: classes.map((_, i) => SLICE_COLORS[i % SLICE_COLORS.length]),
+          borderColor: '#ffffff',
+          borderWidth: 2,
+          hoverOffset: 6,
+        }],
       },
       options: {
         responsive: true,
@@ -131,25 +126,20 @@ function StudentsPieChart({ classes }: { classes: { s: string; c: number }[] }) 
       },
     });
 
-    return () => {
-      chartRef.current?.destroy();
-    };
+    return () => { chartRef.current?.destroy(); };
   }, [classes]);
 
   const total = classes.reduce((sum, c) => sum + c.c, 0);
 
   return (
     <div>
-      {/* Custom legend */}
       <div className="flex flex-wrap gap-x-4 gap-y-2 mb-5">
         {classes.map((cls, i) => {
           const pct = total > 0 ? Math.round((cls.c / total) * 100) : 0;
           return (
             <div key={cls.s} className="flex items-center gap-1.5">
-              <span
-                className="inline-block w-2.5 h-2.5 rounded-[3px] flex-shrink-0"
-                style={{ background: SLICE_COLORS[i % SLICE_COLORS.length] }}
-              />
+              <span className="inline-block w-2.5 h-2.5 rounded-[3px] flex-shrink-0"
+                style={{ background: SLICE_COLORS[i % SLICE_COLORS.length] }} />
               <span className="text-[11px] text-slate-500 font-medium">
                 Gr {cls.s}
                 <span className="text-slate-400 ml-1">{pct}%</span>
@@ -158,13 +148,9 @@ function StudentsPieChart({ classes }: { classes: { s: string; c: number }[] }) 
           );
         })}
       </div>
-
-      {/* Chart */}
       <div className="relative w-full h-[220px]">
         <canvas ref={canvasRef} />
       </div>
-
-      {/* Total centred below */}
       <div className="mt-4 text-center">
         <p className="text-[9px] font-bold uppercase tracking-[.18em] text-slate-400 mb-1">Total Students</p>
         <p className="text-2xl font-black text-slate-800">{total}</p>
@@ -173,6 +159,169 @@ function StudentsPieChart({ classes }: { classes: { s: string; c: number }[] }) 
   );
 }
 
+// ─── Category label resolvers ─────────────────────────────────────────────────
+
+const INCOME_LABELS: Record<string, string> = {
+  daily_fees: 'Daily Fees',
+  book:       'Book Sales',
+  receipt:    'Receipt',
+  other:      'Others',
+};
+
+const EXPENDITURE_LABELS: Record<string, string> = {
+  salary:        'Salary',
+  vehicle_rent:  'Vehicle Rent',
+  kseb_bill:     'KSEB Bill',
+  gas:           'Gas',
+  internet:      'Internet',
+  stationary:    'Stationary',
+  staff_ta:      'Staff TA',
+  training:      'Training',
+  medical:       'Medical',
+  building_rent: 'Building Rent',
+  kuri:          'Kuri Amount',
+  trophy:        'Trophy & Awards',
+  annual_day:    'Annual Day',
+  iame:          'IAME Expenses',
+  other:         'Others',
+};
+
+function resolveLabel(entry: any): string {
+  if (entry.type === 'income') {
+    return INCOME_LABELS[entry.income_category] ?? entry.income_category ?? '—';
+  }
+  return EXPENDITURE_LABELS[entry.expenditure_category] ?? entry.expenditure_category ?? '—';
+}
+
+function resolveSub(entry: any): string | null {
+  return entry.staff_name
+    ?? entry.vehicle_no
+    ?? (entry.book_no    ? `Book: ${entry.book_no}`       : null)
+    ?? (entry.receipt_no ? `Receipt: ${entry.receipt_no}` : null)
+    ?? entry.notes
+    ?? null;
+}
+
+// ─── Today's Summary ──────────────────────────────────────────────────────────
+
+function TodaySummary({
+  todayIncome,
+  todayExpense,
+  entryCount,
+  recentEntries,
+}: {
+  todayIncome:   number;
+  todayExpense:  number;
+  entryCount:    number;
+  recentEntries: any[];
+}) {
+  const todayNet  = todayIncome - todayExpense;
+  const isDeficit = todayNet < 0;
+
+  const dateLabel = new Date().toLocaleDateString('en-IN', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+  });
+
+  return (
+    <div className="bg-white rounded-[24px] border border-slate-100 shadow-sm p-7">
+
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-2.5">
+          <div className="w-2.5 h-2.5 rounded-full bg-indigo-500 shadow-sm shadow-indigo-300 animate-pulse" />
+          <h2 className="text-[10px] font-bold uppercase tracking-[.18em] text-slate-400">Today's Summary</h2>
+        </div>
+        <span className="text-[10px] text-slate-400 font-medium">{dateLabel}</span>
+      </div>
+
+      {/* KPI row */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-7">
+        <div className="rounded-2xl bg-slate-50 border border-slate-100 px-4 py-4">
+          <p className="text-[9px] font-bold uppercase tracking-[.18em] text-slate-400 mb-2">Transactions</p>
+          <p className="text-2xl font-black text-slate-800">{entryCount}</p>
+          <p className="text-[10px] text-slate-400 mt-1">entries recorded</p>
+        </div>
+
+        <div className="rounded-2xl bg-emerald-50 border border-emerald-100 px-4 py-4">
+          <p className="text-[9px] font-bold uppercase tracking-[.18em] text-emerald-500 mb-2">Income</p>
+          <p className="text-2xl font-black text-emerald-700">{fmtINR(todayIncome)}</p>
+          <p className="text-[10px] text-emerald-400 mt-1">collected today</p>
+        </div>
+
+        <div className="rounded-2xl bg-rose-50 border border-rose-100 px-4 py-4">
+          <p className="text-[9px] font-bold uppercase tracking-[.18em] text-rose-500 mb-2">Expenditure</p>
+          <p className="text-2xl font-black text-rose-600">{fmtINR(todayExpense)}</p>
+          <p className="text-[10px] text-rose-400 mt-1">spent today</p>
+        </div>
+
+        <div className={`rounded-2xl px-4 py-4 border ${isDeficit ? 'bg-rose-50 border-rose-100' : 'bg-sky-50 border-sky-100'}`}>
+          <p className={`text-[9px] font-bold uppercase tracking-[.18em] mb-2 ${isDeficit ? 'text-rose-500' : 'text-sky-500'}`}>
+            Net Today
+          </p>
+          <p className={`text-2xl font-black ${isDeficit ? 'text-rose-600' : 'text-sky-700'}`}>
+            {isDeficit ? '' : '+'}{fmtINR(todayNet)}
+          </p>
+          <p className={`text-[10px] mt-1 ${isDeficit ? 'text-rose-400' : 'text-sky-400'}`}>
+            {isDeficit ? 'deficit' : 'surplus'} today
+          </p>
+        </div>
+      </div>
+
+      {/* Recent transactions */}
+      <div>
+        <p className="text-[10px] font-bold uppercase tracking-[.15em] text-slate-300 mb-3">
+          Last {recentEntries.length} Transactions
+        </p>
+
+        {recentEntries.length === 0 ? (
+          <p className="text-[13px] text-slate-400 text-center py-6">No transactions today.</p>
+        ) : (
+          <div className="divide-y divide-slate-50">
+            {recentEntries.map((entry: any) => {
+              const isIncome = entry.type === 'income';
+              const label    = resolveLabel(entry);
+              const sub      = resolveSub(entry);
+              const amount   = Number(entry.amount);
+              const time     = entry.created_at
+                ? new Date(entry.created_at).toLocaleTimeString('en-IN', {
+                    hour: '2-digit', minute: '2-digit', hour12: true,
+                  })
+                : null;
+
+              return (
+                <div key={entry.id} className="flex items-center justify-between py-3 gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className={`w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                      isIncome ? 'bg-emerald-50' : 'bg-rose-50'
+                    }`}>
+                      <span className={`text-[10px] font-black ${isIncome ? 'text-emerald-500' : 'text-rose-500'}`}>
+                        {isIncome ? '↑' : '↓'}
+                      </span>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[13px] font-semibold text-slate-700 truncate">{label}</p>
+                      {sub && <p className="text-[11px] text-slate-400 truncate">{sub}</p>}
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end flex-shrink-0">
+                    <span className={`text-[13px] font-bold tabular-nums ${isIncome ? 'text-emerald-600' : 'text-rose-500'}`}>
+                      {isIncome ? '+' : '−'}{fmtINR(amount)}
+                    </span>
+                    {time && <span className="text-[10px] text-slate-300 mt-0.5">{time}</span>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+    </div>
+  );
+}
+
+// ─── Dashboard ────────────────────────────────────────────────────────────────
+
 export default function Dashboard() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -180,19 +329,46 @@ export default function Dashboard() {
   const load = useCallback(async () => {
     try {
       setLoading(true);
-      const [staff, admissions, totals, categorySummary] = await Promise.all([
-        getAllStaff(), getAdmissions(), fetchTotals(), fetchCategorySummary(),
+      const [staff, admissions, totals, categorySummary, allEntries] = await Promise.all([
+        getAllStaff(),
+        getAdmissions(),
+        fetchTotals(),
+        fetchCategorySummary(),
+        fetchEntries({}),
       ]);
+
+      const todayStr     = new Date().toISOString().split('T')[0];
+      const todayEntries = allEntries.filter((e: any) => e.date === todayStr);
+
+      const todayIncome  = todayEntries
+        .filter((e: any) => e.type === 'income')
+        .reduce((s: number, e: any) => s + Number(e.amount), 0);
+      const todayExpense = todayEntries
+        .filter((e: any) => e.type === 'expenditure')
+        .reduce((s: number, e: any) => s + Number(e.amount), 0);
+
+      // Most recent 5 entries for today, newest first
+      const recentEntries = [...todayEntries]
+        .sort((a: any, b: any) => b.created_at.localeCompare(a.created_at))
+        .slice(0, 5);
+
       const byClass: Record<string, number> = {};
       admissions.forEach((a: any) => { byClass[a.standard] = (byClass[a.standard] || 0) + 1; });
+
       setData({
-        students: admissions.length,
-        staff: staff.filter((s: any) => !s.date_left).length,
-        income: totals.income,
-        expense: totals.expenditure,
-        balance: totals.balance,
-        categories: categorySummary,
-        classes: Object.entries(byClass).map(([s, c]) => ({ s, c })).sort((a, b) => Number(a.s) - Number(b.s)),
+        students:      admissions.length,
+        staff:         staff.filter((s: any) => !s.date_left).length,
+        income:        totals.income,
+        expense:       totals.expenditure,
+        balance:       totals.balance,
+        categories:    categorySummary,
+        classes:       Object.entries(byClass)
+                         .map(([s, c]) => ({ s, c }))
+                         .sort((a, b) => Number(a.s) - Number(b.s)),
+        todayIncome,
+        todayExpense,
+        todayCount:    todayEntries.length,
+        recentEntries,
       });
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
@@ -201,21 +377,21 @@ export default function Dashboard() {
   useEffect(() => { load(); }, [load]);
 
   if (loading) return (
-    <div className="h-screen flex items-center justify-center" >
+    <div className="h-screen flex items-center justify-center">
       <div className="w-10 h-10 border-[3px] border-violet-200 border-t-violet-600 rounded-full animate-spin" />
     </div>
   );
 
-  const balance = data.balance;
-  const isDeficit = balance < 0;
-  const balancePct = data.income > 0 ? Math.round((Math.abs(balance) / data.income) * 100) : 0;
+  const balance     = data.balance;
+  const isDeficit   = balance < 0;
+  const balancePct  = data.income > 0 ? Math.round((Math.abs(balance) / data.income) * 100) : 0;
   const donutFilled = Math.min(balancePct, 100) / 100 * 113;
 
   const income   = data.categories.filter((c: any) => c.type === 'income');
   const expenses = data.categories.filter((c: any) => c.type === 'expenditure');
 
   return (
-    <div className="min-h-screen p-4 md:p-8" style={{  fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+    <div className="min-h-screen p-4 md:p-8" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');`}</style>
       <div className="max-w-7xl mx-auto space-y-5">
 
@@ -258,42 +434,15 @@ export default function Dashboard() {
           />
         </div>
 
-        {/* Finance panels */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          <div className="bg-white rounded-[24px] border border-slate-100 shadow-sm p-7">
-            <div className="flex items-center gap-2.5 mb-6">
-              <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-300" />
-              <h2 className="text-[10px] font-bold uppercase tracking-[.18em] text-slate-400">Income Streams</h2>
-            </div>
-            <div className="space-y-5">
-              {income.map((c: any) => (
-                <StreamRow key={c.category} label={c.category} amount={Number(c.total_amount)} total={data.income}
-                  colors="bg-gradient-to-r from-emerald-400 to-teal-500" />
-              ))}
-            </div>
-            <div className="mt-6 pt-5 border-t border-slate-50 flex justify-between items-center">
-              <span className="text-[10px] font-bold uppercase tracking-[.15em] text-slate-300">Total Income</span>
-              <span className="text-xl font-black text-emerald-600">{fmtINR(data.income)}</span>
-            </div>
-          </div>
+        {/* Today's Summary */}
+        <TodaySummary
+          todayIncome={data.todayIncome}
+          todayExpense={data.todayExpense}
+          entryCount={data.todayCount}
+          recentEntries={data.recentEntries}
+        />
 
-          <div className="bg-white rounded-[24px] border border-slate-100 shadow-sm p-7">
-            <div className="flex items-center gap-2.5 mb-6">
-              <div className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-sm shadow-rose-300" />
-              <h2 className="text-[10px] font-bold uppercase tracking-[.18em] text-slate-400">Expense Breakdown</h2>
-            </div>
-            <div className="space-y-5">
-              {expenses.map((c: any) => (
-                <StreamRow key={c.category} label={c.category} amount={Number(c.total_amount)} total={data.expense}
-                  colors="bg-gradient-to-r from-rose-400 to-pink-500" />
-              ))}
-            </div>
-            <div className="mt-6 pt-5 border-t border-slate-50 flex justify-between items-center">
-              <span className="text-[10px] font-bold uppercase tracking-[.15em] text-slate-300">Total Expense</span>
-              <span className="text-xl font-black text-rose-600">{fmtINR(data.expense)}</span>
-            </div>
-          </div>
-        </div>
+     
 
         {/* Summary + Grades + Pie */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
@@ -306,7 +455,7 @@ export default function Dashboard() {
             </div>
             <div className="space-y-0.5">
               {[
-                { label: 'Gross income', val: fmtINR(data.income), color: 'text-emerald-600' },
+                { label: 'Gross income',   val: fmtINR(data.income),  color: 'text-emerald-600' },
                 { label: 'Total expenses', val: fmtINR(data.expense), color: 'text-rose-500' },
               ].map(r => (
                 <div key={r.label} className="flex justify-between items-center py-3 border-b border-slate-50">
@@ -337,10 +486,9 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Class Density + Pie Chart side by side */}
+          {/* Class Density + Pie Chart */}
           <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-5">
 
-            {/* Class Density */}
             <div className="bg-white rounded-[24px] border border-slate-100 shadow-sm p-7">
               <div className="flex items-center gap-2.5 mb-6">
                 <div className="w-2.5 h-2.5 rounded-full bg-violet-500 shadow-sm shadow-violet-300" />
@@ -353,7 +501,6 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Students Pie Chart */}
             <div className="bg-white rounded-[24px] border border-slate-100 shadow-sm p-7">
               <div className="flex items-center gap-2.5 mb-6">
                 <div className="w-2.5 h-2.5 rounded-full bg-indigo-500 shadow-sm shadow-indigo-300" />

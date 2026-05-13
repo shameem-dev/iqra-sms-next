@@ -4,13 +4,14 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Plus, Trash2, Save, Loader2,
   AlertCircle, X, Search, FileText, RefreshCw,
-  CheckCircle2, FilePen
+  CheckCircle2, FilePen, CalendarDays, 
+  ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import {
   fetchEntries, createEntry, updateEntry, deleteEntry,
   fetchTotals,
   type AccountEntry, type NewEntry, type EntryType,
-  type IncomeCategory, type ExpenditureCategory
+  type IncomeCategory, type ExpenditureCategory,
 } from '@/utils/actions/Accounts';
 import { useAccountsRealtime } from '@/hooks/useAccountsRealtime';
 
@@ -56,7 +57,7 @@ const selectCls =
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function fmt(n: number) {
+export function fmt(n: number) {
   return n.toLocaleString('en-IN', { minimumFractionDigits: 2 });
 }
 
@@ -66,21 +67,27 @@ function monthLabel(ym: string) {
   return new Date(Number(y), Number(m) - 1).toLocaleString('en-IN', { month: 'long', year: 'numeric' });
 }
 
-function resolveIncomeLabel(raw: string | null | undefined): string {
+export function resolveIncomeLabel(raw: string | null | undefined): string {
   if (!raw) return '—';
   return INCOME_CATEGORIES.find(c => c.value === raw)?.label ?? raw;
 }
 
-function resolveExpenditureLabel(raw: string | null | undefined): string {
+export function resolveExpenditureLabel(raw: string | null | undefined): string {
   if (!raw) return '—';
   return EXPENDITURE_CATEGORIES.find(c => c.value === raw)?.label ?? raw;
 }
 
-// ─── Merge helper — replaces null values with defaults ────────────────────────
+function stepDate(dateStr: string, days: number): string {
+  const d = new Date(dateStr + 'T00:00:00');
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split('T')[0];
+}
+
+// ─── Merge helper ─────────────────────────────────────────────────────────────
 
 function mergeWithDefaults<T extends Record<string, unknown>>(
   base: T,
-  overrides: Partial<T>
+  overrides: Partial<T>,
 ): T {
   const result = { ...base };
   for (const key in overrides) {
@@ -133,25 +140,25 @@ function Toast({ message, type, onClose }: {
 
 function emptyIncome() {
   return {
-    date:             new Date().toISOString().split('T')[0],
-    amount:           '' as unknown as number,
-    bill_voucher_no:  '',
-    notes:            '',
-    income_category:  'daily_fees' as IncomeCategory,
-    book_no:          '',
-    receipt_no:       '',
+    date:            new Date().toISOString().split('T')[0],
+    amount:          '' as unknown as number,
+    bill_voucher_no: '',
+    notes:           '',
+    income_category: 'daily_fees' as IncomeCategory,
+    book_no:         '',
+    receipt_no:      '',
   };
 }
 
 function emptyExpenditure() {
   return {
-    date:                  new Date().toISOString().split('T')[0],
-    amount:                '' as unknown as number,
-    bill_voucher_no:       '',
-    notes:                 '',
-    expenditure_category:  'salary' as ExpenditureCategory,
-    staff_name:            '',
-    vehicle_no:            '',
+    date:                 new Date().toISOString().split('T')[0],
+    amount:               '' as unknown as number,
+    bill_voucher_no:      '',
+    notes:                '',
+    expenditure_category: 'salary' as ExpenditureCategory,
+    staff_name:           '',
+    vehicle_no:           '',
   };
 }
 
@@ -201,11 +208,7 @@ function IncomeForm({ initial, onSave, onCancel, saving }: IncomeFormProps) {
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2">
           <Field label="Income Category" required>
-            <select
-              value={form.income_category}
-              onChange={e => set('income_category', e.target.value as IncomeCategory)}
-              className={selectCls}
-            >
+            <select value={form.income_category} onChange={e => set('income_category', e.target.value as IncomeCategory)} className={selectCls}>
               {INCOME_CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
             </select>
           </Field>
@@ -214,54 +217,24 @@ function IncomeForm({ initial, onSave, onCancel, saving }: IncomeFormProps) {
           <input type="date" value={form.date} onChange={e => set('date', e.target.value)} className={inputCls} />
         </Field>
         <Field label="Amount (₹)" required>
-          <input
-            type="number" min="0" step="0.01"
-            value={form.amount}
-            onChange={e => set('amount', e.target.value as unknown as number)}
-            placeholder="0.00"
-            className={inputCls}
-          />
+          <input type="number" min="0" step="0.01" value={form.amount} onChange={e => set('amount', e.target.value as unknown as number)} placeholder="0.00" className={inputCls} />
         </Field>
         <Field label="Bill / Voucher No.">
-          <input
-            type="text"
-            value={form.bill_voucher_no}
-            onChange={e => set('bill_voucher_no', e.target.value)}
-            placeholder="e.g. INV-0042"
-            className={inputCls}
-          />
+          <input type="text" value={form.bill_voucher_no} onChange={e => set('bill_voucher_no', e.target.value)} placeholder="e.g. INV-0042" className={inputCls} />
         </Field>
         {(form.income_category === 'receipt' || form.income_category === 'daily_fees') && (
           <Field label="Receipt No.">
-            <input
-              type="text"
-              value={form.receipt_no}
-              onChange={e => set('receipt_no', e.target.value)}
-              placeholder="e.g. RCP-001"
-              className={inputCls}
-            />
+            <input type="text" value={form.receipt_no} onChange={e => set('receipt_no', e.target.value)} placeholder="e.g. RCP-001" className={inputCls} />
           </Field>
         )}
         {form.income_category === 'book' && (
           <Field label="Book No.">
-            <input
-              type="text"
-              value={form.book_no}
-              onChange={e => set('book_no', e.target.value)}
-              placeholder="e.g. BK-07"
-              className={inputCls}
-            />
+            <input type="text" value={form.book_no} onChange={e => set('book_no', e.target.value)} placeholder="e.g. BK-07" className={inputCls} />
           </Field>
         )}
         <div className="col-span-2">
           <Field label="Notes">
-            <textarea
-              value={form.notes}
-              onChange={e => set('notes', e.target.value)}
-              rows={3}
-              placeholder="Additional details…"
-              className={`${inputCls} resize-none`}
-            />
+            <textarea value={form.notes} onChange={e => set('notes', e.target.value)} rows={3} placeholder="Additional details…" className={`${inputCls} resize-none`} />
           </Field>
         </div>
       </div>
@@ -326,11 +299,7 @@ function ExpenditureForm({ initial, onSave, onCancel, saving, staffList }: Expen
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2">
           <Field label="Expenditure Category" required>
-            <select
-              value={form.expenditure_category}
-              onChange={e => set('expenditure_category', e.target.value as ExpenditureCategory)}
-              className={selectCls}
-            >
+            <select value={form.expenditure_category} onChange={e => set('expenditure_category', e.target.value as ExpenditureCategory)} className={selectCls}>
               {EXPENDITURE_CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
             </select>
           </Field>
@@ -339,22 +308,12 @@ function ExpenditureForm({ initial, onSave, onCancel, saving, staffList }: Expen
           <div className="col-span-2">
             <Field label="Staff Member">
               {staffList.length > 0 ? (
-                <select
-                  value={form.staff_name}
-                  onChange={e => set('staff_name', e.target.value)}
-                  className={selectCls}
-                >
+                <select value={form.staff_name} onChange={e => set('staff_name', e.target.value)} className={selectCls}>
                   <option value="">— All / General —</option>
                   {staffList.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               ) : (
-                <input
-                  type="text"
-                  value={form.staff_name}
-                  onChange={e => set('staff_name', e.target.value)}
-                  placeholder="Staff member name"
-                  className={inputCls}
-                />
+                <input type="text" value={form.staff_name} onChange={e => set('staff_name', e.target.value)} placeholder="Staff member name" className={inputCls} />
               )}
             </Field>
           </div>
@@ -362,13 +321,7 @@ function ExpenditureForm({ initial, onSave, onCancel, saving, staffList }: Expen
         {needsVehicle && (
           <div className="col-span-2">
             <Field label="Vehicle Number">
-              <input
-                type="text"
-                value={form.vehicle_no}
-                onChange={e => set('vehicle_no', e.target.value)}
-                placeholder="e.g. KL-07 AB 1234"
-                className={inputCls}
-              />
+              <input type="text" value={form.vehicle_no} onChange={e => set('vehicle_no', e.target.value)} placeholder="e.g. KL-07 AB 1234" className={inputCls} />
             </Field>
           </div>
         )}
@@ -376,32 +329,14 @@ function ExpenditureForm({ initial, onSave, onCancel, saving, staffList }: Expen
           <input type="date" value={form.date} onChange={e => set('date', e.target.value)} className={inputCls} />
         </Field>
         <Field label="Amount (₹)" required>
-          <input
-            type="number" min="0" step="0.01"
-            value={form.amount}
-            onChange={e => set('amount', e.target.value as unknown as number)}
-            placeholder="0.00"
-            className={inputCls}
-          />
+          <input type="number" min="0" step="0.01" value={form.amount} onChange={e => set('amount', e.target.value as unknown as number)} placeholder="0.00" className={inputCls} />
         </Field>
         <Field label="Bill / Voucher No.">
-          <input
-            type="text"
-            value={form.bill_voucher_no}
-            onChange={e => set('bill_voucher_no', e.target.value)}
-            placeholder="e.g. VCH-0099"
-            className={inputCls}
-          />
+          <input type="text" value={form.bill_voucher_no} onChange={e => set('bill_voucher_no', e.target.value)} placeholder="e.g. VCH-0099" className={inputCls} />
         </Field>
         <div className="col-span-2">
           <Field label="Notes">
-            <textarea
-              value={form.notes}
-              onChange={e => set('notes', e.target.value)}
-              rows={3}
-              placeholder="Additional details…"
-              className={`${inputCls} resize-none`}
-            />
+            <textarea value={form.notes} onChange={e => set('notes', e.target.value)} rows={3} placeholder="Additional details…" className={`${inputCls} resize-none`} />
           </Field>
         </div>
       </div>
@@ -418,16 +353,13 @@ function ExpenditureForm({ initial, onSave, onCancel, saving, staffList }: Expen
 
 // ─── Balance Sheet Row ────────────────────────────────────────────────────────
 
-function BSRow({
-  entry, index, onDelete, onEdit,
-}: {
+function BSRow({ entry, index, onDelete, onEdit }: {
   entry: AccountEntry;
   index: number;
   onDelete: (id: string) => void;
   onEdit: (entry: AccountEntry) => void;
 }) {
   const isIncome = entry.type === 'income';
-
   const categoryLabel = isIncome
     ? resolveIncomeLabel(entry.income_category)
     : resolveExpenditureLabel(entry.expenditure_category);
@@ -440,9 +372,7 @@ function BSRow({
         ? `Book: ${entry.book_no}`
         : entry.receipt_no
           ? `Receipt: ${entry.receipt_no}`
-          : entry.notes
-            ? entry.notes
-            : null;
+          : entry.notes ?? null;
 
   const amount = Number(entry.amount);
 
@@ -454,29 +384,25 @@ function BSRow({
       </td>
       <td className="px-3 py-2.5">
         <p className="text-sm text-slate-800 font-medium leading-tight">{categoryLabel}</p>
-        {subLabel && <p className="text-xs text-slate-400 mt-0.5 truncate max-w-[200px]">{subLabel}</p>}
+        {subLabel && <p className="text-xs text-slate-400 mt-0.5 truncate max-w-50">{subLabel}</p>}
       </td>
       <td className="px-3 py-2.5 text-xs text-slate-400 whitespace-nowrap">
         {entry.bill_voucher_no || entry.receipt_no || <span className="text-slate-200">—</span>}
       </td>
       <td className="px-3 py-2.5 text-right whitespace-nowrap border-l border-slate-100">
-        {isIncome ? (
-          <span className="text-sm font-semibold tabular-nums text-teal-700">₹{fmt(amount)}</span>
-        ) : (
-          <span className="text-slate-200 text-sm">—</span>
-        )}
+        {isIncome
+          ? <span className="text-sm font-semibold tabular-nums text-teal-700">₹{fmt(amount)}</span>
+          : <span className="text-slate-200 text-sm">—</span>}
       </td>
       <td className="px-3 py-2.5 text-right whitespace-nowrap border-l border-slate-100">
-        {!isIncome ? (
-          <span className="text-sm font-semibold tabular-nums text-rose-600">₹{fmt(amount)}</span>
-        ) : (
-          <span className="text-slate-200 text-sm">—</span>
-        )}
+        {!isIncome
+          ? <span className="text-sm font-semibold tabular-nums text-rose-600">₹{fmt(amount)}</span>
+          : <span className="text-slate-200 text-sm">—</span>}
       </td>
       <td className="px-3 py-2.5 w-16 border-l border-slate-100">
         <div className="flex items-center justify-center gap-0.5">
           <button onClick={() => onEdit(entry)} className="p-1.5 text-slate-50 hover:text-white bg-blue-700 hover:bg-blue-800 rounded-md transition-colors" title="Edit">
-            <FilePen className="w-3.5 h-3.5 font-bold" />
+            <FilePen className="w-3.5 h-3.5" />
           </button>
           <button onClick={() => onDelete(entry.id)} className="p-1.5 rounded-md text-slate-50 hover:text-white bg-red-700 hover:bg-red-800 transition-colors" title="Delete">
             <Trash2 className="w-3.5 h-3.5" />
@@ -499,6 +425,247 @@ function ConfirmDialog({ message, onConfirm, onCancel }: {
         <div className="flex justify-end gap-2">
           <button onClick={onCancel} className="h-9 px-4 text-sm text-slate-600 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors">Cancel</button>
           <button onClick={onConfirm} className="h-9 px-4 text-sm font-semibold bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">Delete</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Day Balance Modal ────────────────────────────────────────────────────────
+
+function DayBalanceModal({
+  entries,
+  initialDate,
+  onClose,
+}: {
+  entries: AccountEntry[];
+  initialDate: string;
+  onClose: () => void;
+}) {
+  const todayStr = new Date().toISOString().split('T')[0];
+  const [selectedDate, setSelectedDate] = useState(initialDate);
+
+  const isFuture = selectedDate > todayStr;
+  const isSelectedToday = selectedDate === todayStr;
+
+  // Opening balance = everything strictly before selected date
+  const openingBalance = entries
+    .filter(e => e.date < selectedDate)
+    .reduce((sum, e) => sum + (e.type === 'income' ? Number(e.amount) : -Number(e.amount)), 0);
+
+  const dayEntries = entries
+    .filter(e => e.date === selectedDate)
+    .sort((a, b) => a.created_at.localeCompare(b.created_at));
+
+  const dayIncome = dayEntries
+    .filter(e => e.type === 'income')
+    .reduce((s, e) => s + Number(e.amount), 0);
+
+  const dayExpenditure = dayEntries
+    .filter(e => e.type === 'expenditure')
+    .reduce((s, e) => s + Number(e.amount), 0);
+
+  const dayNet         = dayIncome - dayExpenditure;
+  const closingBalance = openingBalance + dayNet;
+
+  const dateLabel = new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-IN', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+  });
+
+  const goToPrev  = () => setSelectedDate(d => stepDate(d, -1));
+  const goToNext  = () => setSelectedDate(d => stepDate(d, +1));
+  const goToToday = () => setSelectedDate(todayStr);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+      if (e.key === 'ArrowLeft')  goToPrev();
+      if (e.key === 'ArrowRight' && !isFuture) goToNext();
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onClose, isFuture]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 backdrop-blur-sm px-4"
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="bg-white rounded-xl border border-slate-200 shadow-xl w-full max-w-lg overflow-hidden">
+
+        {/* ── Header ───────────────────────────────────── */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
+              <CalendarDays className="w-4 h-4" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-slate-800">Daily balance summary</p>
+              <p className="text-xs text-slate-400">{dateLabel}</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg border bg-red-500 border-slate-200 text-slate-50 hover:text-slate-100 hover:bg-red-600 transition-colors"
+            aria-label="Close"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* ── Date navigator ───────────────────────────── */}
+        <div className="flex items-center gap-2 px-4 py-2.5 border-b border-slate-100 bg-slate-50/70">
+          <button
+            onClick={goToPrev}
+            className="h-8 w-8 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors shrink-0"
+            title="Previous day (←)"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={e => { if (e.target.value) setSelectedDate(e.target.value); }}
+            className="flex-1 h-8 px-3 text-sm text-slate-700 bg-white border border-slate-200 rounded-lg
+              focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+          />
+
+          <button
+            onClick={goToNext}
+            disabled={isSelectedToday}
+            className="h-8 w-8 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
+            title="Next day (→)"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+
+          {!isSelectedToday && (
+            <button
+              onClick={goToToday}
+              className="h-8 px-3 text-xs font-medium text-blue-600 border border-blue-200 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors whitespace-nowrap shrink-0"
+            >
+              Today
+            </button>
+          )}
+
+          {isSelectedToday && (
+            <span className="h-8 px-3 flex items-center text-xs font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-lg shrink-0">
+              Today
+            </span>
+          )}
+        </div>
+
+        {/* ── Balance strip ─────────────────────────────── */}
+        <div className="grid grid-cols-3 divide-x divide-slate-100 border-b border-slate-100">
+          <div className="px-4 py-3.5">
+            <p className="text-[11px] text-slate-400 uppercase tracking-wide mb-1.5">Opening balance</p>
+            <p className={`text-sm font-bold tabular-nums ${openingBalance >= 0 ? 'text-blue-700' : 'text-rose-600'}`}>
+              {openingBalance < 0 ? '−' : ''}₹{fmt(Math.abs(openingBalance))}
+            </p>
+            <p className="text-[10px] text-slate-400 mt-0.5">Before this day</p>
+          </div>
+
+          <div className="px-4 py-3.5">
+            <p className="text-[11px] text-slate-400 uppercase tracking-wide mb-1.5">Day's net</p>
+            {isFuture ? (
+              <p className="text-sm font-bold text-slate-300">—</p>
+            ) : (
+              <>
+                <p className={`text-sm font-bold tabular-nums ${dayNet >= 0 ? 'text-teal-700' : 'text-rose-600'}`}>
+                  {dayNet >= 0 ? '+' : ''}₹{fmt(dayNet)}
+                </p>
+                <p className="text-[10px] mt-0.5 flex items-center gap-1">
+                  <span className="text-teal-600 font-medium tabular-nums">+₹{fmt(dayIncome)}</span>
+                  <span className="text-slate-300">/</span>
+                  <span className="text-rose-500 font-medium tabular-nums">−₹{fmt(dayExpenditure)}</span>
+                </p>
+              </>
+            )}
+          </div>
+
+          <div className="px-4 py-3.5">
+            <p className="text-[11px] text-slate-400 uppercase tracking-wide mb-1.5">Closing balance</p>
+            {isFuture ? (
+              <p className="text-sm font-bold text-slate-300">—</p>
+            ) : (
+              <>
+                <p className={`text-sm font-bold tabular-nums ${closingBalance >= 0 ? 'text-teal-700' : 'text-rose-600'}`}>
+                  {closingBalance < 0 ? '−' : ''}₹{fmt(Math.abs(closingBalance))}
+                </p>
+                <p className="text-[10px] text-slate-400 mt-0.5">Next day's opening</p>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* ── Transaction list ──────────────────────────── */}
+        <div className="px-5 pt-3.5 pb-1 max-h-60 overflow-y-auto">
+          <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-2">
+            {isFuture
+              ? 'Future date — no transactions'
+              : `Transactions — ${dayEntries.length} ${dayEntries.length === 1 ? 'entry' : 'entries'}`}
+          </p>
+
+          {isFuture ? (
+            <div className="flex flex-col items-center justify-center py-7 gap-2 text-slate-300">
+              <CalendarDays className="w-8 h-8" />
+              <p className="text-sm">No data available for future dates.</p>
+            </div>
+          ) : dayEntries.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-7 gap-2 text-slate-400">
+              <FileText className="w-8 h-8 text-slate-200" />
+              <p className="text-sm">No transactions on this day.</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-slate-100">
+              {dayEntries.map(e => {
+                const isIncome = e.type === 'income';
+                const label    = isIncome
+                  ? resolveIncomeLabel(e.income_category)
+                  : resolveExpenditureLabel(e.expenditure_category);
+                const sub = e.staff_name
+                  ?? e.vehicle_no
+                  ?? (e.book_no    ? `Book: ${e.book_no}`       : null)
+                  ?? (e.receipt_no ? `Receipt: ${e.receipt_no}` : null)
+                  ?? e.notes
+                  ?? null;
+
+                return (
+                  <div key={e.id} className="flex items-center justify-between py-2.5 gap-3">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${isIncome ? 'bg-teal-500' : 'bg-rose-500'}`} />
+                      <div className="min-w-0">
+                        <p className="text-sm text-slate-800 truncate">{label}</p>
+                        {sub && <p className="text-xs text-slate-400 truncate">{sub}</p>}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {e.bill_voucher_no && (
+                        <span className="text-[10px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded font-mono">
+                          {e.bill_voucher_no}
+                        </span>
+                      )}
+                      <span className={`text-sm font-semibold tabular-nums ${isIncome ? 'text-teal-700' : 'text-rose-600'}`}>
+                        {isIncome ? '+' : '−'}₹{fmt(Number(e.amount))}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* ── Footer ───────────────────────────────────── */}
+        <div className="flex items-center justify-end px-5 py-3 mt-2 border-t border-slate-100 bg-slate-50/60">
+        
+          <button
+            onClick={onClose}
+            className="h-8 px-4 text-xs font-medium bg-red-600 text-slate-50 rounded-lg border border-slate-200 hover:bg-red-700 transition-colors"
+          >
+            Close
+          </button>
         </div>
       </div>
     </div>
@@ -528,29 +695,24 @@ export default function AccountsUI({ staffList = [] }: AccountsUIProps) {
   const [editTarget, setEditTarget]       = useState<AccountEntry | null>(null);
   const [deleteTarget, setDeleteTarget]   = useState<string | null>(null);
   const [toast, setToast]                 = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [showDayModal, setShowDayModal]   = useState(false);
 
   // ── Load data ─────────────────────────────────────────
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const [data, t] = await Promise.all([
-        fetchEntries({}),
-        fetchTotals(),
-      ]);
+      const [data, t] = await Promise.all([fetchEntries({}), fetchTotals()]);
       setEntries(data);
       setTotals(t);
     } catch (e: unknown) {
-     const message = e instanceof Error ? e.message : 'Failed to load entries';
-        setToast({ message, type: 'error' });
-      }finally {
+      const message = e instanceof Error ? e.message : 'Failed to load entries';
+      setToast({ message, type: 'error' });
+    } finally {
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
+  useEffect(() => { loadData(); }, [loadData]);
   useAccountsRealtime(loadData);
 
   // ── Sync filterMonth → dateFrom / dateTo ─────────────
@@ -566,41 +728,35 @@ export default function AccountsUI({ staffList = [] }: AccountsUIProps) {
   const handleDateFromChange = (v: string) => { setDateFrom(v); setFilterMonth(''); };
   const handleDateToChange   = (v: string) => { setDateTo(v);   setFilterMonth(''); };
 
-  // ── Sorted entries ────────────────────────────────────
+  // ── Sorted & filtered entries ─────────────────────────
   const sortedAll = [...entries].sort((a, b) => a.date.localeCompare(b.date));
 
   const effectiveDateFrom = dateFrom;
   const effectiveDateTo   = dateTo;
   const isFiltered        = !!(effectiveDateFrom || effectiveDateTo || typeFilter !== 'all' || search);
 
-  // ── Opening balance ───────────────────────────────────
   const openingBalance = effectiveDateFrom
     ? sortedAll
         .filter(e => e.date < effectiveDateFrom)
         .reduce((sum, e) => sum + (e.type === 'income' ? Number(e.amount) : -Number(e.amount)), 0)
     : 0;
 
-  // ── Filtered entries ──────────────────────────────────
   const filtered = sortedAll.filter(e => {
-    const q = search.toLowerCase();
-
+    const q       = search.toLowerCase();
     const inLabel = resolveIncomeLabel(e.income_category).toLowerCase().includes(q);
     const exLabel = resolveExpenditureLabel(e.expenditure_category).toLowerCase().includes(q);
-
     const matchSearch = !q || inLabel || exLabel
       || (e.staff_name      ?? '').toLowerCase().includes(q)
       || (e.vehicle_no      ?? '').toLowerCase().includes(q)
       || (e.bill_voucher_no ?? '').toLowerCase().includes(q)
       || (e.notes           ?? '').toLowerCase().includes(q)
       || (e.receipt_no      ?? '').toLowerCase().includes(q);
-
     const matchFrom = !effectiveDateFrom || e.date >= effectiveDateFrom;
     const matchTo   = !effectiveDateTo   || e.date <= effectiveDateTo;
     const matchType = typeFilter === 'all' || e.type === typeFilter;
     return matchSearch && matchFrom && matchTo && matchType;
   });
 
-  // ── Totals from filtered ──────────────────────────────
   const filteredIncome      = filtered.filter(e => e.type === 'income').reduce((s, e) => s + Number(e.amount), 0);
   const filteredExpenditure = filtered.filter(e => e.type === 'expenditure').reduce((s, e) => s + Number(e.amount), 0);
   const filteredNet         = filteredIncome - filteredExpenditure;
@@ -620,7 +776,7 @@ export default function AccountsUI({ staffList = [] }: AccountsUIProps) {
       await loadData();
       setView('list');
       setEditTarget(null);
-    }  catch (e: unknown) {
+    } catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'Failed to save entry';
       setToast({ message, type: 'error' });
     } finally {
@@ -636,9 +792,9 @@ export default function AccountsUI({ staffList = [] }: AccountsUIProps) {
       setTotals(t);
       setToast({ message: 'Entry deleted', type: 'success' });
     } catch (e: unknown) {
-        const message = e instanceof Error ? e.message : 'Failed to delete entry';
-        setToast({ message, type: 'error' });
-    }finally {
+      const message = e instanceof Error ? e.message : 'Failed to delete entry';
+      setToast({ message, type: 'error' });
+    } finally {
       setDeleteTarget(null);
     }
   };
@@ -668,20 +824,28 @@ export default function AccountsUI({ staffList = [] }: AccountsUIProps) {
         />
       )}
 
+      {showDayModal && (
+        <DayBalanceModal
+          entries={entries}
+          initialDate={new Date().toISOString().split('T')[0]}
+          onClose={() => setShowDayModal(false)}
+        />
+      )}
+
       {/* ── Summary Cards ─────────────────────────────── */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="bg-gradient-to-br from-teal-500 to-emerald-600 rounded-xl px-4 py-3.5 shadow-md">
+        <div className="bg-linear-to-br from-teal-500 to-emerald-600 rounded-xl px-4 py-3.5 shadow-md">
           <p className="text-xs text-teal-100 mb-1 font-medium uppercase tracking-wide">Total Income</p>
           <p className="text-xl font-bold text-white tabular-nums">₹{fmt(totals.income)}</p>
         </div>
-        <div className="bg-gradient-to-br from-rose-500 to-pink-600 rounded-xl px-4 py-3.5 shadow-md">
+        <div className="bg-linear-to-br from-rose-500 to-pink-600 rounded-xl px-4 py-3.5 shadow-md">
           <p className="text-xs text-rose-100 mb-1 font-medium uppercase tracking-wide">Total Expenditure</p>
           <p className="text-xl font-bold text-white tabular-nums">₹{fmt(totals.expenditure)}</p>
         </div>
         <div className={`rounded-xl px-4 py-3.5 shadow-md ${
           totals.balance >= 0
-            ? 'bg-gradient-to-br from-blue-500 to-indigo-600'
-            : 'bg-gradient-to-br from-orange-500 to-red-600'
+            ? 'bg-linear-to-br from-blue-500 to-indigo-600'
+            : 'bg-linear-to-br from-orange-500 to-red-600'
         }`}>
           <p className="text-xs text-blue-100 mb-1 font-medium uppercase tracking-wide">Balance</p>
           <p className="text-xl font-bold text-white tabular-nums">
@@ -749,7 +913,7 @@ export default function AccountsUI({ staffList = [] }: AccountsUIProps) {
 
           {/* Toolbar */}
           <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-100 flex-wrap">
-            <div className="relative min-w-[150px] max-w-[200px] flex-1">
+            <div className="relative min-w-37.5 max-w-50 flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
               <input
                 type="text" placeholder="Search…" value={search}
@@ -796,6 +960,14 @@ export default function AccountsUI({ staffList = [] }: AccountsUIProps) {
             <span className="text-xs text-slate-400 tabular-nums ml-auto">
               {filtered.length} {filtered.length === 1 ? 'entry' : 'entries'}
             </span>
+            <button
+              onClick={() => setShowDayModal(true)}
+              className="h-8 flex items-center gap-1.5 px-3 text-sm font-medium text-white rounded-lg bg-blue-600 hover:bg-blue-700 transition-colors"
+              title="View daily balance summary"
+            >
+              <CalendarDays className="w-3.5 h-3.5" />
+              Daily Summary
+            </button>
             <button onClick={() => openAdd('income')} className="h-8 flex items-center gap-1.5 px-3 text-sm font-medium text-white rounded-lg bg-teal-600 hover:bg-teal-700 transition-colors">
               <Plus className="w-3.5 h-3.5" /> Income
             </button>
@@ -804,7 +976,6 @@ export default function AccountsUI({ staffList = [] }: AccountsUIProps) {
             </button>
           </div>
 
-          {/* Loading */}
           {loading && (
             <div className="flex items-center justify-center py-16 gap-3 text-slate-400">
               <Loader2 className="w-5 h-5 animate-spin" />
@@ -812,7 +983,6 @@ export default function AccountsUI({ staffList = [] }: AccountsUIProps) {
             </div>
           )}
 
-          {/* Empty state */}
           {!loading && filtered.length === 0 && (
             <div className="flex flex-col items-center justify-center py-16 gap-3 text-slate-400">
               <FileText className="w-10 h-10 text-slate-200" />
@@ -826,10 +996,9 @@ export default function AccountsUI({ staffList = [] }: AccountsUIProps) {
             </div>
           )}
 
-          {/* Table */}
           {!loading && filtered.length > 0 && (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm min-w-[780px]">
+              <table className="w-full text-sm min-w-195">
                 <thead>
                   <tr className="border-b border-slate-200 bg-slate-50">
                     <th className="px-3 py-2.5 text-left text-xs font-medium text-slate-400 w-8">#</th>
