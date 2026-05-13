@@ -5,6 +5,17 @@ import { createBrowserClient } from '@supabase/ssr'
 import {
   ALL_STANDARDS, TUITION_FEE_TYPES, VEHICLE_FEE_TYPES, ACADEMIC_YEAR,
 } from '@/utils/actions/feeConstants'
+import {
+  Check,
+  Search,
+  X,
+  CheckCircle,
+  SkipForward,
+  XCircle,
+  Plus,
+  GraduationCap,
+  Bus,
+} from 'lucide-react'
 
 interface Student {
   id: number
@@ -108,7 +119,6 @@ export default function BulkFeeAssignment() {
     const selectedStudents = students.filter(s => selectedIds.has(s.id))
 
     for (const student of selectedStudents) {
-      // Check if this fee type already exists for this student
       const { data: existing } = await supabase
         .from('student_fees')
         .select('id')
@@ -183,7 +193,7 @@ export default function BulkFeeAssignment() {
                   : step > s.n
                   ? 'bg-teal-100 border-teal-400 text-teal-600'
                   : 'bg-gray-100 border-gray-300 text-gray-400'}`}>
-                {step > s.n ? '✓' : s.n}
+                {step > s.n ? <Check className="w-3.5 h-3.5" /> : s.n}
               </div>
               <p className={`text-xs mt-1 font-medium
                 ${step === s.n ? 'text-teal-600' : step > s.n ? 'text-teal-400' : 'text-gray-400'}`}>
@@ -233,19 +243,21 @@ export default function BulkFeeAssignment() {
             <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={() => setFeeCategory('tuition')}
-                className={`py-2.5 px-4 rounded-lg text-sm font-semibold border transition-all
+                className={`py-2.5 px-4 rounded-lg text-sm font-semibold border transition-all flex items-center justify-center gap-2
                   ${feeCategory === 'tuition'
                     ? 'bg-teal-600 text-white border-teal-600'
                     : 'bg-gray-50 text-gray-500 border-gray-200 hover:border-teal-300'}`}>
-                 Tuition Fee
+                <GraduationCap className="w-4 h-4" />
+                Tuition Fee
               </button>
               <button
                 onClick={() => setFeeCategory('vehicle')}
-                className={`py-2.5 px-4 rounded-lg text-sm font-semibold border transition-all
+                className={`py-2.5 px-4 rounded-lg text-sm font-semibold border transition-all flex items-center justify-center gap-2
                   ${feeCategory === 'vehicle'
                     ? 'bg-teal-600 text-white border-teal-600'
                     : 'bg-gray-50 text-gray-500 border-gray-200 hover:border-teal-300'}`}>
-                 Vehicle Fee
+                <Bus className="w-4 h-4" />
+                Vehicle Fee
               </button>
             </div>
           </div>
@@ -350,7 +362,6 @@ export default function BulkFeeAssignment() {
                   {selectedIds.size} of {students.length} selected
                 </p>
               </div>
-              {/* Select All / Deselect All */}
               {students.length > 0 && (
                 <div className="flex gap-2">
                   <button
@@ -371,7 +382,7 @@ export default function BulkFeeAssignment() {
 
             {/* Search */}
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></span>
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
               <input
                 type="text"
                 value={search}
@@ -384,7 +395,7 @@ export default function BulkFeeAssignment() {
                 <button
                   onClick={() => setSearch('')}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                  ×
+                  <X className="w-4 h-4" />
                 </button>
               )}
             </div>
@@ -413,9 +424,7 @@ export default function BulkFeeAssignment() {
                           ? 'bg-teal-600 border-teal-600'
                           : 'bg-white border-gray-300'}`}>
                         {isSelected && (
-                          <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                          </svg>
+                          <Check className="w-3 h-3 text-white" strokeWidth={3} />
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -464,8 +473,6 @@ export default function BulkFeeAssignment() {
           ════════════════════════════════════ */}
       {step === 3 && !assignResults && (
         <div className="space-y-4">
-
-          {/* Summary */}
           <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
             <div>
               <h2 className="text-sm font-bold text-gray-700">Step 3 — Confirm Assignment</h2>
@@ -537,7 +544,7 @@ export default function BulkFeeAssignment() {
                 disabled={assigning}
                 className="flex-1 bg-teal-600 text-white py-2.5 rounded-xl text-sm font-semibold
                   hover:bg-teal-700 disabled:opacity-50 transition-all">
-                {assigning ? 'Assigning...' : ` Assign to ${selectedIds.size} Students`}
+                {assigning ? 'Assigning...' : `Assign to ${selectedIds.size} Students`}
               </button>
             </div>
           </div>
@@ -575,8 +582,9 @@ export default function BulkFeeAssignment() {
           {/* Assigned list */}
           {assignResults.success.length > 0 && (
             <div>
-              <p className="text-xs font-semibold text-teal-600 mb-2">
-                 Successfully assigned ({assignResults.success.length})
+              <p className="text-xs font-semibold text-teal-600 mb-2 flex items-center gap-1">
+                <CheckCircle className="w-3.5 h-3.5" />
+                Successfully assigned ({assignResults.success.length})
               </p>
               <div className="space-y-1 max-h-40 overflow-y-auto">
                 {assignResults.success.map((name, i) => (
@@ -591,8 +599,9 @@ export default function BulkFeeAssignment() {
           {/* Skipped list */}
           {assignResults.skipped.length > 0 && (
             <div>
-              <p className="text-xs font-semibold text-yellow-600 mb-2">
-                 Skipped — already assigned ({assignResults.skipped.length})
+              <p className="text-xs font-semibold text-yellow-600 mb-2 flex items-center gap-1">
+                <SkipForward className="w-3.5 h-3.5" />
+                Skipped — already assigned ({assignResults.skipped.length})
               </p>
               <div className="space-y-1 max-h-40 overflow-y-auto">
                 {assignResults.skipped.map((name, i) => (
@@ -607,8 +616,9 @@ export default function BulkFeeAssignment() {
           {/* Failed list */}
           {assignResults.failed.length > 0 && (
             <div>
-              <p className="text-xs font-semibold text-red-500 mb-2">
-                 Failed ({assignResults.failed.length})
+              <p className="text-xs font-semibold text-red-500 mb-2 flex items-center gap-1">
+                <XCircle className="w-3.5 h-3.5" />
+                Failed ({assignResults.failed.length})
               </p>
               <div className="space-y-1 max-h-40 overflow-y-auto">
                 {assignResults.failed.map((name, i) => (
@@ -623,8 +633,9 @@ export default function BulkFeeAssignment() {
           <button
             onClick={handleReset}
             className="w-full bg-teal-600 text-white py-3 rounded-xl text-sm font-semibold
-              hover:bg-teal-700 transition-all">
-            + New Bulk Assignment
+              hover:bg-teal-700 transition-all flex items-center justify-center gap-2">
+            <Plus className="w-4 h-4" />
+            New Bulk Assignment
           </button>
         </div>
       )}

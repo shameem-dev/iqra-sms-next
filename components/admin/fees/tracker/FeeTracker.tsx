@@ -114,10 +114,9 @@ export default function FeeTrackerPage({ onGoToPayment }: Props) {
   }
 
   return (
-    <div className="p-4 max-w-5xl mx-auto">
+    <div className="p-4  mx-auto">
       <div className="flex justify-between items-center mb-5">
         <div>
-          <h1 className="text-2xl font-bold text-gray-700">Fee Tracker</h1>
           <p className="text-xs text-gray-400 mt-1">Academic Year: {ACADEMIC_YEAR}</p>
         </div>
         <button

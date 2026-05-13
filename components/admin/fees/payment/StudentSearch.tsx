@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { ArrowRight } from 'lucide-react'
 import { getStatusConfig, getFeeStatus } from '@/utils/actions/feeConstants'
 
 interface Student {
@@ -49,7 +50,6 @@ export default function StudentSearch({
 
       {selectedStandard && (
         <div className="relative">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">🔍</span>
           <input type="text" value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Search by name or admission no..."
             className="w-full border border-gray-300 rounded-xl pl-9 pr-4 py-2.5 text-sm text-gray-600 focus:outline-none focus:border-teal-400 bg-white" />
@@ -109,7 +109,10 @@ export default function StudentSearch({
                   </div>
                 </div>
                 <div className="flex justify-end mt-2">
-                  <span className="text-xs text-gray-300 group-hover:text-teal-500 transition-all">View Details →</span>
+                  <span className="text-xs text-gray-300 group-hover:text-teal-500 transition-all flex items-center gap-1">
+                    View Details
+                    <ArrowRight size={14} />
+                  </span>
                 </div>
               </button>
             )

@@ -12,6 +12,7 @@ const SECTIONS: Record<string, string> = {
   admission: "Admission Register",
   staff: "Staff Management",
   marks: "Marks",
+  fees: "Fees",
   "certificates & reports": "Certificates & Reports",
 }
 
@@ -24,6 +25,7 @@ const descriptions: Record<string, string> = {
   admission: "Manage student admissions and parent login access",
   staff: "Manage staff members and their details",
   marks: "Enter and manage student marks and assessments",
+  fees: "Track student fee payments, balances, and payment history",
   "certificates & reports": "Generate certificates and progress reports",
 }
 

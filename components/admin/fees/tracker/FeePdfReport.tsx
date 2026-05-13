@@ -171,7 +171,7 @@ export default function FeePdfReport({ students, standard, academicYear, feeType
 
   return (
     <button onClick={handlePrint}
-      className="flex items-center gap-2 border border-gray-300 text-gray-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 hover:border-gray-400 transition-all">
+      className="flex items-center gap-2 border border-gray-300 text-white-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-600 hover:border-white transition-all bg-gray-700">
       Print / Export Report
     </button>
   )

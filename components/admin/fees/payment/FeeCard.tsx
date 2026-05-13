@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { FeeRowUI } from '@/type/fees'
 import { getStatusConfig } from '@/utils/actions/feeConstants'
-import { SquarePen } from 'lucide-react'
+import { SquarePen, AlertCircle } from 'lucide-react'
 
 interface Props {
   fee: FeeRowUI
@@ -88,7 +88,10 @@ export default function FeeCard({ fee, onEdit }: Props) {
             </button>
           </div>
           {fee.paid_amount > 0 && (
-            <p className="text-xs text-yellow-600 mt-1"> Min: ₹{fee.paid_amount.toLocaleString()} (already paid)</p>
+            <p className="text-xs text-yellow-600 mt-1 flex items-center gap-1">
+              <AlertCircle size={11} />
+              Min: ₹{fee.paid_amount.toLocaleString()} (already paid)
+            </p>
           )}
         </div>
       ) : (
