@@ -14,7 +14,7 @@ export const FEE_TYPES = [
   { key: 'Admission Fee',       label: 'Admission Fee'       },
   { key: 'Welfare Fee',         label: 'Welfare Fee'         },
   { key: 'Book Fee',            label: 'Book Fee'            },
-  { key: 'Exam Fee',            label: 'Exam Fee'            },
+  { key: 'Uniform Fee',            label: 'Uniform Fee'            },
   { key: 'Others',              label: 'Others'              },
   { key: 'Tuition Fee 1',       label: 'Tuition Fee 1'       },
   { key: 'Tuition Fee 2',       label: 'Tuition Fee 2'       },

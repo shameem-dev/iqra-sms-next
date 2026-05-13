@@ -30,7 +30,7 @@ const ACTIVE_STATUS_COLOR: Record<string, string> = {
   pending: 'bg-red-500 text-white border-red-500',
 }
 
-const FIXED_FEE_TYPES   = ['Admission Fee', 'Welfare Fee', 'Book Fee', 'Exam Fee', 'Others']
+const FIXED_FEE_TYPES   = ['Admission Fee', 'Welfare Fee', 'Book Fee', 'Uniform Fee', 'Others']
 const TUITION_FEE_TYPES = ['Tuition Fee 1', 'Tuition Fee 2', 'Tuition Fee 3', 'Tuition Fee 4']
 const VEHICLE_FEE_TYPES = [
   'Vehicle Fee - June',
