@@ -5,6 +5,7 @@ import FeeCard from './FeeCard'
 import TuitionFeeSection from './TuitionFeeSection'
 import VehicleFeeSection from './VehicleFeeSection'
 import { getStatusConfig, getFeeStatus } from '@/utils/actions/feeConstants'
+import { Plus, CheckCircle2 } from 'lucide-react'
 
 interface Student {
   id: number
@@ -161,14 +162,18 @@ export default function StudentFeeSummary({
       {grandBalance > 0 && !showPaymentForm && (
         <button
           onClick={onRecordPayment}
-          className="w-full bg-teal-600 text-white py-3 rounded-xl text-sm font-semibold hover:bg-teal-700 transition-all">
-          + Record New Payment
+          className="w-full flex items-center justify-center gap-2 bg-teal-600 text-white py-3 rounded-xl text-sm font-semibold hover:bg-teal-700 transition-all">
+          <Plus size={16} />
+          Record New Payment
         </button>
       )}
 
       {grandBalance === 0 && grandTotal > 0 && (
         <div className="text-center py-4 bg-teal-50 border border-teal-200 rounded-xl">
-          <p className="text-teal-600 font-semibold text-sm"> All fees paid!</p>
+          <p className="text-teal-600 font-semibold text-sm flex items-center justify-center gap-2">
+            <CheckCircle2 size={16} />
+            All fees paid!
+          </p>
           <p className="text-xs text-teal-400 mt-0.5">No outstanding balance</p>
         </div>
       )}

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { FeeRowUI } from '@/type/fees'
 import { getStatusConfig, getDefaultAmount } from '@/utils/actions/feeConstants'
+import { BookOpen, Plus, Trash2, Save } from 'lucide-react'
 
 interface Props {
   tuitionFees: FeeRowUI[]
@@ -47,11 +48,17 @@ export default function TuitionFeeSection({ tuitionFees, studentStandard, onAdd,
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-4">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="text-sm font-bold text-gray-600">📚 Tuition Fees</h3>
+        <h3 className="text-sm font-bold text-gray-600 flex items-center gap-2">
+            <BookOpen size={16} />
+            Tuition Fees
+          </h3>
         {canAddMore && !showAddInput && (
           <button onClick={handleShowAdd}
-            className="text-xs px-3 py-1 rounded-full border border-dashed border-teal-400 text-teal-500 hover:bg-teal-50 transition-all">
-            + Add
+            className="flex items-center gap-1 text-xs px-3 py-1 rounded-full border border-dashed border-teal-400 text-teal-500 hover:bg-teal-50 transition-all">
+            
+              <Plus size={14} />
+              Add
+            
           </button>
         )}
       </div>
@@ -79,7 +86,7 @@ export default function TuitionFeeSection({ tuitionFees, studentStandard, onAdd,
                   </span>
                   <button onClick={() => handleDelete(fee)} disabled={deleting === fee.id}
                     className="w-6 h-6 flex items-center justify-center rounded-full bg-white border border-gray-200 text-gray-400 hover:text-red-500 hover:border-red-300 text-xs shadow-sm disabled:opacity-50">
-                    {deleting === fee.id ? '...' : '🗑'}
+                    {deleting === fee.id ? '...' : <Trash2 size={14} />}
                   </button>
                 </div>
               </div>
@@ -140,7 +147,14 @@ export default function TuitionFeeSection({ tuitionFees, studentStandard, onAdd,
             <div className="flex gap-2">
               <button onClick={handleSaveAdd} disabled={adding}
                 className="flex-1 bg-teal-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-teal-700 disabled:opacity-50">
-                {adding ? 'Saving...' : ' Save'}
+                {adding ? (
+  'Saving...'
+) : (
+  <span className="flex items-center justify-center gap-1">
+    <Save size={14} />
+    Save
+  </span>
+)}
               </button>
               <button onClick={() => setShowAddInput(false)}
                 className="flex-1 border border-gray-300 text-gray-500 py-2 rounded-lg text-sm font-medium hover:bg-gray-50">

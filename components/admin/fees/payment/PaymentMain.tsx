@@ -331,17 +331,17 @@ export default function PaymentPage({ preselectedStudent, onBack }: Props) {
   // ── 6. Render ─────────────────────────────────────────────────────────
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <div className="p-6  mx-auto">
 
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-700">Fee Payment Entry</h1>
+
           <p className="text-xs text-gray-400 mt-1">Academic Year: {ACADEMIC_YEAR}</p>
         </div>
         {onBack && (
           <button onClick={onBack}
-            className="border border-gray-300 text-gray-500 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50">
+            className="border border-gray-300 text-white0 px-4 py-2 bg-gray-600 rounded-lg text-sm font-medium hover:bg-gray-500">
             ← Back to Tracker
           </button>
         )}

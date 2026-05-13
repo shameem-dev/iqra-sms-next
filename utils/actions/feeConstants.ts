@@ -16,7 +16,6 @@ export const TUITION_FEE_TYPES = [
 ] as const
 
 export const VEHICLE_FEE_TYPES = [
-  
   'Vehicle Fee - June',
   'Vehicle Fee - July',
   'Vehicle Fee - August',
@@ -49,33 +48,94 @@ export const GRADE_STANDARDS = [
 
 export const ALL_STANDARDS = [...FS_STANDARDS, ...GRADE_STANDARDS]
 
-export const FS_FEES: Record<string, number> = {
-  'Admission Fee':  500,
-  'Welfare Fee':    200,
-  'Book Fee':       300,
-  'Uniform Fee':    100,
-  'Tuition Fee 1': 1000,
-  'Tuition Fee 2': 1000,
-  'Tuition Fee 3': 1000,
-  'Tuition Fee 4': 1000,
+// ── Fee maps ────────────────────────────────────────────────────────────────
+
+export const FS1_FEES: Record<string, number> = {
+  'Admission Fee':  5000,
+  'Welfare Fee':    1500,
+  'Book Fee':       1500,   // ← updated
+  'Uniform Fee':    1200,
+  'Tuition Fee 1': 8500,
+  'Tuition Fee 2': 8500,
+  'Tuition Fee 3': 8500,
+  'Tuition Fee 4': 8500,
   'Others':           0,
 }
 
-export const GRADE_FEES: Record<string, number> = {
-  'Admission Fee':  750,
-  'Welfare Fee':    200,
-  'Book Fee':       400,
-  'Tuition Fee 1': 1200,
-  'Tuition Fee 2': 1200,
-  'Tuition Fee 3': 1200,
-  'Tuition Fee 4': 1200,
+export const FS2_FEES: Record<string, number> = {
+  'Admission Fee':  5000,
+  'Welfare Fee':    1500,
+  'Book Fee':       1600,   // ← updated
+  'Uniform Fee':    1200,
+  'Tuition Fee 1': 8500,
+  'Tuition Fee 2': 8500,
+  'Tuition Fee 3': 8500,
+  'Tuition Fee 4': 8500,
   'Others':           0,
 }
+
+export const GRADE1_FEES: Record<string, number> = {
+  'Admission Fee':  5000,
+  'Welfare Fee':    1500,
+  'Book Fee':       2300,   // ← updated
+  'Tuition Fee 1': 9000,
+  'Tuition Fee 2': 9000,
+  'Tuition Fee 3': 9000,
+  'Tuition Fee 4': 9000,
+  'Others':           0,
+}
+
+export const GRADE2_FEES: Record<string, number> = {
+  'Admission Fee':  5000,
+  'Welfare Fee':    1500,
+  'Book Fee':       2400,   // ← updated
+  'Tuition Fee 1': 9000,
+  'Tuition Fee 2': 9000,
+  'Tuition Fee 3': 9000,
+  'Tuition Fee 4': 9000,
+  'Others':           0,
+}
+
+export const GRADE3_FEES: Record<string, number> = {
+  'Admission Fee':  5000,
+  'Welfare Fee':    1500,
+  'Book Fee':       2500,   // ← updated
+  'Tuition Fee 1': 9000,
+  'Tuition Fee 2': 9000,
+  'Tuition Fee 3': 9000,
+  'Tuition Fee 4': 9000,
+  'Others':           0,
+}
+
+export const GRADE4_FEES: Record<string, number> = {
+  'Admission Fee':  5000,
+  'Welfare Fee':    1500,
+  'Book Fee':       2600,   // ← updated
+  'Tuition Fee 1': 9000,
+  'Tuition Fee 2': 9000,
+  'Tuition Fee 3': 9000,
+  'Tuition Fee 4': 9000,
+  'Others':           0,
+}
+
+// Keep a generic FS_FEES / GRADE_FEES if anything else in the codebase
+// references them — they now just point to FS1 and GRADE1 as a fallback.
+export const FS_FEES    = FS1_FEES
+export const GRADE_FEES = GRADE1_FEES
+
+// ── Helpers ─────────────────────────────────────────────────────────────────
 
 export function getDefaultAmount(feeType: string, standard: string): number {
-  const isFS = FS_STANDARDS.includes(standard)
-  const feeMap = isFS ? FS_FEES : GRADE_FEES
-  return feeMap[feeType] ?? 0
+  const s = standard.toUpperCase()
+
+  if (s.startsWith('FS1'))     return FS1_FEES[feeType]    ?? 0
+  if (s.startsWith('FS2'))     return FS2_FEES[feeType]    ?? 0
+  if (s.startsWith('GRADE 1')) return GRADE1_FEES[feeType] ?? 0
+  if (s.startsWith('GRADE 2')) return GRADE2_FEES[feeType] ?? 0
+  if (s.startsWith('GRADE 3')) return GRADE3_FEES[feeType] ?? 0
+  if (s.startsWith('GRADE 4')) return GRADE4_FEES[feeType] ?? 0
+
+  return 0
 }
 
 export function getFeeCategory(standard: string): 'FS' | 'GRADE' {
@@ -88,13 +148,11 @@ export function generateReceiptNo(): string {
   return `RCP-${year}-${random}`
 }
 
-  // ← FIXED: total === 0 now returns 'pending' instead of 'paid'
-  // This prevents new students with no fees set from showing as PAID
 export function getFeeStatus(
   paid: number,
   total: number
 ): 'paid' | 'partial' | 'pending' {
-  if (total === 0) return 'pending'   // ← only line changed
+  if (total === 0) return 'pending'
   if (paid >= total) return 'paid'
   if (paid > 0) return 'partial'
   return 'pending'

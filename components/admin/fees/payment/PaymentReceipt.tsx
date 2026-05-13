@@ -2,7 +2,7 @@
 
 import { useRef } from 'react'
 import { PaymentDetail } from '@/type/fees'
-import { Printer } from 'lucide-react'
+import { Printer, Plus, CheckCircle2 } from 'lucide-react'
 
 interface Props {
   receiptNo: string
@@ -157,7 +157,7 @@ export default function PaymentReceipt({
 
       {/* Success banner */}
       <div className="bg-teal-50 border border-teal-200 rounded-xl px-4 py-3 flex items-center gap-3">
-        <span className="text-2xl"></span>
+        <CheckCircle2 className="text-teal-600" size={28} />
         <div>
           <p className="text-sm font-semibold text-teal-700">Payment saved successfully!</p>
           <p className="text-xs text-teal-500 mt-0.5">Receipt No: {receiptNo}</p>
@@ -232,9 +232,9 @@ export default function PaymentReceipt({
         </button>
         <button
           onClick={onNewPayment}
-          className="flex-1 border border-gray-300 text-gray-500 py-2.5 rounded-xl
-            text-sm font-medium hover:bg-gray-50">
-          + New Payment
+          className="flex-1 flex items-center justify-center gap-2 border border-gray-300 text-gray-500 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50">
+           <Plus size={16} />
+             New Payment
         </button>
       </div>
     </div>
