@@ -2,7 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
-import { Save, Loader2, ChevronLeft, ChevronRight } from 'lucide-react'
+import {
+  Save, Loader2, ChevronLeft, ChevronRight, CheckCircle2,
+  CalendarDays,
+} from 'lucide-react'
 
 interface Props {
   classAssignment: any
@@ -11,14 +14,39 @@ interface Props {
 
 type Status = 'present' | 'absent'
 
-const STATUS_CONFIG: Record<Status, { label: string; color: string }> = {
-  present: { label: 'P', color: 'bg-emerald-500 text-white' },
-  absent:  { label: 'A', color: 'bg-red-500 text-white' },
-}
-
 const STATUS_CYCLE: Record<Status, Status> = {
   present: 'absent',
-  absent:  'present',
+  absent: 'present',
+}
+
+const TYPE_EMOJI: Record<string, string> = {
+  holiday: '🎉',
+  leave: '📅',
+  exam: '📝',
+  event: '🎊',
+}
+
+function formatDisplayDate(dateStr: string) {
+  const d = new Date(dateStr + 'T00:00:00')
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const yesterday = new Date(today)
+  yesterday.setDate(today.getDate() - 1)
+
+  if (d.getTime() === today.getTime())
+    return {
+      label: 'Today',
+      sub: d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
+    }
+  if (d.getTime() === yesterday.getTime())
+    return {
+      label: 'Yesterday',
+      sub: d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
+    }
+  return {
+    label: d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' }),
+    sub: d.getFullYear().toString(),
+  }
 }
 
 export default function TeacherAttendance({ classAssignment, userId }: Props) {
@@ -28,82 +56,67 @@ export default function TeacherAttendance({ classAssignment, userId }: Props) {
   )
 
   const standard = classAssignment.standard
-  const today    = new Date().toISOString().split('T')[0]
+  const today = new Date().toISOString().split('T')[0]
 
   const [selectedDate, setSelectedDate] = useState(today)
-  const [students, setStudents]         = useState<any[]>([])
-  const [attendance, setAttendance]     = useState<Record<number, Status>>({})
-  const [loading, setLoading]           = useState(false)
-  const [saving, setSaving]             = useState(false)
-  const [saved, setSaved]               = useState(false)
-  const [error, setError]               = useState('')
-
-  // ── Holiday state ─────────────────────────────────────────────────────────
+  const [students, setStudents] = useState<any[]>([])
+  const [attendance, setAttendance] = useState<Record<number, Status>>({})
+  const [loading, setLoading] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [error, setError] = useState('')
   const [holidays, setHolidays] = useState<Record<string, { title: string; type: string }>>({})
 
-  // ── Load all holidays once ────────────────────────────────────────────────
+  // Load holidays once
   useEffect(() => {
     ;(async () => {
-      const { data } = await supabase
-        .from('school_holidays')
-        .select('date, title, type')
+      const { data } = await supabase.from('school_holidays').select('date, title, type')
       const map: Record<string, { title: string; type: string }> = {}
       ;(data || []).forEach((h: any) => { map[h.date] = { title: h.title, type: h.type } })
       setHolidays(map)
     })()
   }, [])
 
-  // ── Load students + attendance for selected date ───────────────────────────
+  // Load students + attendance whenever date changes
   useEffect(() => {
     ;(async () => {
-      setLoading(true); setError('')
+      setLoading(true)
+      setError('')
 
       const { data: studentData } = await supabase
         .from('students_list')
-        .select('id, name, admission_no, gender')
+        .select('id, name, admission_no')
         .eq('standard', standard)
         .order('name')
 
       if (!studentData) { setLoading(false); return }
+      setStudents(studentData)
 
-      // Sort: Male first → Female, then alphabetical within each group
-      const sorted = [...studentData].sort((a, b) => {
-        const genderOrder: Record<string, number> = { Male: 0, Female: 1 }
-        const gDiff = (genderOrder[a.gender] ?? 2) - (genderOrder[b.gender] ?? 2)
-        return gDiff !== 0 ? gDiff : a.name.localeCompare(b.name)
-      })
-      setStudents(sorted)
-
-      // Load existing attendance for this date
       const { data: attData } = await supabase
         .from('attendance')
         .select('student_id, status')
         .eq('standard', standard)
         .eq('date', selectedDate)
 
-      // Build map — default all to 'present'
       const attMap: Record<number, Status> = {}
-      sorted.forEach(s => {
+      studentData.forEach(s => {
         const existing = attData?.find(a => a.student_id === s.id)
-        attMap[s.id]   = (existing?.status as Status) || 'present'
+        attMap[s.id] = (existing?.status as Status) || 'present'
       })
       setAttendance(attMap)
       setLoading(false)
     })()
   }, [selectedDate, standard])
 
-  // ── Derived: is selected date a holiday ───────────────────────────────────
-  const holidayInfo  = holidays[selectedDate]
-  const isHoliday    = !!holidayInfo
+  // Derived
+  const holidayInfo = holidays[selectedDate]
+  const isHoliday = !!holidayInfo
+  const presentCount = Object.values(attendance).filter(s => s === 'present').length
+  const absentCount = Object.values(attendance).filter(s => s === 'absent').length
+  const totalCount = students.length
+  const presentPct = totalCount > 0 ? Math.round((presentCount / totalCount) * 100) : 0
+  const dateDisplay = formatDisplayDate(selectedDate)
 
-  const TYPE_EMOJI: Record<string, string> = {
-    holiday: '🎉',
-    leave:   '📅',
-    exam:    '📝',
-    event:   '🎊',
-  }
-
-  // ── Toggle present ↔ absent ───────────────────────────────────────────────
   function toggleStatus(studentId: number) {
     setAttendance(prev => ({
       ...prev,
@@ -111,32 +124,27 @@ export default function TeacherAttendance({ classAssignment, userId }: Props) {
     }))
   }
 
-  // ── Mark all present or all absent ────────────────────────────────────────
   function markAll(status: Status) {
     const allMap: Record<number, Status> = {}
     students.forEach(s => { allMap[s.id] = status })
     setAttendance(allMap)
   }
 
-  // ── Save attendance ───────────────────────────────────────────────────────
   async function handleSave() {
-    if (isHoliday) return  // extra safety guard
+    if (isHoliday) return
     setSaving(true); setError(''); setSaved(false)
     try {
       const rows = students.map(student => ({
         student_id: student.id,
         standard,
-        date:       selectedDate,
-        status:     attendance[student.id] || 'present',
-        marked_by:  userId,
+        date: selectedDate,
+        status: attendance[student.id] || 'present',
+        marked_by: userId,
       }))
-
       const { error: upsertError } = await supabase
         .from('attendance')
         .upsert(rows, { onConflict: 'student_id,date' })
-
       if (upsertError) throw new Error(upsertError.message)
-
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
     } catch (err: any) {
@@ -146,205 +154,185 @@ export default function TeacherAttendance({ classAssignment, userId }: Props) {
     }
   }
 
-  // ── Date navigation ───────────────────────────────────────────────────────
   function changeDate(days: number) {
     const d = new Date(selectedDate)
     d.setDate(d.getDate() + days)
-    setSelectedDate(d.toISOString().split('T')[0])
+    const newDateStr = d.toISOString().split('T')[0]
+    if (newDateStr <= today) setSelectedDate(newDateStr)
   }
 
-  const presentCount = Object.values(attendance).filter(s => s === 'present').length
-  const absentCount  = Object.values(attendance).filter(s => s === 'absent').length
-
-  // ── Group students by gender ──────────────────────────────────────────────
-  const maleStudents   = students.filter(s => s.gender === 'Male')
-  const femaleStudents = students.filter(s => s.gender === 'Female')
-  const otherStudents  = students.filter(s => s.gender !== 'Male' && s.gender !== 'Female')
-
-  function renderGroup(group: any[], label: string, color: string) {
-    if (group.length === 0) return null
-    return (
-      <>
-        <tr className={color}>
-          <td colSpan={3} className="px-4 py-1.5 text-xs font-bold uppercase tracking-widest border-b">
-            {label === 'Male' ? '♂' : label === 'Female' ? '♀' : '⚧'} {label}
-          </td>
-        </tr>
-        {group.map((student, i) => {
-          const status = attendance[student.id] || 'present'
-          const config = STATUS_CONFIG[status]
-          return (
-            <tr key={student.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-              <td className="px-4 py-3 text-xs text-slate-400 w-8">{i + 1}</td>
-              <td className="px-4 py-3">
-                <p className="font-medium text-slate-700 text-sm">{student.name}</p>
-                <p className="text-xs text-slate-400">{student.admission_no}</p>
-              </td>
-              <td className="px-4 py-3 text-center">
-                <button
-                  onClick={() => toggleStatus(student.id)}
-                  className={`w-10 h-10 rounded-xl text-sm font-bold transition-all hover:scale-110 active:scale-95 shadow-sm ${config.color}`}>
-                  {config.label}
-                </button>
-              </td>
-            </tr>
-          )
-        })}
-      </>
-    )
-  }
-
-  // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-3 pt-6">
 
-      {/* ── Header ── */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h2 className="text-base font-bold text-slate-700">Attendance — {standard}</h2>
-          <p className="text-xs text-slate-400 mt-0.5">{students.length} students</p>
-        </div>
-        {/* Hide save button on holidays */}
-        {!isHoliday && (
-          <button
-            onClick={handleSave}
-            disabled={saving || students.length === 0}
-            className="flex items-center gap-2 h-9 px-4 text-sm font-semibold bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-60 transition-colors">
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            {saving ? 'Saving…' : 'Save Attendance'}
-          </button>
-        )}
-      </div>
-
-      {/* ── Messages ── */}
-      {saved && (
-        <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">
-          ✅ Attendance saved for {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}!
-        </div>
-      )}
-      {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-          ⚠️ {error}
-        </div>
-      )}
-
-      {/* ── Date selector ── */}
-      <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-3">
-
-        {/* Date navigation */}
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div className="flex items-center gap-2">
-            <button onClick={() => changeDate(-1)}
-              className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors">
-              <ChevronLeft className="w-4 h-4 text-slate-500" />
-            </button>
-            <input type="date" value={selectedDate}
-              max={today}
-              onChange={e => setSelectedDate(e.target.value)}
-              className="h-9 px-3 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
-            <button onClick={() => changeDate(1)}
-              disabled={selectedDate >= today}
-              className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40 transition-colors">
-              <ChevronRight className="w-4 h-4 text-slate-500" />
-            </button>
-            {selectedDate === today && (
-              <span className="text-xs font-medium text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full">
-                Today
-              </span>
-            )}
-            {/* Holiday badge next to date */}
-            {isHoliday && (
-              <span className="text-xs font-medium text-orange-700 bg-orange-50 border border-orange-200 px-2 py-0.5 rounded-full flex items-center gap-1">
-                {TYPE_EMOJI[holidayInfo.type] || '🎌'} {holidayInfo.title}
-              </span>
-            )}
+      {/* ── Attendance Hero Card ── */}
+      <div className="bg-white rounded-2xl border border-slate-200 px-4 pt-4 pb-4 shadow-sm">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <p className="text-[10px] font-black tracking-[0.2em] uppercase mb-1 text-slate-500">
+              Class Attendance
+            </p>
+            <h1 className="text-2xl font-black text-slate-900 leading-none tracking-tight">
+              {standard}
+            </h1>
           </div>
 
-          {/* Stats — only shown on non-holidays */}
           {!isHoliday && (
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg">
-                ✓ Present: {presentCount}
-              </span>
-              <span className="text-xs font-medium text-red-700 bg-red-50 px-3 py-1.5 rounded-lg">
-                ✗ Absent: {absentCount}
-              </span>
-            </div>
+            <button
+              onClick={handleSave}
+              disabled={saving || students.length === 0}
+              className="inline-flex items-center bg-teal-700 text-white gap-1.5 h-10 px-5 rounded-xl text-[11px] font-bold tracking-wide transition-all disabled:opacity-40 active:scale-95 shrink-0 shadow-lg shadow-teal-100"
+            >
+              {saving
+                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                : saved
+                  ? <CheckCircle2 className="w-3.5 h-3.5" />
+                  : <Save className="w-3.5 h-3.5" />}
+              {saved ? 'Saved!' : 'Save'}
+            </button>
           )}
         </div>
 
-        {/* Mark all — only shown on non-holidays */}
-        {!isHoliday && (
-          <div className="flex items-center gap-2 pt-1 border-t border-slate-100">
-            <span className="text-xs text-slate-400">Mark all:</span>
-            <button onClick={() => markAll('present')}
-              className="text-xs px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition-colors font-medium">
-              All Present
-            </button>
-            <button onClick={() => markAll('absent')}
-              className="text-xs px-3 py-1.5 bg-red-50 text-red-700 border border-red-200 rounded-lg hover:bg-red-100 transition-colors font-medium">
-              All Absent
-            </button>
+        {/* Stat Pills */}
+        {!isHoliday && !loading && totalCount > 0 && (
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 bg-slate-100 border border-slate-200">
+              <span className="w-1.5 h-1.5 rounded-full bg-teal-500 shrink-0" />
+              <span className="text-[12px] font-bold text-slate-900">{presentCount}</span>
+              <span className="text-[10px] font-semibold text-slate-500 uppercase">Present</span>
+            </div>
+            <div className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 bg-slate-100 border border-slate-200">
+              <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+              <span className="text-[12px] font-bold text-slate-900">{absentCount}</span>
+              <span className="text-[10px] font-semibold text-slate-500 uppercase">Absent</span>
+            </div>
+            <div className="ml-auto flex items-baseline gap-0.5">
+              <span className="text-xl font-black text-slate-900 leading-none">{presentPct}</span>
+              <span className="text-[10px] font-bold text-slate-400">%</span>
+            </div>
           </div>
         )}
       </div>
 
-      {/* ── Holiday block ── */}
+      {/* ── Date Navigator ── */}
+      <div className="flex items-center gap-2 px-3 py-3 bg-teal-600 rounded-2xl">
+        <button
+          onClick={() => changeDate(-1)}
+          className="flex items-center justify-center w-10 h-10 rounded-xl active:scale-90 transition-all bg-teal-700/40 text-white"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+
+        <label className="flex-1 relative flex items-center gap-3 px-3.5 py-2 rounded-xl bg-white border border-teal-400 shadow-sm cursor-pointer">
+          <CalendarDays className="w-4 h-4 shrink-0 text-teal-600" />
+          <div className="flex-1 min-w-0">
+            <p className="text-[13px] font-bold text-slate-900 leading-none">{dateDisplay.label}</p>
+            <p className="text-[10px] text-slate-500 font-medium mt-0.5 uppercase tracking-wider">{dateDisplay.sub}</p>
+          </div>
+          <span className="text-[9px] font-black tracking-widest uppercase px-2 py-1 rounded-lg shrink-0 bg-teal-50 text-teal-700 border border-teal-100">
+            Change
+          </span>
+          <input
+            type="date"
+            value={selectedDate}
+            max={today}
+            onChange={e => setSelectedDate(e.target.value)}
+            className="absolute inset-0 opacity-0 cursor-pointer"
+          />
+        </label>
+
+        <button
+          onClick={() => changeDate(1)}
+          disabled={selectedDate >= today}
+          className="flex items-center justify-center w-10 h-10 rounded-xl active:scale-90 disabled:opacity-30 transition-all bg-teal-700/40 text-white"
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
+      </div>
+
+      {/* ── Progress Bar ── */}
+      {!isHoliday && !loading && totalCount > 0 && (
+        <div className="h-[4px] w-full bg-slate-200 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-teal-500 rounded-full transition-all duration-700 ease-out"
+            style={{ width: `${presentPct}%` }}
+          />
+        </div>
+      )}
+
+      {/* ── Main Content ── */}
       {isHoliday ? (
-        <div className="bg-orange-50 border border-orange-200 rounded-xl p-10 text-center">
-          <div className="text-5xl mb-4">
-            {TYPE_EMOJI[holidayInfo.type] || '🎌'}
-          </div>
-          <p className="text-lg font-bold text-orange-700">{holidayInfo.title}</p>
-          <p className="text-sm text-orange-500 mt-2">
-            This day is marked as a holiday by the admin.
-          </p>
-          <p className="text-xs text-orange-400 mt-1">
-            Attendance cannot be taken on this day.
-          </p>
-          <div className="mt-4 flex justify-center gap-2">
-            <button onClick={() => changeDate(-1)}
-              className="text-xs px-4 py-2 bg-white border border-orange-200 text-orange-600 rounded-lg hover:bg-orange-50 transition-colors">
-              ← Previous Day
-            </button>
-            {selectedDate < today && (
-              <button onClick={() => changeDate(1)}
-                className="text-xs px-4 py-2 bg-white border border-orange-200 text-orange-600 rounded-lg hover:bg-orange-50 transition-colors">
-                Next Day →
-              </button>
-            )}
-          </div>
+        <div className="bg-white rounded-2xl border border-slate-200 px-6 py-16 text-center shadow-sm">
+          <div className="text-5xl mb-4">{TYPE_EMOJI[holidayInfo.type] || '🎌'}</div>
+          <p className="text-[16px] font-bold text-slate-900">{holidayInfo.title}</p>
+          <p className="text-[11px] text-slate-400 mt-2 uppercase tracking-[0.2em] font-black">School Holiday</p>
         </div>
-
       ) : loading ? (
-        <div className="flex items-center justify-center py-16 text-slate-400 gap-2">
-          <Loader2 className="w-5 h-5 animate-spin" />
-          <span className="text-sm">Loading…</span>
+        <div className="bg-white rounded-2xl border border-slate-200 py-20 flex items-center justify-center gap-3 text-slate-400 shadow-sm">
+          <Loader2 className="w-5 h-5 animate-spin text-teal-500" />
+          <span className="text-[13px] font-medium tracking-wide uppercase">Updating Class...</span>
         </div>
-
-      ) : students.length === 0 ? (
-        <div className="text-center py-16 text-slate-400 text-sm">
-          No students found in {standard}
-        </div>
-
       ) : (
-        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-200">
-                <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 w-8">#</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500">Student</th>
-                <th className="px-4 py-3 text-center text-xs font-medium text-slate-500">
-                  Status — tap to toggle
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {renderGroup(maleStudents,   'Male',   'bg-blue-50 text-blue-500 border-blue-100')}
-              {renderGroup(femaleStudents, 'Female', 'bg-pink-50 text-pink-500 border-pink-100')}
-              {renderGroup(otherStudents,  'Other',  'bg-gray-50 text-gray-400 border-gray-100')}
-            </tbody>
-          </table>
+        <>
+          {/* Mark All buttons */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => markAll('present')}
+              className="flex-1 py-3 rounded-xl text-[11px] font-black tracking-widest uppercase border active:opacity-80 transition-all bg-teal-50 border-teal-200 text-teal-700"
+            >
+              All Present
+            </button>
+            <button
+              onClick={() => markAll('absent')}
+              className="flex-1 py-3 rounded-xl text-[11px] font-black tracking-widest uppercase border active:opacity-80 transition-all bg-rose-50 border-rose-200 text-rose-600"
+            >
+              All Absent
+            </button>
+          </div>
+
+          {/* Student List */}
+          <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+            <table className="w-full border-collapse">
+              <tbody>
+                {students.map((student, i) => {
+                  const status = attendance[student.id] || 'present'
+                  const present = status === 'present'
+                  return (
+                    <tr
+                      key={student.id}
+                      className="border-b border-slate-50 last:border-0 hover:bg-slate-50/60 transition-colors"
+                    >
+                      <td className="pl-4 pr-2 py-4 w-8 text-right text-[11px] tabular-nums text-slate-300 font-bold">
+                        {String(i + 1).padStart(2, '0')}
+                      </td>
+                      <td className="px-3 py-4">
+                        <p className="text-[14px] font-bold text-slate-900 leading-tight">{student.name}</p>
+                        <p className="text-[11px] text-slate-400 mt-0.5 font-mono tracking-tighter uppercase">{student.admission_no}</p>
+                      </td>
+                      <td className="pr-4 py-4 text-right">
+                        <button
+                          onClick={() => toggleStatus(student.id)}
+                          className={`inline-flex items-center justify-center w-10 h-10 rounded-xl text-[12px] font-black transition-all ring-1 ${
+                            present
+                              ? 'bg-teal-50 text-teal-600 ring-teal-200 shadow-sm shadow-teal-100'
+                              : 'bg-rose-50 text-rose-600 ring-rose-200 shadow-sm shadow-rose-100'
+                          }`}
+                        >
+                          {present ? 'P' : 'A'}
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+
+      {/* ── Error ── */}
+      {error && (
+        <div className="bg-rose-50 border border-rose-100 rounded-xl px-4 py-3 text-[12px] text-rose-600 font-bold text-center">
+          {error}
         </div>
       )}
     </div>
