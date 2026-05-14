@@ -18,8 +18,8 @@ interface Props {
 }
 
 const GENDER_STYLE: Record<string, { row: string; text: string; border: string }> = {
-  Male:   { row: 'bg-blue-50',  text: 'text-blue-500',  border: 'border-blue-100'  },
-  Female: { row: 'bg-pink-50',  text: 'text-pink-500',  border: 'border-pink-100'  },
+  Boy:   { row: 'bg-blue-50',  text: 'text-blue-500',  border: 'border-blue-100'  },
+  Girl: { row: 'bg-pink-50',  text: 'text-pink-500',  border: 'border-pink-100'  },
   Other:  { row: 'bg-gray-50',  text: 'text-gray-400',  border: 'border-gray-100'  },
 }
 
@@ -31,9 +31,9 @@ export default function AttendanceGrid({
   const daysInMonth = getDaysInMonth(year, month)
   const todayStr    = new Date().toISOString().split('T')[0]
 
-  const maleStudents   = students.filter(s => s.gender === 'Male')
-  const femaleStudents = students.filter(s => s.gender === 'Female')
-  const otherStudents  = students.filter(s => s.gender !== 'Male' && s.gender !== 'Female')
+  const maleStudents   = students.filter(s => s.gender === 'Boy')
+  const femaleStudents = students.filter(s => s.gender === 'Girl')
+  const otherStudents  = students.filter(s => s.gender !== 'Boy' && s.gender !== 'Girl')
 
   function renderGenderGroup(group: Student[], genderLabel: string) {
     if (group.length === 0) return null
@@ -44,7 +44,7 @@ export default function AttendanceGrid({
         <tr className={style.row}>
           <td colSpan={daysInMonth + 2}
             className={`px-3 py-1.5 text-xs font-bold uppercase tracking-widest border-b ${style.text} ${style.border}`}>
-            {genderLabel === 'Male' ? '' : genderLabel === 'Female' ? '' : ''} {genderLabel}
+            {genderLabel === 'Boy' ? '' : genderLabel === 'Girl' ? '' : ''} {genderLabel}
           </td>
         </tr>
 
@@ -223,8 +223,8 @@ export default function AttendanceGrid({
           </thead>
 
           <tbody>
-            {renderGenderGroup(maleStudents,   'Male')}
-            {renderGenderGroup(femaleStudents, 'Female')}
+            {renderGenderGroup(maleStudents,   'Boy')}
+            {renderGenderGroup(femaleStudents, 'Girl')}
             {renderGenderGroup(otherStudents,  'Other')}
           </tbody>
 

@@ -117,7 +117,7 @@ export default function FeeTrackerPage({ onGoToPayment }: Props) {
     <div className="p-4  mx-auto">
       <div className="flex justify-between items-center mb-5">
         <div>
-          <p className="text-xs text-gray-400 mt-1">Academic Year: {ACADEMIC_YEAR}</p>
+          <p className="text-xs text-gray-500 mt-1   py-1 rounded-2xl">Academic Year: {ACADEMIC_YEAR}</p>
         </div>
         <button
           onClick={() => onGoToPayment({ id: 0, name: '', admission_no: '', standard: '' })}
