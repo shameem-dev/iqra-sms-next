@@ -8,6 +8,7 @@ import AttendanceControls from './AttendanceControls'
 import AttendanceGrid from './AttendanceGrid'
 import AttendanceSummary from './AttendanceSummary'
 import HolidayManager from './HolidayManager'
+import AcademicYearSummary from './AcademicYearSummary'   // ← NEW
 
 export default function AdminAttendance() {
   const today = new Date()
@@ -20,7 +21,6 @@ export default function AdminAttendance() {
   const [year, setYear]   = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth())
   const [holidays, setHolidays] = useState<Record<string, string>>({})
-  // holidays = { 'YYYY-MM-DD': 'Holiday Title' }
 
   const {
     students, attendance, dirtyDates,
@@ -130,7 +130,7 @@ export default function AdminAttendance() {
         </div>
       )}
 
-      {/* ── Grid + Summary ── */}
+      {/* ── Grid + Monthly Summary + Annual Summary ── */}
       {selectedStandard && !loading && students.length > 0 && (
         <>
           <AttendanceGrid
@@ -151,6 +151,11 @@ export default function AdminAttendance() {
             attendance={attendance}
             year={year}
             month={month}
+          />
+          {/* ── NEW: Academic Year Summary ── */}
+          <AcademicYearSummary
+            students={students}
+            selectedStandard={selectedStandard}
           />
         </>
       )}

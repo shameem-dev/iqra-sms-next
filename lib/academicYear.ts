@@ -1,14 +1,13 @@
+export function getAcademicYear(): string {
+  const now = new Date()
+  const year = now.getFullYear()
+  const startYear = now.getMonth() >= 4 ? year : year - 1
+  return `${startYear}-${startYear + 1}`
+}
 
-  export function getAcademicYear(): string {
-    const now = new Date()
-    const month = now.getMonth() // 0-indexed, June = 5
-    const year = now.getFullYear()
-
-    // Academic year starts in June
-    // June 2025 → December 2025 → May 2026  =  "2025-2026"
-    if (month >= 5) {
-      return `${year}-${year + 1}`
-    } else {
-      return `${year - 1}-${year}`
-    }
-  }
+export function academicMonths(startYear: number): Array<{ year: number; month: number }> {
+  const months: Array<{ year: number; month: number }> = []
+  for (let m = 4; m <= 11; m++) months.push({ year: startYear,     month: m })
+  for (let m = 0; m <= 2;  m++) months.push({ year: startYear + 1, month: m })
+  return months
+}

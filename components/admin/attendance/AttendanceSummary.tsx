@@ -32,7 +32,7 @@ export default function AttendanceSummary({ students, attendance, year, month }:
 
   const maleStudents   = studentStats.filter(s => s.gender === 'Male')
   const femaleStudents = studentStats.filter(s => s.gender === 'Female')
-  const otherStudents  = studentStats.filter(s => s.gender !== 'Male' && s.gender !== 'Female')
+
 
   // Overall class stats
   const totalPresent = studentStats.reduce((s, st) => s + st.present, 0)
@@ -162,7 +162,7 @@ export default function AttendanceSummary({ students, attendance, year, month }:
         <tbody>
           {renderGroup(maleStudents,   'Male')}
           {renderGroup(femaleStudents, 'Female')}
-          {renderGroup(otherStudents,  'Other')}
+
         </tbody>
 
         {/* Footer totals */}
