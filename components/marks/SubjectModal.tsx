@@ -24,6 +24,11 @@ const subjectFormFields = [
   { label: 'Final', key: 'max_final' },
 ]
 
+const subjectTypes = [
+  { value: 'academic',      label: 'Academic'      },
+  { value: 'moral_studies', label: 'Moral Studies' },
+] as const
+
 export default function SubjectModal({
   show,
   onClose,
@@ -41,7 +46,7 @@ export default function SubjectModal({
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
 
         {/* Header */}
-        <div className="bg-gradient-to-r from-teal-600 to-teal-500 px-6 py-4">
+        <div className="bg-linear-to-r from-teal-600 to-teal-500 px-6 py-4">
           <div className="flex justify-between items-start">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">
@@ -84,6 +89,31 @@ export default function SubjectModal({
                 "
                 required
               />
+            </div>
+
+            {/* Subject Type */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
+                Subject Type
+              </label>
+              <div className="grid grid-cols-2 gap-2.5">
+                {subjectTypes.map(({ value, label }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setForm({ ...form, subject_type: value })}
+                    className={`
+                      py-2.5 rounded-xl text-sm font-semibold border-2 transition-all
+                      ${form.subject_type === value
+                        ? 'border-teal-500 bg-teal-50 text-teal-700'
+                        : 'border-slate-200 bg-white text-slate-400 hover:border-slate-300 hover:text-slate-500'
+                      }
+                    `}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Max Marks */}
@@ -157,6 +187,7 @@ export default function SubjectModal({
                 Cancel
               </button>
             </div>
+
           </form>
         </div>
       </div>
