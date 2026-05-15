@@ -4,6 +4,7 @@
 export interface Subject {
   id: number
   name: string
+  subject_type: 'academic' | 'moral_studies'
   standard: string
   max_ut1: number
   max_ut2: number
@@ -20,6 +21,7 @@ export interface Subject {
 export interface SubjectFormData {
   name: string
   standard: string
+  subject_type: 'academic' | 'moral_studies'
   max_ut1: number
   max_ut2: number
   max_ut3: number

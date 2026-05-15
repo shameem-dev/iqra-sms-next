@@ -2,14 +2,15 @@
 
 import { useState, useEffect } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
-import { Save, Loader2, CheckCircle2, BookOpen, ChevronRight } from 'lucide-react'
+import { Save, Loader2, CheckCircle2, BookOpen, Lock } from 'lucide-react'
+import { getAcademicYear } from '@/lib/academicYear'
 
 interface Props {
   subjectAssignments: any[]
   userId: string
 }
 
-const ACADEMIC_YEAR = '2025-2026'
+const ACADEMIC_YEAR = getAcademicYear()
 
 const EXAM_FIELDS = [
   { key: 'ut1',         label: 'UT 1',        maxKey: 'max_ut1',         color: 'blue' },
@@ -22,9 +23,9 @@ const EXAM_FIELDS = [
 ]
 
 const COLOR_MAP: Record<string, { filled: string; ring: string; label: string }> = {
-  blue:  { filled: 'bg-blue-50 border-blue-200 text-blue-700',   ring: 'focus:ring-blue-400',   label: 'text-blue-400' },
-  amber: { filled: 'bg-amber-50 border-amber-200 text-amber-700', ring: 'focus:ring-amber-400', label: 'text-amber-400' },
-  teal:  { filled: 'bg-teal-50 border-teal-200 text-teal-700',   ring: 'focus:ring-teal-400',   label: 'text-teal-500' },
+  blue:  { filled: 'bg-blue-50 border-blue-200 text-blue-700',    ring: 'focus:ring-blue-400',   label: 'text-blue-400' },
+  amber: { filled: 'bg-amber-50 border-amber-200 text-amber-700', ring: 'focus:ring-amber-400',  label: 'text-amber-400' },
+  teal:  { filled: 'bg-teal-50 border-teal-200 text-teal-700',    ring: 'focus:ring-teal-400',   label: 'text-teal-500' },
 }
 
 function getScorePercent(val: any, max: any): number | null {
@@ -45,6 +46,24 @@ function ScoreBadge({ pct }: { pct: number | null }) {
   )
 }
 
+// ─── Published Lock Banner ────────────────────────────────────────────────────
+function PublishedLockBanner({ standard }: { standard: string }) {
+  return (
+    <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3.5">
+      <div className="p-2 bg-amber-100 rounded-xl shrink-0">
+        <Lock className="w-4 h-4 text-amber-600" />
+      </div>
+      <div>
+        <p className="text-[12px] font-black text-amber-700 leading-tight">Results Published</p>
+        <p className="text-[11px] text-amber-600 mt-0.5">
+          Marks for <span className="font-bold">{standard}</span> are locked.
+          Contact an admin to make changes.
+        </p>
+      </div>
+    </div>
+  )
+}
+
 export default function TeacherMarks({ subjectAssignments, userId }: Props) {
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -62,15 +81,23 @@ export default function TeacherMarks({ subjectAssignments, userId }: Props) {
   const [saved, setSaved]                         = useState(false)
   const [error, setError]                         = useState('')
 
+  // ── Publish lock state ────────────────────────────────────────────────────
+  const [isPublished, setIsPublished]           = useState(false)
+  const [publishCheckDone, setPublishCheckDone] = useState(false)
+
   const subjectsInStandard = subjectAssignments.filter(a => a.standard === selectedStandard)
   const selectedAssignment = subjectAssignments.find(a => a.subject_id === selectedSubjectId)
-  const subject = selectedAssignment?.subjects
+  const subject            = selectedAssignment?.subjects
 
+  // ── When standard changes: reset subject + re-check publish status ────────
   useEffect(() => {
     const first = subjectsInStandard[0]
     setSelectedSubjectId(first?.subject_id || null)
+    if (selectedStandard) fetchPublishStatus(selectedStandard)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedStandard])
 
+  // ── Fetch marks when subject changes ─────────────────────────────────────
   useEffect(() => {
     if (!selectedSubjectId || !selectedStandard) return
     ;(async () => {
@@ -106,9 +133,25 @@ export default function TeacherMarks({ subjectAssignments, userId }: Props) {
       setMarks(marksMap)
       setLoading(false)
     })()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedSubjectId, selectedStandard])
 
+  // ── Fetch publish status from result_status table ─────────────────────────
+  async function fetchPublishStatus(standard: string) {
+    setPublishCheckDone(false)
+    const { data } = await supabase
+      .from('result_status')
+      .select('is_published')
+      .eq('standard', standard)
+      .eq('academic_year', ACADEMIC_YEAR)
+      .single()
+    setIsPublished(data?.is_published ?? false)
+    setPublishCheckDone(true)
+  }
+
   function updateMark(studentId: number, field: string, value: string) {
+    // Silently ignore if published — inputs are read-only anyway, but belt-and-suspenders
+    if (isPublished) return
     setMarks(prev => ({
       ...prev,
       [studentId]: { ...prev[studentId], [field]: value === '' ? null : Number(value) }
@@ -116,6 +159,12 @@ export default function TeacherMarks({ subjectAssignments, userId }: Props) {
   }
 
   async function handleSave() {
+    // Hard block — should not be reachable via UI when published, but guard anyway
+    if (isPublished) {
+      setError('Results are published. Mark editing is locked. Contact an admin.')
+      return
+    }
+
     setSaving(true); setError(''); setSaved(false)
     try {
       for (const studentId of Object.keys(marks)) {
@@ -158,7 +207,8 @@ export default function TeacherMarks({ subjectAssignments, userId }: Props) {
             </h1>
           </div>
 
-          {students.length > 0 && (
+          {/* Save button — hidden when published */}
+          {students.length > 0 && !isPublished && (
             <button
               onClick={handleSave}
               disabled={saving}
@@ -171,6 +221,14 @@ export default function TeacherMarks({ subjectAssignments, userId }: Props) {
                   : <Save className="w-3.5 h-3.5" />}
               {saved ? 'Saved!' : 'Save'}
             </button>
+          )}
+
+          {/* Lock indicator shown instead of Save when published */}
+          {students.length > 0 && isPublished && (
+            <span className="inline-flex items-center gap-1.5 h-10 px-4 bg-amber-50 border border-amber-200 text-amber-600 rounded-xl text-[11px] font-black">
+              <Lock className="w-3.5 h-3.5" />
+              Locked
+            </span>
           )}
         </div>
 
@@ -216,6 +274,11 @@ export default function TeacherMarks({ subjectAssignments, userId }: Props) {
           </div>
         )}
 
+        {/* Published lock banner */}
+        {publishCheckDone && isPublished && (
+          <PublishedLockBanner standard={selectedStandard} />
+        )}
+
         {/* Error */}
         {error && (
           <div className="bg-rose-50 border border-rose-100 rounded-xl px-4 py-2.5 text-[12px] text-rose-600 font-bold">
@@ -243,7 +306,6 @@ export default function TeacherMarks({ subjectAssignments, userId }: Props) {
           students.map((student, i) => {
             const studentMarks = marks[student.id] || {}
 
-            // Calculate overall filled count
             const filledCount = EXAM_FIELDS.filter(f =>
               studentMarks[f.key] !== null && studentMarks[f.key] !== undefined && studentMarks[f.key] !== ''
             ).length
@@ -281,13 +343,13 @@ export default function TeacherMarks({ subjectAssignments, userId }: Props) {
                   </div>
                 </div>
 
-                {/* Marks grid */}
-                <div className="p-3 grid grid-cols-2 gap-2">
+                {/* Marks grid — read-only overlay when published */}
+                <div className={`p-3 grid grid-cols-2 gap-2 ${isPublished ? 'pointer-events-none opacity-75' : ''}`}>
                   {EXAM_FIELDS.map(f => {
-                    const max = subject?.[f.maxKey]
-                    const val = studentMarks[f.key]
+                    const max    = subject?.[f.maxKey]
+                    const val    = studentMarks[f.key]
                     const filled = val !== null && val !== undefined && val !== ''
-                    const pct = getScorePercent(val, max)
+                    const pct    = getScorePercent(val, max)
                     const colors = COLOR_MAP[f.color] || COLOR_MAP.blue
 
                     return (
@@ -314,6 +376,9 @@ export default function TeacherMarks({ subjectAssignments, userId }: Props) {
                           value={val ?? ''}
                           onChange={e => updateMark(student.id, f.key, e.target.value)}
                           placeholder="—"
+                          // Inputs are truly disabled when published
+                          disabled={isPublished}
+                          readOnly={isPublished}
                           className={`w-full h-9 text-center rounded-lg border text-[15px] font-black focus:outline-none focus:ring-2 transition-colors bg-white ${
                             filled
                               ? `border-transparent ${colors.ring}`
@@ -322,19 +387,27 @@ export default function TeacherMarks({ subjectAssignments, userId }: Props) {
                             f.color === 'blue'  ? 'text-blue-700' :
                             f.color === 'amber' ? 'text-amber-700' :
                                                   'text-teal-700'
-                          ) : ''}`}
+                          ) : ''} ${isPublished ? 'cursor-not-allowed select-none' : ''}`}
                         />
                       </div>
                     )
                   })}
                 </div>
+
+                {/* Lock overlay label per card when published */}
+                {isPublished && (
+                  <div className="flex items-center gap-1.5 px-4 py-2 border-t border-amber-100 bg-amber-50">
+                    <Lock className="w-3 h-3 text-amber-500" />
+                    <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest">Read Only</span>
+                  </div>
+                )}
               </div>
             )
           })
         )}
 
-        {/* Bottom save for long lists */}
-        {students.length > 3 && (
+        {/* Bottom save — hidden when published */}
+        {students.length > 3 && !isPublished && (
           <button
             onClick={handleSave}
             disabled={saving}

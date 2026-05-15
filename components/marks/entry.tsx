@@ -13,6 +13,9 @@ import {
   Users,
   BarChart2,
   ClipboardList,
+  Lock,
+  Unlock,
+  Globe,
 } from 'lucide-react'
 import { Subject, MarkWithStudent, MarkFormData, SubjectFormData } from '@/type/mark'
 import SubjectModal from '@/components/marks/SubjectModal'
@@ -32,19 +35,18 @@ const STANDARDS = [
 ]
 
 const DEFAULT_STANDARD = 'FS1 A'
-const ACADEMIC_YEAR =  getAcademicYear()
+const ACADEMIC_YEAR = getAcademicYear()
 
 const examColumns: { label: string; field: keyof Omit<MarkFormData, 'id'>; maxKey: keyof Subject }[] = [
-  { label: 'UT1',        field: 'ut1',        maxKey: 'max_ut1' },
-  { label: 'UT2',        field: 'ut2',        maxKey: 'max_ut2' },
-  { label: 'UT3',        field: 'ut3',        maxKey: 'max_ut3' },
-  { label: 'UT4',        field: 'ut4',        maxKey: 'max_ut4' },
-  { label: 'Mid Term',   field: 'mid_term',   maxKey: 'max_mid_term' },
-  { label: 'Half Yearly',field: 'half_yearly',maxKey: 'max_half_yearly' },
-  { label: 'Final',      field: 'final',      maxKey: 'max_final' },
+  { label: 'UT1',         field: 'ut1',         maxKey: 'max_ut1' },
+  { label: 'UT2',         field: 'ut2',         maxKey: 'max_ut2' },
+  { label: 'UT3',         field: 'ut3',         maxKey: 'max_ut3' },
+  { label: 'UT4',         field: 'ut4',         maxKey: 'max_ut4' },
+  { label: 'Mid Term',    field: 'mid_term',    maxKey: 'max_mid_term' },
+  { label: 'Half Yearly', field: 'half_yearly', maxKey: 'max_half_yearly' },
+  { label: 'Final',       field: 'final',       maxKey: 'max_final' },
 ]
 
-// emptyMarks never includes id — new rows must not send id to Postgres
 const emptyMarks = (): MarkFormData => ({
   ut1: null, ut2: null, ut3: null, ut4: null,
   mid_term: null, half_yearly: null, final: null,
@@ -65,15 +67,9 @@ interface StudentAllMarks {
 
 // ─── Stat Card ────────────────────────────────────────────────────────────────
 function StatCard({
-  label,
-  value,
-  icon: Icon,
-  accent,
+  label, value, icon: Icon, accent,
 }: {
-  label: string
-  value: string | number
-  icon: React.ElementType
-  accent: string
+  label: string; value: string | number; icon: React.ElementType; accent: string
 }) {
   return (
     <div className="flex items-center gap-4 bg-white border border-slate-100 rounded-2xl px-5 py-4 shadow-sm">
@@ -102,13 +98,11 @@ function SectionHeader({ title, subtitle }: { title: string; subtitle?: string }
 function Alert({ type, message }: { type: 'error' | 'success'; message: string }) {
   const isError = type === 'error'
   return (
-    <div
-      className={`flex items-center gap-2.5 border rounded-xl px-4 py-3 text-sm font-medium ${
-        isError
-          ? 'bg-red-50 border-red-200 text-red-600'
-          : 'bg-emerald-50 border-emerald-200 text-emerald-700'
-      }`}
-    >
+    <div className={`flex items-center gap-2.5 border rounded-xl px-4 py-3 text-sm font-medium ${
+      isError
+        ? 'bg-red-50 border-red-200 text-red-600'
+        : 'bg-emerald-50 border-emerald-200 text-emerald-700'
+    }`}>
       {isError
         ? <AlertCircle size={15} className="shrink-0" />
         : <CheckCircle2 size={15} className="shrink-0" />
@@ -119,14 +113,8 @@ function Alert({ type, message }: { type: 'error' | 'success'; message: string }
 }
 
 // ─── Empty State ──────────────────────────────────────────────────────────────
-function EmptyState({
-  icon: Icon,
-  message,
-  action,
-}: {
-  icon: React.ElementType
-  message: string
-  action?: React.ReactNode
+function EmptyState({ icon: Icon, message, action }: {
+  icon: React.ElementType; message: string; action?: React.ReactNode
 }) {
   return (
     <div className="flex flex-col items-center justify-center py-20 text-center gap-3">
@@ -149,6 +137,72 @@ function Spinner() {
   )
 }
 
+// ─── Result Status Badge ──────────────────────────────────────────────────────
+/**
+ * Shows a pill badge with the current publish state.
+ * Admins also get a toggle button next to it.
+ */
+function ResultStatusBadge({
+  isPublished,
+  isAdmin,
+  loading,
+  onToggle,
+}: {
+  isPublished: boolean
+  isAdmin: boolean
+  loading: boolean
+  onToggle: () => void
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      {/* Status pill */}
+      <span
+        className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border ${
+          isPublished
+            ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+            : 'bg-amber-50 border-amber-200 text-amber-700'
+        }`}
+      >
+        {isPublished
+          ? <><Globe size={12} /> Result Published</>
+          : <><Lock size={12} /> Result Not Published</>
+        }
+      </span>
+
+      {/* Toggle button — admin only */}
+      {isAdmin && (
+        <button
+          onClick={onToggle}
+          disabled={loading}
+          title={isPublished ? 'Unpublish result (allow mark editing)' : 'Publish result (lock mark editing)'}
+          className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border transition shadow-sm disabled:opacity-60 ${
+            isPublished
+              ? 'bg-amber-500 border-amber-600 text-white hover:bg-amber-600'
+              : 'bg-emerald-600 border-emerald-700 text-white hover:bg-emerald-700'
+          }`}
+        >
+          {loading
+            ? <Loader2 size={12} className="animate-spin" />
+            : isPublished
+              ? <><Unlock size={12} /> Unpublish</>
+              : <><Globe size={12} /> Publish</>
+          }
+        </button>
+      )}
+    </div>
+  )
+}
+
+// ─── Published Lock Banner ────────────────────────────────────────────────────
+function PublishedLockBanner() {
+  return (
+    <div className="flex items-center gap-2.5 bg-amber-50 border border-amber-200 text-amber-700 rounded-xl px-4 py-3 text-sm font-medium">
+      <Lock size={15} className="shrink-0" />
+      Results have been published for this class. Mark editing is locked. Contact an admin to make changes.
+    </div>
+  )
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function MarksEntryPage() {
   const supabase = createBrowserClient(
@@ -157,27 +211,56 @@ export default function MarksEntryPage() {
   )
 
   const [selectedStandard, setSelectedStandard] = useState(DEFAULT_STANDARD)
-  const [subjects, setSubjects] = useState<Subject[]>([])
-  const [activeSubject, setActiveSubject] = useState<Subject | null>(null)
-  const [marksData, setMarksData] = useState<MarkWithStudent[]>([])
-  const [editMode, setEditMode] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
+  const [subjects, setSubjects]                 = useState<Subject[]>([])
+  const [activeSubject, setActiveSubject]       = useState<Subject | null>(null)
+  const [marksData, setMarksData]               = useState<MarkWithStudent[]>([])
+  const [editMode, setEditMode]                 = useState(false)
+  const [loading, setLoading]                   = useState(false)
+  const [saving, setSaving]                     = useState(false)
+  const [error, setError]                       = useState('')
+  const [success, setSuccess]                   = useState('')
 
   const [showSubjectModal, setShowSubjectModal] = useState(false)
-  const [subjectSaving, setSubjectSaving] = useState(false)
-  const [editingSubject, setEditingSubject] = useState<Subject | null>(null)
-  const [subjectForm, setSubjectForm] = useState<SubjectFormData>(emptySubjectForm(DEFAULT_STANDARD))
+  const [subjectSaving, setSubjectSaving]       = useState(false)
+  const [editingSubject, setEditingSubject]     = useState<Subject | null>(null)
+  const [subjectForm, setSubjectForm]           = useState<SubjectFormData>(emptySubjectForm(DEFAULT_STANDARD))
 
   const [allSubjectsMarks, setAllSubjectsMarks] = useState<StudentAllMarks[]>([])
-  const [toppersLoading, setToppersLoading] = useState(false)
+  const [toppersLoading, setToppersLoading]     = useState(false)
+
+  // ── Result publish state ──────────────────────────────────────────────────
+  const [isPublished, setIsPublished]       = useState(false)
+  const [publishLoading, setPublishLoading] = useState(false)
+  /**
+   * isAdmin: read from the logged-in user's app_metadata role.
+   * Supabase stores custom roles in `app_metadata` (set server-side / via service key).
+   * If you use a different role field, adjust the path below.
+   *
+   * e.g. if your JWT has   app_metadata: { role: 'admin' }
+   *      OR               user_metadata: { role: 'admin' }
+   */
+  const [isAdmin, setIsAdmin] = useState(false)
+
+  // ── On mount: detect admin role from session ──────────────────────────────
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      const user = data.session?.user
+      if (!user) return
+      // Check app_metadata first, fall back to user_metadata
+      const role =
+        (user.app_metadata as any)?.role ??
+        (user.user_metadata as any)?.role ??
+        ''
+      setIsAdmin(role === 'admin')
+    })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (selectedStandard) {
       fetchSubjects()
+      fetchResultStatus()
       setActiveSubject(null)
       setMarksData([])
       setAllSubjectsMarks([])
@@ -200,6 +283,56 @@ export default function MarksEntryPage() {
       fetchAllSubjectsMarks()
     }
   }, [subjects])
+
+  // ── Fetch result publish status for the selected class ────────────────────
+  async function fetchResultStatus() {
+    const { data } = await supabase
+      .from('result_status')
+      .select('is_published')
+      .eq('standard', selectedStandard)
+      .eq('academic_year', ACADEMIC_YEAR)
+      .single()
+    // If no row exists yet, treat as not published
+    setIsPublished(data?.is_published ?? false)
+  }
+
+  // ── Toggle publish / unpublish ────────────────────────────────────────────
+  async function handleTogglePublish() {
+    setPublishLoading(true)
+    setError('')
+    setSuccess('')
+
+    const newStatus = !isPublished
+
+    // Upsert so it works whether the row exists or not
+    const { error: upsertError } = await supabase
+      .from('result_status')
+      .upsert(
+        {
+          standard:      selectedStandard,
+          academic_year: ACADEMIC_YEAR,
+          is_published:  newStatus,
+          published_at:  newStatus ? new Date().toISOString() : null,
+          updated_at:    new Date().toISOString(),
+        },
+        { onConflict: 'standard,academic_year' }
+      )
+
+    if (upsertError) {
+      setError(upsertError.message)
+    } else {
+      setIsPublished(newStatus)
+      setSuccess(
+        newStatus
+          ? `Results published for ${selectedStandard}. Mark editing is now locked.`
+          : `Results unpublished for ${selectedStandard}. Teachers can edit marks again.`
+      )
+      // Exit edit mode if we just published
+      if (newStatus) setEditMode(false)
+    }
+
+    setPublishLoading(false)
+  }
 
   async function fetchSubjects() {
     setError('')
@@ -244,22 +377,22 @@ export default function MarksEntryPage() {
     const combined: MarkWithStudent[] = students.map((student: any) => {
       const existing = existingMarks?.find((m: any) => m.student_id === student.id)
       return {
-        student_id: student.id,
-        name: student.name,
+        student_id:   student.id,
+        name:         student.name,
         admission_no: student.admission_no,
-        standard: student.standard,
+        standard:     student.standard,
         marks: existing
           ? {
-              id: existing.id,          // existing row — keep id for upsert match
-              ut1: existing.ut1,
-              ut2: existing.ut2,
-              ut3: existing.ut3,
-              ut4: existing.ut4,
-              mid_term: existing.mid_term,
+              id:          existing.id,
+              ut1:         existing.ut1,
+              ut2:         existing.ut2,
+              ut3:         existing.ut3,
+              ut4:         existing.ut4,
+              mid_term:    existing.mid_term,
               half_yearly: existing.half_yearly,
-              final: existing.final,
+              final:       existing.final,
             }
-          : emptyMarks(),               // new row — NO id, let Postgres use DEFAULT
+          : emptyMarks(),
       }
     })
 
@@ -308,8 +441,8 @@ export default function MarksEntryPage() {
         return { subject_id: subject.id, total, maxTotal }
       })
       return {
-        student_id: student.id,
-        name: student.name,
+        student_id:   student.id,
+        name:         student.name,
         admission_no: student.admission_no,
         subjectMarks,
       }
@@ -323,15 +456,10 @@ export default function MarksEntryPage() {
     if (allSubjectsMarks.length === 0) return []
     return allSubjectsMarks
       .map(student => {
-        const total = student.subjectMarks.reduce((sum, sm) => sum + sm.total, 0)
+        const total    = student.subjectMarks.reduce((sum, sm) => sum + sm.total, 0)
         const maxTotal = student.subjectMarks.reduce((sum, sm) => sum + sm.maxTotal, 0)
-        const percent = maxTotal === 0 ? '0.0' : ((total / maxTotal) * 100).toFixed(1)
-        return {
-          student_id: student.student_id,
-          name: student.name,
-          admission_no: student.admission_no,
-          total, maxTotal, percent,
-        }
+        const percent  = maxTotal === 0 ? '0.0' : ((total / maxTotal) * 100).toFixed(1)
+        return { student_id: student.student_id, name: student.name, admission_no: student.admission_no, total, maxTotal, percent }
       })
       .filter(s => s.maxTotal > 0)
       .sort((a, b) => parseFloat(b.percent) - parseFloat(a.percent))
@@ -339,10 +467,7 @@ export default function MarksEntryPage() {
   }
 
   function handleMarkChange(studentId: number, field: keyof Omit<MarkFormData, 'id'>, value: string) {
-      const num =
-      value.trim() === ''
-        ? null
-        : Number(value)
+    const num = value.trim() === '' ? null : Number(value)
     setMarksData(prev =>
       prev.map(row =>
         row.student_id === studentId
@@ -358,7 +483,12 @@ export default function MarksEntryPage() {
   }
 
   async function handleSave() {
-    // Validate: no mark exceeds its max
+    // Block save if published (belt-and-suspenders guard)
+    if (isPublished) {
+      setError('Results are published. Unplublish first to edit marks.')
+      return
+    }
+
     let hasError = false
     if (activeSubject) {
       marksData.forEach(row => {
@@ -377,37 +507,27 @@ export default function MarksEntryPage() {
     setError('')
     setSuccess('')
 
-    // ── FIXED: build payload explicitly, only include id when it truly exists ──
-    const upsertData = marksData.map(row => {
-      // Base payload — never includes id for new rows
-      const payload: Record<string, unknown> = {
-        student_id: row.student_id,
-        subject_id: activeSubject!.id,
-        academic_year: ACADEMIC_YEAR,
-        ut1: row.marks.ut1,
-        ut2: row.marks.ut2,
-        ut3: row.marks.ut3,
-        ut4: row.marks.ut4,
-        mid_term: row.marks.mid_term,
-        half_yearly: row.marks.half_yearly,
-        final: row.marks.final,
-        updated_at: new Date().toISOString(),
-      }
-
-
-      return payload
-    })
-
+    const upsertData = marksData.map(row => ({
+      student_id:    row.student_id,
+      subject_id:    activeSubject!.id,
+      academic_year: ACADEMIC_YEAR,
+      ut1:           row.marks.ut1,
+      ut2:           row.marks.ut2,
+      ut3:           row.marks.ut3,
+      ut4:           row.marks.ut4,
+      mid_term:      row.marks.mid_term,
+      half_yearly:   row.marks.half_yearly,
+      final:         row.marks.final,
+      updated_at:    new Date().toISOString(),
+    }))
 
     const { data, error } = await supabase
       .from('marks')
-      .upsert(upsertData, {
-      onConflict: 'student_id,subject_id,academic_year'
-      })
+      .upsert(upsertData, { onConflict: 'student_id,subject_id,academic_year' })
       .select()
 
-      console.log(data)
-      console.log(error)
+    console.log(data)
+    console.log(error)
 
     if (error) {
       setError(error.message)
@@ -482,10 +602,14 @@ export default function MarksEntryPage() {
     }
   }
 
+  // ── Derived: can the current user edit marks? ─────────────────────────────
+  // Admins can always edit. Teachers are blocked when published.
+  const canEditMarks = isAdmin || !isPublished
+
   // Derived stats
   const totalStudents = marksData.length
   const totalSubjects = subjects.length
-  const enteredCount = marksData.filter(r =>
+  const enteredCount  = marksData.filter(r =>
     examColumns.some(c => r.marks[c.field] !== null)
   ).length
 
@@ -494,21 +618,34 @@ export default function MarksEntryPage() {
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <header className="bg-white border-b border-slate-100 sticky top-0 z-30 shadow-sm w-full rounded-lg">
-        <div className="w-full px-6 py-4 flex items-center justify-between gap-4 " >
+        <div className="w-full px-6 py-4 flex items-center justify-between gap-4">
           <div className="leading-tight">
             <p className="text-xs text-slate-400">Academic Year {ACADEMIC_YEAR}</p>
           </div>
-          <div className="flex items-center gap-2">
-            <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 hidden sm:block">
-              Class
-            </label>
-            <select
-              value={selectedStandard}
-              onChange={e => setSelectedStandard(e.target.value)}
-              className="border border-slate-200 bg-white text-slate-700 text-sm font-semibold rounded-xl px-4 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 transition cursor-pointer"
-            >
-              {STANDARDS.map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
+          <div className="flex items-center gap-3 flex-wrap justify-end">
+
+            {/* ── Result Status Badge + Toggle ────────────────────────────── */}
+            <ResultStatusBadge
+              isPublished={isPublished}
+              isAdmin={isAdmin}
+              loading={publishLoading}
+              onToggle={handleTogglePublish}
+            />
+
+            {/* ── Class Selector ──────────────────────────────────────────── */}
+            <div className="flex items-center gap-2">
+              <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 hidden sm:block">
+                Class
+              </label>
+              <select
+                value={selectedStandard}
+                onChange={e => setSelectedStandard(e.target.value)}
+                className="border border-slate-200 bg-white text-slate-700 text-sm font-semibold rounded-xl px-4 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 transition cursor-pointer"
+              >
+                {STANDARDS.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+
           </div>
         </div>
       </header>
@@ -516,16 +653,19 @@ export default function MarksEntryPage() {
       {/* ── Main ───────────────────────────────────────────────────────────── */}
       <main className="w-full px-6 py-6 space-y-5">
 
-        {error && <Alert type="error" message={error} />}
+        {error   && <Alert type="error"   message={error} />}
         {success && <Alert type="success" message={success} />}
+
+        {/* ── Published lock banner (for teachers) ───────────────────────── */}
+        {isPublished && !isAdmin && <PublishedLockBanner />}
 
         {/* ── Stats ──────────────────────────────────────────────────────── */}
         {subjects.length > 0 && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <StatCard label="Class"    value={selectedStandard}                              icon={ClipboardList} accent="bg-indigo-500" />
-            <StatCard label="Students" value={totalStudents || '—'}                          icon={Users}         accent="bg-violet-500" />
-            <StatCard label="Subjects" value={totalSubjects}                                 icon={BookOpen}      accent="bg-sky-500" />
-            <StatCard label="Entries"  value={totalStudents ? `${enteredCount} / ${totalStudents}` : '—'} icon={BarChart2} accent="bg-emerald-500" />
+            <StatCard label="Class"    value={selectedStandard}                                                  icon={ClipboardList} accent="bg-indigo-500" />
+            <StatCard label="Students" value={totalStudents || '—'}                                              icon={Users}         accent="bg-violet-500" />
+            <StatCard label="Subjects" value={totalSubjects}                                                     icon={BookOpen}      accent="bg-sky-500" />
+            <StatCard label="Entries"  value={totalStudents ? `${enteredCount} / ${totalStudents}` : '—'}        icon={BarChart2}     accent="bg-emerald-500" />
           </div>
         )}
 
@@ -575,36 +715,47 @@ export default function MarksEntryPage() {
                 title={`${activeSubject.name} — Marks`}
                 subtitle={`${selectedStandard} · ${ACADEMIC_YEAR}`}
               />
-              <div className="flex gap-2 shrink-0">
-                {!editMode ? (
-                  <button
-                    onClick={() => setEditMode(true)}
-                    className="inline-flex items-center gap-1.5 text-sm font-semibold bg-indigo-600 text-white px-4 py-2 rounded-xl hover:bg-indigo-700 transition shadow-sm"
-                  >
-                    <Pencil size={14} />
-                    Edit Marks
-                  </button>
-                ) : (
-                  <>
+              <div className="flex gap-2 shrink-0 items-center">
+
+                {/* Lock icon shown to teachers when published */}
+                {isPublished && !isAdmin && (
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-600 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-full">
+                    <Lock size={12} /> Locked
+                  </span>
+                )}
+
+                {/* Edit / Save / Cancel — only when allowed */}
+                {canEditMarks && (
+                  !editMode ? (
                     <button
-                      onClick={() => { setEditMode(false); fetchMarks(activeSubject) }}
-                      className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 transition"
+                      onClick={() => setEditMode(true)}
+                      className="inline-flex items-center gap-1.5 text-sm font-semibold bg-indigo-600 text-white px-4 py-2 rounded-xl hover:bg-indigo-700 transition shadow-sm"
                     >
-                      <X size={14} />
-                      Cancel
+                      <Pencil size={14} />
+                      Edit Marks
                     </button>
-                    <button
-                      onClick={handleSave}
-                      disabled={saving}
-                      className="inline-flex items-center gap-1.5 text-sm font-semibold bg-emerald-600 text-white px-4 py-2 rounded-xl hover:bg-emerald-700 disabled:opacity-60 transition shadow-sm"
-                    >
-                      {saving
-                        ? <Loader2 size={14} className="animate-spin" />
-                        : <Save size={14} />
-                      }
-                      {saving ? 'Saving…' : 'Save'}
-                    </button>
-                  </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => { setEditMode(false); fetchMarks(activeSubject) }}
+                        className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 transition"
+                      >
+                        <X size={14} />
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleSave}
+                        disabled={saving}
+                        className="inline-flex items-center gap-1.5 text-sm font-semibold bg-emerald-600 text-white px-4 py-2 rounded-xl hover:bg-emerald-700 disabled:opacity-60 transition shadow-sm"
+                      >
+                        {saving
+                          ? <Loader2 size={14} className="animate-spin" />
+                          : <Save size={14} />
+                        }
+                        {saving ? 'Saving…' : 'Save'}
+                      </button>
+                    </>
+                  )
                 )}
               </div>
             </div>
@@ -614,9 +765,9 @@ export default function MarksEntryPage() {
                 selectedStandard={selectedStandard}
                 academicYear={ACADEMIC_YEAR}
                 marksData={marksData}
-                editMode={editMode}
+                editMode={editMode && canEditMarks}   // force read-only when locked
                 saving={saving}
-                onEditToggle={() => setEditMode(true)}
+                onEditToggle={() => canEditMarks && setEditMode(true)}
                 onSave={handleSave}
                 onCancel={() => { setEditMode(false); fetchMarks(activeSubject) }}
                 onMarkChange={handleMarkChange}
@@ -631,9 +782,9 @@ export default function MarksEntryPage() {
           <EmptyState icon={Users} message={`No students found in ${selectedStandard}.`} />
         )}
 
-        {/* ── Ana  lytics ───────────────────────────────────────────────────── */}
+        {/* ── Analytics ───────────────────────────────────────────────────── */}
         {!loading && marksData.length > 0 && activeSubject && (
-          <div className=" lg:grid-cols-2 gap-5">
+          <div className="lg:grid-cols-2 gap-5">
             <div className="bg-white border border-slate-100 rounded-2xl shadow-sm p-5 mb-4">
               <SectionHeader title="Top Scorers" subtitle={`By exam · ${activeSubject.name}`} />
               <TopScorers
@@ -650,7 +801,6 @@ export default function MarksEntryPage() {
                 loading={toppersLoading}
               />
             </div>
-
           </div>
         )}
       </main>
