@@ -47,6 +47,7 @@ const rankConfig = [
   },
 ]
 
+
 function getInitials(name: string) {
   return name
     .split(' ')
@@ -55,6 +56,7 @@ function getInitials(name: string) {
     .join('')
     .toUpperCase()
 }
+
 
 export default function ClassTopper({ selectedStandard, toppers, loading }: Props) {
   if (loading) {
@@ -70,12 +72,14 @@ export default function ClassTopper({ selectedStandard, toppers, loading }: Prop
 
   return (
     <div className="mt-6 border-t border-slate-100 pt-6 w-full">
+
+
       {/* Section header */}
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-lg bg-teal-50 flex items-center justify-center">
             <Trophy size={14} className="text-teal-600" />
-          </div>
+          </div>  
           <div>
             <h3 className="text-sm font-semibold text-slate-700">Class Toppers</h3>
             <p className="text-xs text-slate-400">{selectedStandard}</p>
@@ -90,6 +94,8 @@ export default function ClassTopper({ selectedStandard, toppers, loading }: Prop
         {toppers.map((student, i) => {
           const cfg = rankConfig[i] ?? rankConfig[2]
           const pctNum = parseFloat(student.percent)
+          const rank =i > 0 && student.total === toppers[i - 1].total ? toppers.findIndex(s => s.total === student.total) + 1
+      : i + 1
 
           return (
             <div
@@ -105,7 +111,7 @@ export default function ClassTopper({ selectedStandard, toppers, loading }: Prop
               <div className={`w-9 h-9 rounded-xl ${cfg.badgeBg} flex items-center justify-center shrink-0 shadow-sm`}>
                 {i === 0
                   ? <Medal size={16} className="text-white" />
-                  : <span className={`text-sm font-bold ${cfg.badgeText}`}>{i + 1}</span>
+                  : <span className={`text-sm font-bold ${cfg.badgeText}`}>{rank}</span>
                 }
               </div>
 
