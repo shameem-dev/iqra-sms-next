@@ -79,9 +79,21 @@ export default function TopScorers({ activeSubject, marksData, examColumns }: Pr
                   </div>
                 ) : (
                   withMarks.map((student, i) => {
-                    const cfg = rankConfig[i]
                     const score = student.marks[col.field] as number
                     const pct = max > 0 ? (score / max) * 100 : 0
+
+                    // Same marks => same rank
+                    const rank =
+                      i > 0 &&
+                      score === (withMarks[i - 1].marks[col.field] as number)
+                        ? withMarks
+                            .slice(0, i)
+                            .findIndex(
+                              s => (s.marks[col.field] as number) === score
+                            ) + 1
+                        : i + 1
+
+                    const cfg = rankConfig[Math.min(rank - 1, 2)]
 
                     return (
                       <div
@@ -92,7 +104,7 @@ export default function TopScorers({ activeSubject, marksData, examColumns }: Pr
                         <span
                           className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${cfg.bg} ${cfg.text}`}
                         >
-                          {i + 1}
+                          {rank}
                         </span>
 
                         {/* Avatar + name */}

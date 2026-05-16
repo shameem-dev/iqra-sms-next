@@ -37,6 +37,7 @@ const STANDARDS = [
 const DEFAULT_STANDARD = 'FS1 A'
 const ACADEMIC_YEAR = getAcademicYear()
 
+
 const examColumns: { label: string; field: keyof Omit<MarkFormData, 'id'>; maxKey: keyof Subject }[] = [
   { label: 'UT1',         field: 'ut1',         maxKey: 'max_ut1' },
   { label: 'UT2',         field: 'ut2',         maxKey: 'max_ut2' },
@@ -53,7 +54,7 @@ const emptyMarks = (): MarkFormData => ({
 })
 
 const emptySubjectForm = (standard: string): SubjectFormData => ({
-  name: '', standard,
+  name: '', standard,subject_type: 'academic',
   max_ut1: 0, max_ut2: 0, max_ut3: 0, max_ut4: 0,
   max_mid_term: 0, max_half_yearly: 0, max_final: 0,
 })
@@ -62,7 +63,12 @@ interface StudentAllMarks {
   student_id: number
   name: string
   admission_no: string
-  subjectMarks: { subject_id: number; total: number; maxTotal: number }[]
+  subjectMarks: {
+  subject_id: number
+  total: number
+  maxTotal: number
+  marks: MarkFormData
+}[]
 }
 
 // ─── Stat Card ────────────────────────────────────────────────────────────────
@@ -205,6 +211,7 @@ function PublishedLockBanner() {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function MarksEntryPage() {
+
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!
@@ -219,6 +226,7 @@ export default function MarksEntryPage() {
   const [saving, setSaving]                     = useState(false)
   const [error, setError]                       = useState('')
   const [success, setSuccess]                   = useState('')
+  const [selectedExam, setSelectedExam] = useState<keyof Omit<MarkFormData, 'id'>>('ut1')
 
   const [showSubjectModal, setShowSubjectModal] = useState(false)
   const [subjectSaving, setSubjectSaving]       = useState(false)
@@ -438,7 +446,20 @@ export default function MarksEntryPage() {
           subject.max_ut1, subject.max_ut2, subject.max_ut3, subject.max_ut4,
           subject.max_mid_term, subject.max_half_yearly, subject.max_final,
         ].reduce((sum, v) => sum + (v || 0), 0)
-        return { subject_id: subject.id, total, maxTotal }
+        return {
+          subject_id: subject.id,
+          total,
+          maxTotal,
+          marks: {
+            ut1: mark?.ut1 ?? null,
+            ut2: mark?.ut2 ?? null,
+            ut3: mark?.ut3 ?? null,
+            ut4: mark?.ut4 ?? null,
+            mid_term: mark?.mid_term ?? null,
+            half_yearly: mark?.half_yearly ?? null,
+            final: mark?.final ?? null,
+          }
+        }
       })
       return {
         student_id:   student.id,
@@ -465,6 +486,44 @@ export default function MarksEntryPage() {
       .sort((a, b) => parseFloat(b.percent) - parseFloat(a.percent))
       .slice(0, 3)
   }
+  function getExamToppers(field: keyof Omit<MarkFormData, 'id'>) {
+  if (allSubjectsMarks.length === 0) return []
+
+  return allSubjectsMarks
+    .map(student => {
+      let total = 0
+      let maxTotal = 0
+
+      student.subjectMarks.forEach(subjectMark => {
+        total += subjectMark.marks[field] || 0
+
+        const subject = subjects.find(
+          s => s.id === subjectMark.subject_id
+        )
+
+        if (!subject) return
+
+        maxTotal +=
+          (subject[`max_${field}` as keyof Subject] as number) || 0
+      })
+
+      const percent =
+        maxTotal === 0
+          ? '0.0'
+          : ((total / maxTotal) * 100).toFixed(1)
+
+      return {
+        student_id: student.student_id,
+        name: student.name,
+        admission_no: student.admission_no,
+        total,
+        maxTotal,
+        percent,
+      }
+    })
+    .filter(s => s.maxTotal > 0)
+    .sort((a, b) => b.total - a.total)
+}
 
   function handleMarkChange(studentId: number, field: keyof Omit<MarkFormData, 'id'>, value: string) {
     const num = value.trim() === '' ? null : Number(value)
@@ -549,7 +608,7 @@ export default function MarksEntryPage() {
   function openEditSubjectModal(subject: Subject) {
     setEditingSubject(subject)
     setSubjectForm({
-      name: subject.name, standard: subject.standard,
+      name: subject.name, standard: subject.standard, subject_type: subject.subject_type,
       max_ut1: subject.max_ut1, max_ut2: subject.max_ut2,
       max_ut3: subject.max_ut3, max_ut4: subject.max_ut4,
       max_mid_term: subject.max_mid_term,
@@ -794,13 +853,64 @@ export default function MarksEntryPage() {
               />
             </div>
             <div className="bg-white border border-slate-100 rounded-2xl shadow-sm p-5">
-              <SectionHeader title="Class Toppers" subtitle="Overall rank across all subjects" />
-              <ClassTopper
-                selectedStandard={selectedStandard}
-                toppers={getClassToppers()}
-                loading={toppersLoading}
-              />
-            </div>
+  
+  {/* Header */}
+  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5">
+    
+    <SectionHeader
+      title="Class Toppers"
+      subtitle={`${selectedExam
+        .replace('_', ' ')
+        .replace(/\b\w/g, l => l.toUpperCase())} Rank Across All Subjects`}
+    />
+
+    {/* Exam selector */}
+    <div className="flex items-center gap-2 shrink-0">
+      <label className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+        Exam
+      </label>
+
+      <select
+        value={selectedExam}
+        onChange={e =>
+          setSelectedExam(
+            e.target.value as keyof Omit<MarkFormData, 'id'>
+          )
+        }
+        className="
+          min-w-[150px]
+          border border-slate-200
+          bg-white
+          text-slate-700
+          text-sm
+          font-semibold
+          rounded-xl
+          px-4 py-2.5
+          shadow-sm
+          focus:outline-none
+          focus:ring-2
+          focus:ring-indigo-300
+          transition
+          cursor-pointer
+        "
+      >
+        <option value="ut1">UT1</option>
+        <option value="ut2">UT2</option>
+        <option value="ut3">UT3</option>
+        <option value="ut4">UT4</option>
+        <option value="mid_term">Mid Term</option>
+        <option value="half_yearly">Half Yearly</option>
+        <option value="final">Final</option>
+      </select>
+    </div>
+  </div>
+
+  <ClassTopper
+    selectedStandard={selectedStandard}
+    toppers={getExamToppers(selectedExam)}
+    loading={toppersLoading}
+  />
+</div>
           </div>
         )}
       </main>
