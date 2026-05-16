@@ -39,24 +39,51 @@ const ACADEMIC_YEAR = getAcademicYear()
 
 
 const examColumns: { label: string; field: keyof Omit<MarkFormData, 'id'>; maxKey: keyof Subject }[] = [
-  { label: 'UT1',         field: 'ut1',         maxKey: 'max_ut1' },
-  { label: 'UT2',         field: 'ut2',         maxKey: 'max_ut2' },
-  { label: 'UT3',         field: 'ut3',         maxKey: 'max_ut3' },
-  { label: 'UT4',         field: 'ut4',         maxKey: 'max_ut4' },
-  { label: 'Mid Term',    field: 'mid_term',    maxKey: 'max_mid_term' },
+  { label: 'UT1', field: 'ut1', maxKey: 'max_ut1' },
+  { label: 'UT2', field: 'ut2', maxKey: 'max_ut2' },
+  { label: 'UT3', field: 'ut3', maxKey: 'max_ut3' },
+  { label: 'UT4', field: 'ut4', maxKey: 'max_ut4' },
+
+  { label: 'UT5', field: 'ut5', maxKey: 'max_ut5' },
+  { label: 'UT6', field: 'ut6', maxKey: 'max_ut6' },
+  { label: 'UT7', field: 'ut7', maxKey: 'max_ut7' },
+  { label: 'UT8', field: 'ut8', maxKey: 'max_ut8' },
+
+  { label: 'Mid Term', field: 'mid_term', maxKey: 'max_mid_term' },
   { label: 'Half Yearly', field: 'half_yearly', maxKey: 'max_half_yearly' },
-  { label: 'Final',       field: 'final',       maxKey: 'max_final' },
+  { label: 'Final', field: 'final', maxKey: 'max_final' },
 ]
 
 const emptyMarks = (): MarkFormData => ({
-  ut1: null, ut2: null, ut3: null, ut4: null,
-  mid_term: null, half_yearly: null, final: null,
-})
+  ut1: null,
+  ut2: null,
+  ut3: null,
+  ut4: null,
 
+  ut5: null,
+  ut6: null,
+  ut7: null,
+  ut8: null,
+
+  mid_term: null,
+  half_yearly: null,
+  final: null,
+})
 const emptySubjectForm = (standard: string): SubjectFormData => ({
-  name: '', standard,subject_type: 'academic',
-  max_ut1: 0, max_ut2: 0, max_ut3: 0, max_ut4: 0,
-  max_mid_term: 0, max_half_yearly: 0, max_final: 0,
+  name: '',
+  standard,
+  subject_type: 'academic',
+  max_ut1: 0,
+  max_ut2: 0,
+  max_ut3: 0, 
+  max_ut4: 0,
+  max_ut5: 0,
+  max_ut6: 0,
+  max_ut7: 0,
+  max_ut8: 0,
+  max_mid_term: 0, 
+  max_half_yearly: 0, 
+  max_final: 0,
 })
 
 interface StudentAllMarks {
@@ -396,6 +423,10 @@ export default function MarksEntryPage() {
               ut2:         existing.ut2,
               ut3:         existing.ut3,
               ut4:         existing.ut4,
+              ut5:         existing.ut5,
+              ut6:         existing.ut6,
+              ut7:         existing.ut7,
+              ut8:         existing.ut8,
               mid_term:    existing.mid_term,
               half_yearly: existing.half_yearly,
               final:       existing.final,
@@ -438,12 +469,14 @@ export default function MarksEntryPage() {
           (m: any) => m.student_id === student.id && m.subject_id === subject.id
         )
         const total = mark
-          ? [mark.ut1, mark.ut2, mark.ut3, mark.ut4,
+          ? [mark.ut1, mark.ut2, mark.ut3, mark.ut4,mark.ut5,
+              mark.ut6,mark.ut7,mark.ut8,
              mark.mid_term, mark.half_yearly, mark.final]
               .reduce((sum: number, v: number | null) => sum + (v || 0), 0)
           : 0
         const maxTotal = [
           subject.max_ut1, subject.max_ut2, subject.max_ut3, subject.max_ut4,
+          subject.max_ut5,subject.max_ut6,subject.max_ut7,subject.max_ut8,
           subject.max_mid_term, subject.max_half_yearly, subject.max_final,
         ].reduce((sum, v) => sum + (v || 0), 0)
         return {
@@ -455,6 +488,10 @@ export default function MarksEntryPage() {
             ut2: mark?.ut2 ?? null,
             ut3: mark?.ut3 ?? null,
             ut4: mark?.ut4 ?? null,
+            ut5: mark?.ut5 ?? null,
+            ut6: mark?.ut6 ?? null,
+            ut7: mark?.ut7 ?? null,
+            ut8: mark?.ut8 ?? null,
             mid_term: mark?.mid_term ?? null,
             half_yearly: mark?.half_yearly ?? null,
             final: mark?.final ?? null,
@@ -574,6 +611,10 @@ export default function MarksEntryPage() {
       ut2:           row.marks.ut2,
       ut3:           row.marks.ut3,
       ut4:           row.marks.ut4,
+      ut5: row.marks.ut5,
+      ut6: row.marks.ut6,
+      ut7: row.marks.ut7,
+      ut8: row.marks.ut8,
       mid_term:      row.marks.mid_term,
       half_yearly:   row.marks.half_yearly,
       final:         row.marks.final,
@@ -611,6 +652,10 @@ export default function MarksEntryPage() {
       name: subject.name, standard: subject.standard, subject_type: subject.subject_type,
       max_ut1: subject.max_ut1, max_ut2: subject.max_ut2,
       max_ut3: subject.max_ut3, max_ut4: subject.max_ut4,
+      max_ut5: subject.max_ut5,
+      max_ut6: subject.max_ut6,
+      max_ut7: subject.max_ut7,
+      max_ut8: subject.max_ut8,
       max_mid_term: subject.max_mid_term,
       max_half_yearly: subject.max_half_yearly,
       max_final: subject.max_final,
@@ -898,6 +943,10 @@ export default function MarksEntryPage() {
         <option value="ut2">UT2</option>
         <option value="ut3">UT3</option>
         <option value="ut4">UT4</option>
+        <option value="ut5">UT5</option>
+        <option value="ut6">UT6</option>
+        <option value="ut7">UT7</option>
+        <option value="ut8">UT8</option>
         <option value="mid_term">Mid Term</option>
         <option value="half_yearly">Half Yearly</option>
         <option value="final">Final</option>

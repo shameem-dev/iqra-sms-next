@@ -46,17 +46,32 @@ export default function MarksTable({
 
   function calcTotal(marks: MarkFormData): number {
     return [marks.ut1, marks.ut2, marks.ut3, marks.ut4,
+       marks.ut5,
+    marks.ut6,
+    marks.ut7,
+    marks.ut8,
       marks.mid_term, marks.half_yearly, marks.final]
       .reduce<number>((sum, v) => sum + (v ?? 0), 0)
   }
 
-  function calcMaxTotal(): number {
-    return [activeSubject.max_ut1, activeSubject.max_ut2,
-      activeSubject.max_ut3, activeSubject.max_ut4,
-      activeSubject.max_mid_term, activeSubject.max_half_yearly,
-      activeSubject.max_final]
-      .reduce<number>((sum, v) => sum + (v ?? 0), 0)
+    function calcMaxTotal(): number {
+    return [
+        activeSubject.max_ut1,
+        activeSubject.max_ut2,
+        activeSubject.max_ut3,
+        activeSubject.max_ut4,
+
+        activeSubject.max_ut5,
+        activeSubject.max_ut6,
+        activeSubject.max_ut7,
+        activeSubject.max_ut8,
+
+        activeSubject.max_mid_term,
+        activeSubject.max_half_yearly,
+        activeSubject.max_final,
+      ].reduce<number>((sum, v) => sum + (v ?? 0), 0)
   }
+      
 
   function calcPercent(marks: MarkFormData): string {
     const max = calcMaxTotal()

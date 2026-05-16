@@ -121,7 +121,14 @@ function TopScorers({ activeSubject, marksData, examColumns }: {
                     return (
                       <div key={student.student_id} className="flex items-center gap-2 px-3 py-2">
                         <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${cfg.bg} ${cfg.text}`}>
-                          {i + 1}
+                          {
+                                i > 0 &&
+                                score === (withMarks[i - 1].marks[col.field] as number)
+                                  ? withMarks.findIndex(
+                                      s => (s.marks[col.field] as number) === score
+                                    ) + 1
+                                  : i + 1
+                              }
                         </span>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1 mb-0.5">
@@ -169,7 +176,7 @@ function ClassTopper({ selectedStandard, toppers, loading }: {
           </div>
         </div>
         <span className="text-[11px] bg-teal-50 text-teal-600 font-medium px-2 py-0.5 rounded-full border border-teal-100">
-          Overall
+          Exam Rank
         </span>
       </div>
 

@@ -19,6 +19,12 @@ const subjectFormFields = [
   { label: 'UT2', key: 'max_ut2' },
   { label: 'UT3', key: 'max_ut3' },
   { label: 'UT4', key: 'max_ut4' },
+
+  { label: 'UT5', key: 'max_ut5' },
+  { label: 'UT6', key: 'max_ut6' },
+  { label: 'UT7', key: 'max_ut7' },
+  { label: 'UT8', key: 'max_ut8' },
+
   { label: 'Mid Term', key: 'max_mid_term' },
   { label: 'Half Yearly', key: 'max_half_yearly' },
   { label: 'Final', key: 'max_final' },
@@ -125,7 +131,7 @@ export default function SubjectModal({
                 <span className="text-[11px] text-slate-400">Set 0 to skip</span>
               </div>
 
-              <div className="grid grid-cols-4 gap-2.5">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                 {subjectFormFields.map(({ label, key }) => (
                   <div key={key} className="group">
                     <label className="block text-[11px] font-medium text-slate-400 mb-1 group-focus-within:text-teal-500 transition-colors">

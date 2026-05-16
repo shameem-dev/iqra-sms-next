@@ -10,6 +10,12 @@ export interface Subject {
   max_ut2: number
   max_ut3: number
   max_ut4: number
+  max_ut5: number
+  max_ut6: number
+  max_ut7: number
+  max_ut8: number
+  max_ut9: number
+  max_ut10: number
   max_mid_term: number
   max_half_yearly: number
   max_final: number
@@ -26,6 +32,10 @@ export interface SubjectFormData {
   max_ut2: number
   max_ut3: number
   max_ut4: number
+  max_ut5: number
+  max_ut6: number
+  max_ut7: number
+  max_ut8: number
   max_mid_term: number
   max_half_yearly: number
   max_final: number
@@ -43,6 +53,10 @@ export interface Mark {
   ut2: number | null
   ut3: number | null
   ut4: number | null
+  ut5: number | null
+  ut6: number | null
+  ut7: number | null
+  ut8: number | null
   mid_term: number | null
   half_yearly: number | null
   final: number | null
@@ -57,6 +71,11 @@ export interface MarkFormData {
   ut2: number | null
   ut3: number | null
   ut4: number | null
+  ut5: number | null
+  ut6: number | null
+  ut7: number | null
+  ut8: number | null
+
   mid_term: number | null
   half_yearly: number | null
   final: number | null
