@@ -46,7 +46,6 @@ function ScoreBadge({ pct }: { pct: number | null }) {
   )
 }
 
-// ─── Published Lock Banner ────────────────────────────────────────────────────
 function PublishedLockBanner({ standard }: { standard: string }) {
   return (
     <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3.5">
@@ -81,13 +80,36 @@ export default function TeacherMarks({ subjectAssignments, userId }: Props) {
   const [saved, setSaved]                         = useState(false)
   const [error, setError]                         = useState('')
 
-  // ── Publish lock state ────────────────────────────────────────────────────
   const [isPublished, setIsPublished]           = useState(false)
   const [publishCheckDone, setPublishCheckDone] = useState(false)
 
   const subjectsInStandard = subjectAssignments.filter(a => a.standard === selectedStandard)
   const selectedAssignment = subjectAssignments.find(a => a.subject_id === selectedSubjectId)
   const subject            = selectedAssignment?.subjects
+
+  const [subjectDetail, setSubjectDetail] = useState<any>(null)
+
+  // subject from prop may lack max_* fields if the parent query didn't select them.
+  // subjectDetail is fetched directly from the subjects table to guarantee all max_* fields.
+  useEffect(() => {
+    if (!selectedSubjectId) { setSubjectDetail(null); return }
+    supabase
+      .from('subjects')
+      .select('*')
+      .eq('id', selectedSubjectId)
+      .single()
+      .then(({ data }) => setSubjectDetail(data ?? null))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedSubjectId])
+
+  // Prefer the directly-fetched detail; fall back to prop data
+  const subjectFull = subjectDetail ?? subject
+
+  // Only show exam fields that have a max mark configured in the subject
+  const activeExamFields = EXAM_FIELDS.filter(f => {
+    const max = subjectFull?.[f.maxKey]
+    return max !== null && max !== undefined && Number(max) > 0
+  })
 
   // ── When standard changes: reset subject + re-check publish status ────────
   useEffect(() => {
@@ -103,11 +125,12 @@ export default function TeacherMarks({ subjectAssignments, userId }: Props) {
     ;(async () => {
       setLoading(true); setError('')
 
+      // Order by admission_no to match the admin page's ordering
       const { data: studentData } = await supabase
         .from('students_list')
         .select('id, name, admission_no')
         .eq('standard', selectedStandard)
-        .order('name')
+        .order('admission_no')
 
       if (!studentData) { setLoading(false); return }
       setStudents(studentData)
@@ -124,10 +147,16 @@ export default function TeacherMarks({ subjectAssignments, userId }: Props) {
       studentData.forEach(s => {
         const existing = marksData?.find(m => m.student_id === s.id)
         marksMap[s.id] = existing || {
-          student_id: s.id, subject_id: selectedSubjectId,
+          student_id:    s.id,
+          subject_id:    selectedSubjectId,
           academic_year: ACADEMIC_YEAR,
-          ut1: null, ut2: null, ut3: null, ut4: null,
-          mid_term: null, half_yearly: null, final: null,
+          ut1:         null,
+          ut2:         null,
+          ut3:         null,
+          ut4:         null,
+          mid_term:    null,
+          half_yearly: null,
+          final:       null,
         }
       })
       setMarks(marksMap)
@@ -136,7 +165,6 @@ export default function TeacherMarks({ subjectAssignments, userId }: Props) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedSubjectId, selectedStandard])
 
-  // ── Fetch publish status from result_status table ─────────────────────────
   async function fetchPublishStatus(standard: string) {
     setPublishCheckDone(false)
     const { data } = await supabase
@@ -150,7 +178,6 @@ export default function TeacherMarks({ subjectAssignments, userId }: Props) {
   }
 
   function updateMark(studentId: number, field: string, value: string) {
-    // Silently ignore if published — inputs are read-only anyway, but belt-and-suspenders
     if (isPublished) return
     setMarks(prev => ({
       ...prev,
@@ -159,7 +186,6 @@ export default function TeacherMarks({ subjectAssignments, userId }: Props) {
   }
 
   async function handleSave() {
-    // Hard block — should not be reachable via UI when published, but guard anyway
     if (isPublished) {
       setError('Results are published. Mark editing is locked. Contact an admin.')
       return
@@ -167,20 +193,38 @@ export default function TeacherMarks({ subjectAssignments, userId }: Props) {
 
     setSaving(true); setError(''); setSaved(false)
     try {
-      for (const studentId of Object.keys(marks)) {
-        const row = marks[Number(studentId)]
-        const { id, ...payload } = row
-        if (id) {
-          await supabase.from('marks').update({
-            ...payload, entered_by: userId, updated_at: new Date().toISOString()
-          }).eq('id', id)
-        } else {
-          const { data } = await supabase.from('marks').insert({
-            ...payload, entered_by: userId, updated_at: new Date().toISOString()
-          }).select().single()
-          if (data) setMarks(prev => ({ ...prev, [Number(studentId)]: data }))
-        }
+      // Build upsert payload — same shape and conflict key as the admin page
+      const upsertData = Object.values(marks).map((row: any) => ({
+        student_id:    row.student_id,
+        subject_id:    row.subject_id ?? selectedSubjectId,
+        academic_year: row.academic_year ?? ACADEMIC_YEAR,
+        ut1:           row.ut1,
+        ut2:           row.ut2,
+        ut3:           row.ut3,
+        ut4:           row.ut4,
+        mid_term:      row.mid_term,
+        half_yearly:   row.half_yearly,
+        final:         row.final,
+        entered_by:    userId,
+        updated_at:    new Date().toISOString(),
+      }))
+
+      const { data, error: upsertError } = await supabase
+        .from('marks')
+        .upsert(upsertData, { onConflict: 'student_id,subject_id,academic_year' })
+        .select()
+
+      if (upsertError) throw upsertError
+
+      // Refresh local marks map so IDs are populated for future saves
+      if (data) {
+        setMarks(prev => {
+          const next = { ...prev }
+          data.forEach((row: any) => { next[row.student_id] = row })
+          return next
+        })
       }
+
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
     } catch (err: any) {
@@ -203,7 +247,7 @@ export default function TeacherMarks({ subjectAssignments, userId }: Props) {
               Marks Entry
             </p>
             <h1 className="text-2xl font-black text-slate-900 leading-tight tracking-tight">
-              {subject?.name || 'Select Subject'}
+              {subjectFull?.name || 'Select Subject'}
             </h1>
           </div>
 
@@ -286,7 +330,6 @@ export default function TeacherMarks({ subjectAssignments, userId }: Props) {
           </div>
         )}
 
-        {/* Divider */}
         <div className="h-px bg-slate-200" />
       </div>
 
@@ -306,7 +349,7 @@ export default function TeacherMarks({ subjectAssignments, userId }: Props) {
           students.map((student, i) => {
             const studentMarks = marks[student.id] || {}
 
-            const filledCount = EXAM_FIELDS.filter(f =>
+            const filledCount = activeExamFields.filter(f =>
               studentMarks[f.key] !== null && studentMarks[f.key] !== undefined && studentMarks[f.key] !== ''
             ).length
 
@@ -327,7 +370,7 @@ export default function TeacherMarks({ subjectAssignments, userId }: Props) {
                   {/* Progress indicator */}
                   <div className="flex items-center gap-1.5 shrink-0">
                     <div className="flex gap-0.5">
-                      {EXAM_FIELDS.map(f => {
+                      {activeExamFields.map(f => {
                         const filled = studentMarks[f.key] !== null && studentMarks[f.key] !== undefined && studentMarks[f.key] !== ''
                         return (
                           <div
@@ -339,14 +382,14 @@ export default function TeacherMarks({ subjectAssignments, userId }: Props) {
                         )
                       })}
                     </div>
-                    <span className="text-[10px] font-black text-slate-300 ml-1">{filledCount}/{EXAM_FIELDS.length}</span>
+                    <span className="text-[10px] font-black text-slate-300 ml-1">{filledCount}/{activeExamFields.length}</span>
                   </div>
                 </div>
 
-                {/* Marks grid — read-only overlay when published */}
+                {/* Marks grid */}
                 <div className={`p-3 grid grid-cols-2 gap-2 ${isPublished ? 'pointer-events-none opacity-75' : ''}`}>
-                  {EXAM_FIELDS.map(f => {
-                    const max    = subject?.[f.maxKey]
+                  {activeExamFields.map(f => {
+                    const max    = subjectFull?.[f.maxKey]
                     const val    = studentMarks[f.key]
                     const filled = val !== null && val !== undefined && val !== ''
                     const pct    = getScorePercent(val, max)
@@ -376,7 +419,6 @@ export default function TeacherMarks({ subjectAssignments, userId }: Props) {
                           value={val ?? ''}
                           onChange={e => updateMark(student.id, f.key, e.target.value)}
                           placeholder="—"
-                          // Inputs are truly disabled when published
                           disabled={isPublished}
                           readOnly={isPublished}
                           className={`w-full h-9 text-center rounded-lg border text-[15px] font-black focus:outline-none focus:ring-2 transition-colors bg-white ${
