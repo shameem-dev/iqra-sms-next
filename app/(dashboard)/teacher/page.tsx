@@ -39,7 +39,7 @@ export default async function TeacherPage() {
   return (
     <TeacherDashboard
       teacher={staffData}
-      fullName={profile.full_name}
+fullName={staffData?.name ?? profile.full_name}
       classAssignment={classAssignment || null}
       subjectAssignments={subjectAssignments}
       userId={user.id}

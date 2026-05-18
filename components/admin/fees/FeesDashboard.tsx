@@ -177,28 +177,41 @@ export default function FeesDashboard() {
                   onDelete={handleDelete}  
                 />
 
-                {/* Summary cards */}
-                <div className="grid grid-cols-3 gap-3 mt-5">
-                  <div className="bg-gray-50 rounded-xl p-3 text-center">
-                    <p className="text-xs text-gray-400 mb-1">Total fees</p>
-                    <p className="text-base font-medium text-gray-800">
-                      ₹{feeRows.reduce((s, r) => s + r.total_amount, 0).toLocaleString('en-IN')}
-                    </p>
-                  </div>
-                  <div className="bg-green-50 rounded-xl p-3 text-center">
-                    <p className="text-xs text-green-600 mb-1">Total paid</p>
-                    <p className="text-base font-medium text-green-700">
-                      ₹{feeRows.reduce((s, r) => s + r.paid_amount, 0).toLocaleString('en-IN')}
-                    </p>
-                  </div>
-                  <div className="bg-red-50 rounded-xl p-3 text-center">
-                    <p className="text-xs text-red-400 mb-1">Balance due</p>
-                    <p className="text-base font-medium text-red-600">
-                      ₹{feeRows.reduce((s, r) => s + r.balance, 0).toLocaleString('en-IN')}
-                    </p>
-                  </div>
-                </div>
+             {/* Summary cards */}
+<div className="grid grid-cols-3 gap-3 mt-5">
+  <div className="relative overflow-hidden rounded-2xl p-4 bg-[linear-gradient(135deg,_#7C3AED_0%,_#4F46E5_60%,_#3730A3_100%)] shadow-lg shadow-violet-200">
+    <div className="absolute -right-4 -top-4 w-20 h-20 rounded-full bg-white/10" />
+    <div className="absolute right-2 bottom-2 w-10 h-10 rounded-full bg-black/10" />
+    <div className="relative z-10">
+      <p className="text-[10px] font-bold uppercase tracking-[.18em] text-white/60 mb-2">Total fees</p>
+      <p className="text-xl font-black text-white leading-none">
+        ₹{feeRows.reduce((s, r) => s + r.total_amount, 0).toLocaleString('en-IN')}
+      </p>
+    </div>
+  </div>
 
+  <div className="relative overflow-hidden rounded-2xl p-4 bg-[linear-gradient(135deg,_#059669_0%,_#0D9488_55%,_#0891B2_100%)] shadow-lg shadow-emerald-200">
+    <div className="absolute -right-4 -top-4 w-20 h-20 rounded-full bg-white/10" />
+    <div className="absolute right-2 bottom-2 w-10 h-10 rounded-full bg-black/10" />
+    <div className="relative z-10">
+      <p className="text-[10px] font-bold uppercase tracking-[.18em] text-white/60 mb-2">Total paid</p>
+      <p className="text-xl font-black text-white leading-none">
+        ₹{feeRows.reduce((s, r) => s + r.paid_amount, 0).toLocaleString('en-IN')}
+      </p>
+    </div>
+  </div>
+
+  <div className="relative overflow-hidden rounded-2xl p-4 bg-[linear-gradient(135deg,_#F59E0B_0%,_#EF4444_55%,_#EC4899_100%)] shadow-lg shadow-rose-200">
+    <div className="absolute -right-4 -top-4 w-20 h-20 rounded-full bg-white/10" />
+    <div className="absolute right-2 bottom-2 w-10 h-10 rounded-full bg-black/10" />
+    <div className="relative z-10">
+      <p className="text-[10px] font-bold uppercase tracking-[.18em] text-white/60 mb-2">Balance due</p>
+      <p className="text-xl font-black text-white leading-none">
+        ₹{feeRows.reduce((s, r) => s + r.balance, 0).toLocaleString('en-IN')}
+      </p>
+    </div>
+  </div>
+</div>
                 {/* Actions */}
                 <div className="flex justify-end gap-3 mt-5 pt-4 border-t border-gray-100">
                   <button

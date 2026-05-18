@@ -832,28 +832,41 @@ export default function AccountsUI({ staffList = [] }: AccountsUIProps) {
         />
       )}
 
-      {/* ── Summary Cards ─────────────────────────────── */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="bg-linear-to-br from-teal-500 to-emerald-600 rounded-xl px-4 py-3.5 shadow-md">
-          <p className="text-xs text-teal-100 mb-1 font-medium uppercase tracking-wide">Total Income</p>
-          <p className="text-xl font-bold text-white tabular-nums">₹{fmt(totals.income)}</p>
-        </div>
-        <div className="bg-linear-to-br from-rose-500 to-pink-600 rounded-xl px-4 py-3.5 shadow-md">
-          <p className="text-xs text-rose-100 mb-1 font-medium uppercase tracking-wide">Total Expenditure</p>
-          <p className="text-xl font-bold text-white tabular-nums">₹{fmt(totals.expenditure)}</p>
-        </div>
-        <div className={`rounded-xl px-4 py-3.5 shadow-md ${
-          totals.balance >= 0
-            ? 'bg-linear-to-br from-blue-500 to-indigo-600'
-            : 'bg-linear-to-br from-orange-500 to-red-600'
-        }`}>
-          <p className="text-xs text-blue-100 mb-1 font-medium uppercase tracking-wide">Balance</p>
-          <p className="text-xl font-bold text-white tabular-nums">
-            {totals.balance >= 0 ? '+' : ''}₹{fmt(totals.balance)}
-          </p>
-        </div>
-      </div>
+ {/* ── Summary Cards ─────────────────────────────── */}
+<div className="grid grid-cols-3 gap-3">
+  <div className="relative overflow-hidden rounded-2xl px-5 py-4 bg-[linear-gradient(135deg,_#059669_0%,_#0D9488_55%,_#0891B2_100%)] shadow-lg shadow-emerald-200">
+    <div className="absolute -right-5 -top-5 w-24 h-24 rounded-full bg-white/10" />
+    <div className="absolute right-3 bottom-2 w-12 h-12 rounded-full bg-black/10" />
+    <div className="relative z-10">
+      <p className="text-[10px] font-bold uppercase tracking-[.18em] text-white/60 mb-2">Total Income</p>
+      <p className="text-xl font-black text-white tabular-nums">₹{fmt(totals.income)}</p>
+    </div>
+  </div>
 
+  <div className="relative overflow-hidden rounded-2xl px-5 py-4 bg-[linear-gradient(135deg,_#DC2626_0%,_#DB2777_60%,_#9333EA_100%)] shadow-lg shadow-rose-200">
+    <div className="absolute -right-5 -top-5 w-24 h-24 rounded-full bg-white/10" />
+    <div className="absolute right-3 bottom-2 w-12 h-12 rounded-full bg-black/10" />
+    <div className="relative z-10">
+      <p className="text-[10px] font-bold uppercase tracking-[.18em] text-white/60 mb-2">Total Expenditure</p>
+      <p className="text-xl font-black text-white tabular-nums">₹{fmt(totals.expenditure)}</p>
+    </div>
+  </div>
+
+  <div className={`relative overflow-hidden rounded-2xl px-5 py-4 shadow-lg ${
+    totals.balance >= 0
+      ? 'bg-[linear-gradient(135deg,_#2563EB_0%,_#7C3AED_55%,_#DB2777_100%)] shadow-blue-200'
+      : 'bg-[linear-gradient(135deg,_#F59E0B_0%,_#EF4444_55%,_#EC4899_100%)] shadow-amber-200'
+  }`}>
+    <div className="absolute -right-5 -top-5 w-24 h-24 rounded-full bg-white/10" />
+    <div className="absolute right-3 bottom-2 w-12 h-12 rounded-full bg-black/10" />
+    <div className="relative z-10">
+      <p className="text-[10px] font-bold uppercase tracking-[.18em] text-white/60 mb-2">Balance</p>
+      <p className="text-xl font-black text-white tabular-nums">
+        {totals.balance >= 0 ? '+' : ''}₹{fmt(totals.balance)}
+      </p>
+    </div>
+  </div>
+</div>
       {/* ── Opening / Closing Balance Bar ─────────────── */}
       {isFiltered && effectiveDateFrom && (
         <div className="grid grid-cols-3 gap-3">

@@ -3,7 +3,13 @@
 import { useState } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 import { useRouter } from 'next/navigation'
-import { CalendarCheck, LogOut, User, BookOpen } from 'lucide-react'
+// At the top of your file, update your lucide-react imports:
+import {
+  CalendarCheck, CalendarCheck2,   // outline → filled pair for attendance
+  LogOut, User, BookOpen,
+  BookMarked,                        // filled version for marks
+  UserRound,                         // filled version for profile
+} from 'lucide-react'
 
 import TeacherMarks from './TeacherMarks'
 import TeacherAttendance from './TeacherAttendance'
@@ -94,35 +100,46 @@ export default function TeacherDashboard({
         </div>
       </main>
 
-      {/* ── Fixed Bottom Tab Bar ── */}
-      <nav className="fixed bottom-0 inset-x-0 z-30 bg-teal-700 border-t border-teal-800 shadow-[0_-2px_10px_rgba(0,0,0,0.1)]">
-        <div className="max-w-2xl mx-auto flex">
-          {visibleTabs.map(tab => {
-            const active = activeTab === tab.id
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as Tab)}
-                className={`flex-1 flex flex-col items-center justify-center gap-1 py-3 transition-all active:bg-teal-800 ${
-                  active ? 'text-white' : 'text-teal-300'
-                }`}
-              >
-                <div className="relative">
-                  <tab.icon className={`w-5 h-5 transition-transform ${active ? 'scale-110' : 'opacity-80'}`} />
-                  {active && (
-                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-400 rounded-full" />
-                  )}
-                </div>
-                <span className={`text-[11px] font-medium leading-none ${active ? 'opacity-100' : 'opacity-70'}`}>
-                  {tab.label}
-                </span>
-              </button>
-            )
-          })}
-        </div>
-        {/* iOS home indicator safe area */}
-        <div className="h-[env(safe-area-inset-bottom)] bg-teal-700" />
-      </nav>
+  {/* ── Fixed Bottom Tab Bar ── */}
+<nav className="fixed bottom-0 inset-x-0 z-30 bg-teal-700 border-t border-teal-800 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+    <div className="max-w-2xl mx-auto flex">
+    {visibleTabs.map(tab => {
+      const active = activeTab === tab.id
+
+      // Icon pairs: [outline, filled]
+      const iconMap = {
+        marks:      { outline: BookOpen,      filled: BookMarked      },
+        attendance: { outline: CalendarCheck, filled: CalendarCheck2  },
+        profile:    { outline: User,          filled: UserRound        },
+      } as const
+
+      const { outline: OutlineIcon, filled: FilledIcon } = iconMap[tab.id]
+
+      return (
+        <button
+          key={tab.id}
+          onClick={() => setActiveTab(tab.id as Tab)}
+          className="flex-1 flex flex-col items-center justify-center gap-1 py-3 transition-all active:bg-teal-800"
+        >
+          {active
+            ? <FilledIcon  className="w-5.5 h-5.5 text-white" />
+            : <OutlineIcon className="w-5.5 h-5.5 text-teal-100" />
+          }
+          <span className={`text-[11px] font-semibold leading-none tracking-wide transition-colors ${
+active ? 'text-white' : 'text-teal-100'          }`}>
+            {tab.label}
+          </span>
+          {/* Active pill indicator */}
+          {active && (
+            <span className="absolute bottom-[env(safe-area-inset-bottom,0px)] w-8 h-0.75 bg-yellow-400 rounded-full" />
+          )}
+        </button>
+      )
+    })}
+  </div>
+  {/* iOS home indicator safe area */}
+  <div className="h-[env(safe-area-inset-bottom)] bg-teal-700" />
+</nav>
     </div>
   )
 }

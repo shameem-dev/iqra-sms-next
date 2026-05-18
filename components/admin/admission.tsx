@@ -59,11 +59,15 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   )
 }
 
-function StatCard({ label, value, accent }: { label: string; value: number; accent: string }) {
+function StatCard({ label, value, gradient, shadow }: { label: string; value: number; gradient: string; shadow: string }) {
   return (
-    <div className={`relative overflow-hidden flex flex-col justify-between px-5 py-4 rounded-2xl border ${accent} min-w-[120px]`}>
-      <p className="text-[11px] font-bold uppercase tracking-widest opacity-60 mb-1">{label}</p>
-      <p className="text-3xl font-black leading-none">{value}</p>
+    <div className={`relative overflow-hidden flex flex-col justify-between px-5 py-4 rounded-2xl ${gradient} shadow-lg ${shadow}`}>
+      <div className="absolute -right-5 -top-5 w-24 h-24 rounded-full bg-white/10" />
+      <div className="absolute right-3 bottom-2 w-12 h-12 rounded-full bg-black/10" />
+      <div className="relative z-10">
+        <p className="text-[10px] font-bold uppercase tracking-[.18em] text-white/60 mb-2">{label}</p>
+        <p className="text-3xl font-black leading-none text-white">{value}</p>
+      </div>
     </div>
   )
 }
@@ -370,19 +374,33 @@ export default function AdmissionRegisterPage() {
             </div>
           </div>
 
-          {/* ── Stat cards ── */}
-          <div className="flex flex-wrap gap-3">
-            <StatCard label="Total Students" value={filtered.length} accent="bg-white border-[#E2E8F0] text-[#0F172A]" />
-            <StatCard label="Boys"           value={boyCount}        accent="bg-[#EFF6FF] border-[#BFDBFE] text-[#1D4ED8]" />
-            <StatCard label="Girls"          value={girlCount}       accent="bg-[#FDF2F8] border-[#FBCFE8] text-[#BE185D]" />
-            {/* FIX: Added "Active Logins" stat card so you can see at a glance
-                how many parents have login accounts */}
-            <StatCard
-              label="Active Logins"
-              value={records.filter(r => !!r.parent_auth_user_id).length}
-              accent="bg-[#F0FDF4] border-[#BBF7D0] text-[#15803D]"
-            />
-          </div>
+{/* ── Stat cards ── */}
+<div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+  <StatCard
+    label="Total Students"
+    value={filtered.length}
+    gradient="bg-[linear-gradient(135deg,_#7C3AED_0%,_#4F46E5_55%,_#3730A3_100%)]"
+    shadow="shadow-violet-200"
+  />
+  <StatCard
+    label="Boys"
+    value={boyCount}
+    gradient="bg-[linear-gradient(135deg,_#2563EB_0%,_#0D9488_55%,_#0891B2_100%)]"
+    shadow="shadow-blue-200"
+  />
+  <StatCard
+    label="Girls"
+    value={girlCount}
+    gradient="bg-[linear-gradient(135deg,_#DB2777_0%,_#EC4899_55%,_#9333EA_100%)]"
+    shadow="shadow-pink-200"
+  />
+  <StatCard
+    label="Active Logins"
+    value={records.filter(r => !!r.parent_auth_user_id).length}
+    gradient="bg-[linear-gradient(135deg,_#059669_0%,_#0D9488_55%,_#0891B2_100%)]"
+    shadow="shadow-emerald-200"
+  />
+</div>
         </div>
 
         {/* ── Error banner ── */}

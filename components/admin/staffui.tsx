@@ -16,7 +16,6 @@ import { getPayrollStatusForMonth, getPayrollForStaff, type PayrollRecord } from
 type SortKey = 'name' | 'department' | 'designation' | 'date_joined' | 'total_salary';
 type SortDir  = 'asc' | 'desc';
 
-// Status per staff member for the current month
 interface PayStatus {
   totalPaid:        number
   isFullyPaid:      boolean
@@ -37,7 +36,6 @@ export default function StaffUI() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [deleting, setDeleting]         = useState(false);
 
-  // ── Payroll state ─────────────────────────────────────────────────────────
   const [payTarget, setPayTarget]               = useState<Staff | null>(null);
   const [payStatusMap, setPayStatusMap]         = useState<Record<string, PayStatus>>({});
   const [staffPayHistory, setStaffPayHistory]   = useState<PayrollRecord[]>([]);
@@ -46,7 +44,6 @@ export default function StaffUI() {
 
   const currentMonth = new Date().toISOString().slice(0, 7);
 
-  // ── Fetch staff + payroll status ──────────────────────────────────────────
   const fetchStaff = useCallback(async () => {
     try {
       setLoading(true);
@@ -55,7 +52,6 @@ export default function StaffUI() {
       setStaff(data);
       setFiltered(data);
 
-      // Build payroll status using full salary info per staff member
       const statusMap = await getPayrollStatusForMonth(
         currentMonth,
         data.map(s => ({
@@ -74,7 +70,6 @@ export default function StaffUI() {
 
   useEffect(() => { fetchStaff(); }, [fetchStaff]);
 
-  // ── Filter + sort ─────────────────────────────────────────────────────────
   useEffect(() => {
     const q = search.toLowerCase();
     const result = staff.filter(s =>
@@ -112,7 +107,6 @@ export default function StaffUI() {
     }
   };
 
-  // ── Open pay modal ────────────────────────────────────────────────────────
   const handleOpenPay = async (s: Staff) => {
     setPayHistoryLoading(true);
     try {
@@ -134,16 +128,12 @@ export default function StaffUI() {
     fetchStaff();
   };
 
-  // ── Helpers ───────────────────────────────────────────────────────────────
   const SortIcon = ({ col }: { col: SortKey }) =>
     sortKey === col
       ? sortDir === 'asc'
         ? <ChevronUp   className="w-3 h-3 ml-1 text-teal-600" />
         : <ChevronDown className="w-3 h-3 ml-1 text-teal-600" />
       : <ChevronUp className="w-3 h-3 ml-1 opacity-20" />;
-
-  const initials = (name: string) =>
-    name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
 
   const AVATAR_COLORS = [
     'bg-teal-100 text-teal-700',
@@ -155,7 +145,12 @@ export default function StaffUI() {
   const avatarColor = (name: string) =>
     AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length];
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  // ── Derived stats ─────────────────────────────────────────────────────────
+  const activeStaff   = staff.filter(s => !s.date_left).length;
+  const fullyPaid     = Object.values(payStatusMap).filter(p => p.isFullyPaid).length;
+  const partiallyPaid = Object.values(payStatusMap).filter(p => p.isPartiallyPaid).length;
+  const pending       = Object.values(payStatusMap).filter(p => !p.isFullyPaid && !p.isPartiallyPaid).length;
+
   return (
     <div className="w-full space-y-4">
 
@@ -197,6 +192,74 @@ export default function StaffUI() {
           </button>
         </div>
       </div>
+
+      {/* ── Stats Cards ── */}
+      {!loading && staff.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {/* Total Staff */}
+          <div className="relative overflow-hidden rounded-2xl px-5 py-4 bg-[linear-gradient(135deg,_#7C3AED_0%,_#4F46E5_55%,_#3730A3_100%)] shadow-lg shadow-violet-200">
+            <div className="absolute -right-5 -top-5 w-24 h-24 rounded-full bg-white/10" />
+            <div className="absolute right-3 bottom-2 w-12 h-12 rounded-full bg-black/10" />
+            <div className="relative z-10 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shrink-0">
+                <Users size={18} className="text-white" />
+              </div>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[.18em] text-white/60">Total Staff</p>
+                <p className="text-xl font-black text-white leading-tight">{staff.length}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Active */}
+          <div className="relative overflow-hidden rounded-2xl px-5 py-4 bg-[linear-gradient(135deg,_#059669_0%,_#0D9488_55%,_#0891B2_100%)] shadow-lg shadow-emerald-200">
+            <div className="absolute -right-5 -top-5 w-24 h-24 rounded-full bg-white/10" />
+            <div className="absolute right-3 bottom-2 w-12 h-12 rounded-full bg-black/10" />
+            <div className="relative z-10 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shrink-0">
+                <CheckCircle2 size={18} className="text-white" />
+              </div>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[.18em] text-white/60">Active</p>
+                <p className="text-xl font-black text-white leading-tight">{activeStaff}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Salary Paid */}
+          <div className="relative overflow-hidden rounded-2xl px-5 py-4 bg-[linear-gradient(135deg,_#2563EB_0%,_#7C3AED_55%,_#DB2777_100%)] shadow-lg shadow-blue-200">
+            <div className="absolute -right-5 -top-5 w-24 h-24 rounded-full bg-white/10" />
+            <div className="absolute right-3 bottom-2 w-12 h-12 rounded-full bg-black/10" />
+            <div className="relative z-10 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shrink-0">
+                <Banknote size={18} className="text-white" />
+              </div>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[.18em] text-white/60">Salary Paid</p>
+                <p className="text-xl font-black text-white leading-tight">
+                  {fullyPaid}
+                  <span className="text-sm font-medium text-white/60 ml-1">+ {partiallyPaid} partial</span>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Pending */}
+          <div className="relative overflow-hidden rounded-2xl px-5 py-4 bg-[linear-gradient(135deg,_#F59E0B_0%,_#EF4444_55%,_#EC4899_100%)] shadow-lg shadow-amber-200">
+            <div className="absolute -right-5 -top-5 w-24 h-24 rounded-full bg-white/10" />
+            <div className="absolute right-3 bottom-2 w-12 h-12 rounded-full bg-black/10" />
+            <div className="relative z-10 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shrink-0">
+                <AlertCircle size={18} className="text-white" />
+              </div>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[.18em] text-white/60">Pending</p>
+                <p className="text-xl font-black text-white leading-tight">{pending}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Error Banner ── */}
       {error && (
@@ -265,13 +328,10 @@ export default function StaffUI() {
                   return (
                     <tr key={s.id} className="hover:bg-slate-50/60 transition-colors">
 
-                      {/* # */}
                       <td className="px-4 py-3 text-xs text-slate-400 tabular-nums">{i + 1}</td>
 
-                      {/* Name */}
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2.5 min-w-0">
-                          
                           <div className="min-w-0">
                             <p className="font-medium text-slate-800 truncate">{s.name}</p>
                             {s.edu_qualification && (
@@ -281,33 +341,28 @@ export default function StaffUI() {
                         </div>
                       </td>
 
-                      {/* Mobile */}
                       <td className="px-4 py-3 text-slate-600 tabular-nums whitespace-nowrap">
                         {s.mobile
                           ? <a href={`tel:${s.mobile}`} className="hover:text-teal-600 transition-colors">{s.mobile}</a>
                           : <span className="text-slate-300">—</span>}
                       </td>
 
-                      {/* Designation */}
                       <td className="px-4 py-3 text-slate-700 whitespace-nowrap">
                         {s.designation || <span className="text-slate-300">—</span>}
                       </td>
 
-                      {/* Department */}
                       <td className="px-4 py-3">
                         {s.department
                           ? <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-slate-100 text-slate-600">{s.department}</span>
                           : <span className="text-slate-300">—</span>}
                       </td>
 
-                      {/* Joined */}
                       <td className="px-4 py-3 text-slate-500 whitespace-nowrap tabular-nums">
                         {s.date_joined
                           ? new Date(s.date_joined).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
                           : <span className="text-slate-300">—</span>}
                       </td>
 
-                      {/* Salary */}
                       <td className="px-4 py-3 text-right whitespace-nowrap">
                         {s.total_salary
                           ? (
@@ -324,14 +379,11 @@ export default function StaffUI() {
                       </td>
 
                       <td className="px-4 py-3">
-                        <div className="flex flex-col gap-1 ">
-                          
-
-                          {/* Salary payment badge — only for active staff with salary */}
+                        <div className="flex flex-col gap-1">
                           {isActive && hasSalary && (
                             ps?.isFullyPaid ? (
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold bg-teal-50 text-teal-700">
-                               Paid
+                                Paid
                               </span>
                             ) : ps?.isPartiallyPaid ? (
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold bg-blue-50 text-blue-600">
@@ -348,7 +400,6 @@ export default function StaffUI() {
                         </div>
                       </td>
 
-                      {/* Actions */}
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-center gap-0.5">
                           <button
@@ -365,7 +416,6 @@ export default function StaffUI() {
                           >
                             <Pencil className="w-3.5 h-3.5" />
                           </button>
-                          {/* Pay button — only for active staff with salary */}
                           {isActive && hasSalary && (
                             <button
                               onClick={() => handleOpenPay(s)}
@@ -403,7 +453,6 @@ export default function StaffUI() {
           </div>
         )}
 
-        {/* Table footer */}
         {!loading && filtered.length > 0 && (
           <div className="px-4 py-2.5 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
             <p className="text-xs text-slate-400">

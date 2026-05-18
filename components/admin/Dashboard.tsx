@@ -38,36 +38,38 @@ function KpiCard({
   badgePositive,
 }: any) {
   return (
-    <div
-      className={`relative overflow-hidden rounded-[28px] p-6 ${gradient} shadow-lg`}
-    >
-      <div className="absolute -right-6 -top-6 w-32 h-32 rounded-full bg-white/10" />
-      <div className="absolute right-6 top-10 w-16 h-16 rounded-full bg-white/8" />
-      <div className="relative z-10">
-        <div className="flex items-start justify-between mb-5">
-          <span className="text-[9px] font-bold uppercase tracking-[.22em] text-white/60">
+    <div className={`relative overflow-hidden rounded-[24px] p-6 ${gradient} shadow-xl`}>
+      {/* Decorative circles */}
+      <div className="absolute -right-8 -top-8 w-40 h-40 rounded-full bg-white/10" />
+      <div className="absolute right-4 bottom-4 w-20 h-20 rounded-full bg-black/10" />
+      <div className="absolute -left-4 -bottom-6 w-28 h-28 rounded-full bg-white/8" />
+
+      <div className="relative z-10 flex flex-col gap-4">
+        {/* Top row: label + icon */}
+        <div className="flex items-start justify-between">
+          <span className="text-[10px] font-bold uppercase tracking-[.2em] text-white/60">
             {label}
           </span>
-          <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center">
-            <Icon size={17} className="text-white" />
+          <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-inner">
+            <Icon size={18} className="text-white drop-shadow" />
           </div>
         </div>
-        <p className="text-[2.2rem] font-black leading-none text-white tracking-tight">
+
+        {/* Value */}
+        <p className="text-[2.4rem] font-black leading-none text-white tracking-tight drop-shadow-sm">
           {value}
         </p>
+
+        {/* Badge + sub */}
         {(sub || badge) && (
-          <div className="flex items-center gap-2 mt-3">
+          <div className="flex items-center gap-2 flex-wrap">
             {badge && (
-              <span
-                className={`text-[9px] font-bold px-2.5 py-1 rounded-full ${badgePositive ? 'bg-white/25 text-white' : 'bg-black/25 text-white/90'}`}
-              >
+              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-black/20 text-white/90 backdrop-blur-sm">
                 {badge}
               </span>
             )}
             {sub && (
-              <span className="text-[10px] text-white/55 font-medium">
-                {sub}
-              </span>
+              <span className="text-[11px] text-white/55 font-medium">{sub}</span>
             )}
           </div>
         )}
@@ -75,7 +77,6 @@ function KpiCard({
     </div>
   )
 }
-
 function StreamRow({ label, amount, total, colors }: any) {
   const p = total > 0 ? Math.min(Math.round((amount / total) * 100), 100) : 0
   return (
@@ -563,48 +564,43 @@ export default function Dashboard() {
             </button>
           </div>
         </header>
-
-        {/* KPIs */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <KpiCard
-            label="Students"
-            value={String(data.students)}
-            sub="enrolled this term"
-            icon={Users}
-            gradient="bg-gradient-to-br from-violet-500 via-purple-500 to-indigo-600"
-          />
-          <KpiCard
-            label="Revenue"
-            value={fmtINR(data.income)}
-            badge="+12.4%"
-            badgePositive
-            sub="vs last month"
-            icon={TrendingUp}
-            gradient="bg-gradient-to-br from-emerald-400 via-teal-500 to-cyan-600"
-          />
-          <KpiCard
-            label="Faculty"
-            value={String(data.staff)}
-            sub="active members"
-            icon={GraduationCap}
-            gradient="bg-gradient-to-br from-amber-400 via-orange-500 to-red-500"
-          />
-          <KpiCard
-            label="Treasury"
-            value={fmtINR(balance)}
-            badge={
-              isDeficit ? `${balancePct}% deficit` : `${balancePct}% surplus`
-            }
-            badgePositive={!isDeficit}
-            icon={isDeficit ? AlertTriangle : Wallet}
-            gradient={
-              isDeficit
-                ? 'bg-gradient-to-br from-rose-500 via-pink-600 to-red-600'
-                : 'bg-gradient-to-br from-sky-500 via-blue-500 to-indigo-600'
-            }
-          />
-        </div>
-
+<div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+  <KpiCard
+    label="Students"
+    value={String(data.students)}
+    sub="enrolled this term"
+    icon={Users}
+    gradient="bg-[linear-gradient(135deg,_#7C3AED_0%,_#4F46E5_50%,_#3730A3_100%)]"
+  />
+  <KpiCard
+    label="Revenue"
+    value={fmtINR(data.income)}
+    badge="+12.4%"
+    badgePositive
+    sub="vs last month"
+    icon={TrendingUp}
+    gradient="bg-[linear-gradient(135deg,_#059669_0%,_#0D9488_50%,_#0891B2_100%)]"
+  />
+  <KpiCard
+    label="Faculty"
+    value={String(data.staff)}
+    sub="active members"
+    icon={GraduationCap}
+    gradient="bg-[linear-gradient(135deg,_#F59E0B_0%,_#EF4444_55%,_#EC4899_100%)]"
+  />
+  <KpiCard
+    label="Treasury"
+    value={fmtINR(balance)}
+    badge={isDeficit ? `${balancePct}% deficit` : `${balancePct}% surplus`}
+    badgePositive={!isDeficit}
+    icon={isDeficit ? AlertTriangle : Wallet}
+    gradient={
+      isDeficit
+        ? "bg-[linear-gradient(135deg,_#DC2626_0%,_#DB2777_60%,_#9333EA_100%)]"
+        : "bg-[linear-gradient(135deg,_#2563EB_0%,_#7C3AED_55%,_#DB2777_100%)]"
+    }
+  />
+</div>
         {/* Today's Summary */}
         <TodaySummary
           todayIncome={data.todayIncome}

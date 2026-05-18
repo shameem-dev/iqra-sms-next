@@ -98,25 +98,27 @@ interface StudentAllMarks {
 }[]
 }
 
-// ─── Stat Card ────────────────────────────────────────────────────────────────
 function StatCard({
-  label, value, icon: Icon, accent,
+  label, value, icon: Icon, gradient, shadow,
 }: {
-  label: string; value: string | number; icon: React.ElementType; accent: string
+  label: string; value: string | number; icon: React.ElementType; gradient: string; shadow: string
 }) {
   return (
-    <div className="flex items-center gap-4 bg-white border border-slate-100 rounded-2xl px-5 py-4 shadow-sm">
-      <div className={`p-2.5 rounded-xl ${accent}`}>
-        <Icon size={18} className="text-white" />
-      </div>
-      <div>
-        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{label}</p>
-        <p className="text-xl font-bold text-slate-800 leading-tight">{value}</p>
+    <div className={`relative overflow-hidden rounded-2xl px-5 py-4 ${gradient} shadow-lg ${shadow}`}>
+      <div className="absolute -right-5 -top-5 w-24 h-24 rounded-full bg-white/10" />
+      <div className="absolute right-3 bottom-2 w-12 h-12 rounded-full bg-black/10" />
+      <div className="relative z-10 flex items-center gap-3">
+        <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shrink-0">
+          <Icon size={18} className="text-white" />
+        </div>
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[.18em] text-white/60">{label}</p>
+          <p className="text-xl font-black text-white leading-tight">{value}</p>
+        </div>
       </div>
     </div>
   )
 }
-
 // ─── Section Header ───────────────────────────────────────────────────────────
 function SectionHeader({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
@@ -763,16 +765,38 @@ export default function MarksEntryPage() {
         {/* ── Published lock banner (for teachers) ───────────────────────── */}
         {isPublished && !isAdmin && <PublishedLockBanner />}
 
-        {/* ── Stats ──────────────────────────────────────────────────────── */}
-        {subjects.length > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <StatCard label="Class"    value={selectedStandard}                                                  icon={ClipboardList} accent="bg-indigo-500" />
-            <StatCard label="Students" value={totalStudents || '—'}                                              icon={Users}         accent="bg-violet-500" />
-            <StatCard label="Subjects" value={totalSubjects}                                                     icon={BookOpen}      accent="bg-sky-500" />
-            <StatCard label="Entries"  value={totalStudents ? `${enteredCount} / ${totalStudents}` : '—'}        icon={BarChart2}     accent="bg-emerald-500" />
-          </div>
-        )}
-
+      {subjects.length > 0 && (
+  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+    <StatCard
+      label="Class"
+      value={selectedStandard}
+      icon={ClipboardList}
+      gradient="bg-[linear-gradient(135deg,_#7C3AED_0%,_#4F46E5_55%,_#3730A3_100%)]"
+      shadow="shadow-violet-200"
+    />
+    <StatCard
+      label="Students"
+      value={totalStudents || '—'}
+      icon={Users}
+      gradient="bg-[linear-gradient(135deg,_#059669_0%,_#0D9488_55%,_#0891B2_100%)]"
+      shadow="shadow-emerald-200"
+    />
+    <StatCard
+      label="Subjects"
+      value={totalSubjects}
+      icon={BookOpen}
+      gradient="bg-[linear-gradient(135deg,_#F59E0B_0%,_#F97316_55%,_#EF4444_100%)]"
+      shadow="shadow-amber-200"
+    />
+    <StatCard
+      label="Entries"
+      value={totalStudents ? `${enteredCount} / ${totalStudents}` : '—'}
+      icon={BarChart2}
+      gradient="bg-[linear-gradient(135deg,_#2563EB_0%,_#7C3AED_55%,_#DB2777_100%)]"
+      shadow="shadow-blue-200"
+    />
+  </div>
+)}
         {/* ── No subjects ─────────────────────────────────────────────────── */}
         {subjects.length === 0 && !loading && (
           <EmptyState
