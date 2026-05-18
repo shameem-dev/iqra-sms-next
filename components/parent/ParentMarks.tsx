@@ -3,13 +3,25 @@
 import { useState, useEffect } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 import { Loader2 } from 'lucide-react'
+import { getAcademicYear } from '@/lib/academicYear';
 
 interface Props { studentId: number; standard: string }
 
-const ACADEMIC_YEAR = '2025-2026'
+const ACADEMIC_YEAR = getAcademicYear()
 const EXAM_LABELS: Record<string, string> = {
-  ut1: 'UT 1', ut2: 'UT 2', ut3: 'UT 3', ut4: 'UT 4',
-  mid_term: 'Mid Term', half_yearly: 'Half Yearly', final: 'Final',
+  ut1: 'UT 1',
+  ut2: 'UT 2',
+  ut3: 'UT 3',
+  ut4: 'UT 4',
+
+  ut5: 'UT 5',
+  ut6: 'UT 6',
+  ut7: 'UT 7',
+  ut8: 'UT 8',
+
+  mid_term: 'Mid Term',
+  half_yearly: 'Half Yearly',
+  final: 'Final',
 }
 
 export default function ParentMarks({ studentId, standard }: Props) {
@@ -26,7 +38,26 @@ export default function ParentMarks({ studentId, standard }: Props) {
       setLoading(true)
       const { data } = await supabase
         .from('marks')
-        .select('*, subjects(id, name, max_ut1, max_ut2, max_ut3, max_ut4, max_mid_term, max_half_yearly, max_final)')
+        .select(`
+  *,
+  subjects(
+    id,
+    name,
+    max_ut1,
+    max_ut2,
+    max_ut3,
+    max_ut4,
+
+    max_ut5,
+    max_ut6,
+    max_ut7,
+    max_ut8,
+
+    max_mid_term,
+    max_half_yearly,
+    max_final
+  )
+`)
         .eq('student_id', studentId)
         .eq('academic_year', ACADEMIC_YEAR)
       setMarksData(data || [])
@@ -46,7 +77,21 @@ export default function ParentMarks({ studentId, standard }: Props) {
     </div>
   )
 
-  const examFields = ['ut1', 'ut2', 'ut3', 'ut4', 'mid_term', 'half_yearly', 'final']
+  const examFields = [
+  'ut1',
+  'ut2',
+  'ut3',
+  'ut4',
+
+  'ut5',
+  'ut6',
+  'ut7',
+  'ut8',
+
+  'mid_term',
+  'half_yearly',
+  'final',
+]
 
   return (
     <div className="space-y-4">
