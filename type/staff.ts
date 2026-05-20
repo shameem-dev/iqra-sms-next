@@ -1,4 +1,3 @@
-
 export interface Staff {
   id: string;
   name: string;
@@ -12,8 +11,9 @@ export interface Staff {
   basic_salary: number;
   ta: number;
   total_salary: number;
+  medical_allowance: number;   // ← NEW: total budget
   medical_used: number;
-  medical_remaining: number;
+  medical_remaining: number;   // auto = medical_allowance - medical_used
   edu_qualification: string | null;
   certificate_option: string | null;
   remarks: string | null;
@@ -23,8 +23,8 @@ export interface Staff {
   trainings?: StaffTraining[];
   projects?: StaffProject[];
   leaves?: StaffLeave[];
-  auth_user_id?: string | null
-  email?: string | null
+  auth_user_id?: string | null;
+  email?: string | null;
 }
 
 export interface StaffTraining {
@@ -70,8 +70,9 @@ export interface StaffFormData {
   date_left: string;
   basic_salary: number;
   ta: number;
+  medical_allowance: number;   // ← NEW
   medical_used: number;
-  medical_remaining: number;
+  medical_remaining: number;   // read-only; auto = medical_allowance - medical_used
   edu_qualification: string;
   certificate_option: string;
   remarks: string;

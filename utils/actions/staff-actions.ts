@@ -1,8 +1,7 @@
-
 import { createClient } from '../supabase/client';
 const supabase = createClient();
 import type { Staff, StaffFormData, LeaveType } from '@/type/staff';
-
+import { createEntry } from '@/utils/actions/Accounts';
 // ─── FETCH ALL STAFF ─────────────────────────────────────────────────────────
 export async function getAllStaff(): Promise<Staff[]> {
   const { data, error } = await supabase
@@ -46,18 +45,17 @@ export async function createStaff(formData: StaffFormData): Promise<Staff> {
     ...staffData
   } = formData;
 
-  // Insert main staff record
   const { data: newStaff, error: staffError } = await supabase
     .from('staff')
     .insert([{
       ...staffData,
-      basic_salary: Number(staffData.basic_salary) || 0,
-      ta: Number(staffData.ta) || 0,
-      medical_used: Number(staffData.medical_used) || 0,
+      basic_salary:      Number(staffData.basic_salary) || 0,
+      ta:                Number(staffData.ta) || 0,
+      medical_used:      Number(staffData.medical_used) || 0,
       medical_remaining: Number(staffData.medical_remaining) || 0,
-      date_of_birth: staffData.date_of_birth || null,
-      date_joined: staffData.date_joined || null,
-      date_left: staffData.date_left || null,
+      date_of_birth:     staffData.date_of_birth || null,
+      date_joined:       staffData.date_joined || null,
+      date_left:         staffData.date_left || null,
     }])
     .select()
     .single();
@@ -66,49 +64,40 @@ export async function createStaff(formData: StaffFormData): Promise<Staff> {
 
   const staffId = newStaff.id;
 
-  // Insert trainings (outside)
   if (trainings_outside.length > 0) {
     const { error } = await supabase.from('staff_trainings').insert(
       trainings_outside.filter(t => t.trim()).map((t) => ({
-        staff_id: staffId,
-        training_name: t,
-        source: 'outside',
+        staff_id: staffId, training_name: t, source: 'outside',
       }))
     );
     if (error) throw error;
   }
 
-  // Insert trainings (iqrah)
   if (trainings_iqrah.length > 0) {
     const { error } = await supabase.from('staff_trainings').insert(
       trainings_iqrah.filter(t => t.trim()).map((t) => ({
-        staff_id: staffId,
-        training_name: t,
-        source: 'iqrah',
+        staff_id: staffId, training_name: t, source: 'iqrah',
       }))
     );
     if (error) throw error;
   }
 
-  // Insert projects
   if (projects.length > 0) {
     const { error } = await supabase.from('staff_projects').insert(
       projects.filter(p => p.trim()).map((p) => ({
-        staff_id: staffId,
-        project_name: p,
+        staff_id: staffId, project_name: p,
       }))
     );
     if (error) throw error;
   }
 
-  // Insert leaves
   const leaveTypes: LeaveType[] = ['annual', 'casual', 'commuted', 'sick', 'other'];
   const leaveRows = leaveTypes.map((type) => ({
-    staff_id: staffId,
-    leave_type: type,
-    days_used: Number(leaves[`${type}_used` as keyof typeof leaves]) || 0,
+    staff_id:       staffId,
+    leave_type:     type,
+    days_used:      Number(leaves[`${type}_used` as keyof typeof leaves]) || 0,
     days_remaining: Number(leaves[`${type}_remaining` as keyof typeof leaves]) || 0,
-    year: new Date().getFullYear(),
+    year:           new Date().getFullYear(),
   }));
 
   const { error: leaveError } = await supabase.from('staff_leaves').insert(leaveRows);
@@ -127,18 +116,29 @@ export async function updateStaff(id: string, formData: StaffFormData): Promise<
     ...staffData
   } = formData;
 
-  // Update main staff record
+  // ── Fetch current medical_used before update ──────────────────────────────
+  const { data: existing } = await supabase
+    .from('staff')
+    .select('medical_used, name')
+    .eq('id', id)
+    .single();
+
+  const prevMedicalUsed = Number(existing?.medical_used) || 0;
+  const newMedicalUsed  = Number(staffData.medical_used)  || 0;
+  const medicalDiff     = newMedicalUsed - prevMedicalUsed;
+
+  // ── Update main staff record ──────────────────────────────────────────────
   const { data: updated, error: staffError } = await supabase
     .from('staff')
     .update({
       ...staffData,
-      basic_salary: Number(staffData.basic_salary) || 0,
-      ta: Number(staffData.ta) || 0,
-      medical_used: Number(staffData.medical_used) || 0,
+      basic_salary:      Number(staffData.basic_salary) || 0,
+      ta:                Number(staffData.ta) || 0,
+      medical_used:      Number(staffData.medical_used) || 0,
       medical_remaining: Number(staffData.medical_remaining) || 0,
-      date_of_birth: staffData.date_of_birth || null,
-      date_joined: staffData.date_joined || null,
-      date_left: staffData.date_left || null,
+      date_of_birth:     staffData.date_of_birth || null,
+      date_joined:       staffData.date_joined || null,
+      date_left:         staffData.date_left || null,
     })
     .eq('id', id)
     .select()
@@ -146,7 +146,21 @@ export async function updateStaff(id: string, formData: StaffFormData): Promise<
 
   if (staffError) throw staffError;
 
-  // Replace trainings
+  // ── Auto account entry when medical_used increases ────────────────────────
+  if (medicalDiff > 0 && existing?.name) {
+    const receiptNo = `MED-${Date.now().toString().slice(-6)}`;
+    await createEntry({
+      type:                 'expenditure',
+      date:                 new Date().toISOString().split('T')[0],
+      amount:               medicalDiff,
+      notes:                `Medical allowance — ${existing.name}`,
+      expenditure_category: 'medical',
+      staff_name:           existing.name,
+      receipt_no:           receiptNo,
+    });
+  }
+
+  // ── Replace trainings ─────────────────────────────────────────────────────
   await supabase.from('staff_trainings').delete().eq('staff_id', id);
 
   const allTrainings = [
@@ -157,21 +171,21 @@ export async function updateStaff(id: string, formData: StaffFormData): Promise<
     await supabase.from('staff_trainings').insert(allTrainings);
   }
 
-  // Replace projects
+  // ── Replace projects ──────────────────────────────────────────────────────
   await supabase.from('staff_projects').delete().eq('staff_id', id);
   const allProjects = projects.filter(p => p.trim()).map(p => ({ staff_id: id, project_name: p }));
   if (allProjects.length > 0) {
     await supabase.from('staff_projects').insert(allProjects);
   }
 
-  // Upsert leaves
+  // ── Upsert leaves ─────────────────────────────────────────────────────────
   const leaveTypes: LeaveType[] = ['annual', 'casual', 'commuted', 'sick', 'other'];
   const year = new Date().getFullYear();
   for (const type of leaveTypes) {
     await supabase.from('staff_leaves').upsert({
-      staff_id: id,
-      leave_type: type,
-      days_used: Number(leaves[`${type}_used` as keyof typeof leaves]) || 0,
+      staff_id:       id,
+      leave_type:     type,
+      days_used:      Number(leaves[`${type}_used` as keyof typeof leaves]) || 0,
       days_remaining: Number(leaves[`${type}_remaining` as keyof typeof leaves]) || 0,
       year,
     }, { onConflict: 'staff_id,leave_type,year' });

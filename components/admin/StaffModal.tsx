@@ -51,7 +51,8 @@ const selectCls =
 const EMPTY_FORM: StaffFormData = {
   name: '', address: '', mobile: '', designation: '', department: '',
   date_of_birth: '', date_joined: '', date_left: '',
-  basic_salary: 0, ta: 0, medical_used: 0, medical_remaining: 0,
+  basic_salary: 0, ta: 0,
+  medical_allowance: 0, medical_used: 0, medical_remaining: 0,
   edu_qualification: '', certificate_option: '', remarks: '',
   trainings_outside: [''], trainings_iqrah: [''], projects: [''],
   leaves: {
@@ -83,17 +84,19 @@ function formatBytes(bytes: number) {
 interface InputFieldProps {
   label: string; value: string | number;
   onChange: (val: string | number) => void;
-  type?: string; required?: boolean; placeholder?: string;
+  type?: string; required?: boolean; placeholder?: string; readOnly?: boolean;
 }
-function InputField({ label, value, onChange, type = 'text', required = false, placeholder }: InputFieldProps) {
+function InputField({ label, value, onChange, type = 'text', required = false, placeholder, readOnly = false }: InputFieldProps) {
   return (
     <div>
       <label className="block text-xs font-medium text-slate-600 mb-1">
         {label}{required && <span className="text-red-500 ml-0.5">*</span>}
       </label>
-      <input type={type} value={value} placeholder={placeholder}
-        onChange={e => onChange(type === 'number' ? Number(e.target.value) : e.target.value)}
-        className={inputCls} />
+      <input
+        type={type} value={value} placeholder={placeholder} readOnly={readOnly}
+        onChange={e => !readOnly && onChange(type === 'number' ? Number(e.target.value) : e.target.value)}
+        className={`${inputCls} ${readOnly ? 'bg-slate-50 cursor-not-allowed text-slate-500' : ''}`}
+      />
     </div>
   );
 }
@@ -260,12 +263,17 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
       leaveMap[`${l.leave_type}_remaining`] = l.days_remaining;
     });
 
+    const allowance = staff.medical_allowance ?? 0;
+    const used      = staff.medical_used      ?? 0;
+
     setForm({
       name: staff.name, address: staff.address || '', mobile: staff.mobile || '',
       designation: staff.designation || '', department: staff.department || '',
       date_of_birth: staff.date_of_birth || '', date_joined: staff.date_joined || '',
       date_left: staff.date_left || '', basic_salary: staff.basic_salary, ta: staff.ta,
-      medical_used: staff.medical_used, medical_remaining: staff.medical_remaining,
+      medical_allowance: allowance,
+      medical_used: used,
+      medical_remaining: allowance - used,
       edu_qualification: staff.edu_qualification || '',
       certificate_option: staff.certificate_option || '', remarks: staff.remarks || '',
       trainings_outside: outsideTrainings.length ? outsideTrainings : [''],
@@ -304,6 +312,24 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
 
   const removeListItem = (key: 'trainings_outside' | 'trainings_iqrah' | 'projects', idx: number) =>
     setForm(f => ({ ...f, [key]: f[key].filter((_, i) => i !== idx) }));
+
+  // ── Medical allowance auto-calc helpers ───────────────────────────────────
+
+  const setMedicalAllowance = (allowance: number) => {
+    setForm(f => ({
+      ...f,
+      medical_allowance: allowance,
+      medical_remaining: allowance - f.medical_used,
+    }));
+  };
+
+  const setMedicalUsed = (used: number) => {
+    setForm(f => ({
+      ...f,
+      medical_used: used,
+      medical_remaining: f.medical_allowance - used,
+    }));
+  };
 
   // ─────────────────────────────────────────────────────────────────────────
   // SAVE STAFF
@@ -461,12 +487,10 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
     try {
       const originalSize = selectedFile.size;
 
-      // Send to ilovepdf compression API route
       const form = new FormData();
       form.append('file', selectedFile);
       const res = await fetch('/api/compress-pdf', { method: 'POST', body: form });
 
-      // Use compressed blob only if smaller
       let uploadBlob: Blob = selectedFile;
       if (res.ok) {
         const compressed = await res.blob();
@@ -682,12 +706,50 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
                   Basic: ₹{Number(form.basic_salary).toLocaleString('en-IN')} + TA: ₹{Number(form.ta).toLocaleString('en-IN')}
                 </div>
               </div>
+
+              {/* ── Medical Reimbursement ── */}
               <div className="col-span-2">
                 <p className="text-sm font-semibold text-slate-700 mb-3">Medical Reimbursement</p>
                 <div className="grid grid-cols-2 gap-4">
-                  <InputField label="Used (₹)"      value={form.medical_used}      onChange={v => set('medical_used', v as number)}      type="number" />
-                  <InputField label="Remaining (₹)" value={form.medical_remaining} onChange={v => set('medical_remaining', v as number)} type="number" />
+                  {/* Allowance — editable */}
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">Allowance (₹)</label>
+                    <input
+                      type="number" min="0"
+                      value={form.medical_allowance}
+                      onChange={e => setMedicalAllowance(Number(e.target.value))}
+                      className={inputCls}
+                    />
+                  </div>
+                  {/* Used — editable */}
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">Used (₹)</label>
+                    <input
+                      type="number" min="0"
+                      value={form.medical_used}
+                      onChange={e => setMedicalUsed(Number(e.target.value))}
+                      className={inputCls}
+                    />
+                  </div>
                 </div>
+                {/* Remaining — auto-calculated, read-only display */}
+                <div className="mt-3 p-3 bg-teal-50 border border-teal-100 rounded-xl flex items-center justify-between">
+                  <div>
+                    <div className="text-xs text-teal-600 font-medium">Remaining</div>
+                    <div className={`text-xl font-bold mt-0.5 ${form.medical_remaining < 0 ? 'text-red-600' : 'text-teal-800'}`}>
+                      ₹{Number(form.medical_remaining).toLocaleString('en-IN')}
+                    </div>
+                  </div>
+                  <div className="text-right text-xs text-teal-500 space-y-0.5">
+                    <div>Allowance: ₹{Number(form.medical_allowance).toLocaleString('en-IN')}</div>
+                    <div>Used: ₹{Number(form.medical_used).toLocaleString('en-IN')}</div>
+                  </div>
+                </div>
+                {form.medical_remaining < 0 && (
+                  <p className="text-xs text-red-500 mt-1.5 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" /> Used exceeds allowance
+                  </p>
+                )}
               </div>
             </div>
           )}
@@ -792,7 +854,6 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
                   <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
                     <p className="text-sm font-semibold text-slate-700">Upload Document</p>
 
-                    {/* Title */}
                     <div>
                       <label className="block text-xs font-medium text-slate-600 mb-1">
                         Document Title <span className="text-red-500">*</span>
@@ -802,7 +863,6 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
                         className={inputCls} />
                     </div>
 
-                    {/* File picker */}
                     <div>
                       <label className="block text-xs font-medium text-slate-600 mb-1">
                         PDF File <span className="text-red-500">*</span>
@@ -834,21 +894,18 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
                         className="hidden" onChange={handleFilePick} />
                     </div>
 
-                    {/* Doc error */}
                     {docError && (
                       <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-xs">
                         <AlertCircle className="w-3.5 h-3.5 shrink-0" />{docError}
                       </div>
                     )}
 
-                    {/* Doc success — shows compression result after upload */}
                     {docSuccess && (
                       <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-xs">
                         <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />{docSuccess}
                       </div>
                     )}
 
-                    {/* Upload button */}
                     <button
                       onClick={handleDocUpload}
                       disabled={uploading || !selectedFile || !docTitle.trim()}
@@ -887,12 +944,9 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
                       <div key={doc.id}
                         className="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-xl hover:shadow-sm transition-all"
                       >
-                        {/* Icon */}
                         <div className="p-3 bg-red-50 rounded-xl shrink-0 border border-red-100">
                           <FileText className="w-6 h-6 text-red-500" />
                         </div>
-
-                        {/* Info */}
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-bold text-slate-800 truncate">{doc.title}</p>
                           <p className="text-xs text-slate-500 truncate">{doc.file_name}</p>
@@ -902,11 +956,7 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
                             })}
                           </p>
                         </div>
-
-                        {/* Actions — always visible */}
                         <div className="flex items-center gap-1.5 shrink-0">
-
-                          {/* View — black */}
                           <button
                             onClick={() => handleDocPreview(doc)}
                             disabled={previewLoadingId === doc.id}
@@ -918,8 +968,6 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
                               : <Eye className="w-3.5 h-3.5" />
                             }
                           </button>
-
-                          {/* Download — teal */}
                           <button
                             onClick={() => handleDocDownload(doc)}
                             disabled={downloadingDocId === doc.id}
@@ -931,8 +979,6 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
                               : <Download className="w-3.5 h-3.5" />
                             }
                           </button>
-
-                          {/* Delete — red */}
                           <button
                             onClick={() => handleDocDelete(doc)}
                             disabled={deletingDocId === doc.id}
@@ -944,7 +990,6 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
                               : <Trash2 className="w-3.5 h-3.5" />
                             }
                           </button>
-
                         </div>
                       </div>
                     ))}
@@ -964,7 +1009,6 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
                 </div>
               ) : (
                 <>
-                  {/* Status banner */}
                   {hasLogin ? (
                     <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 space-y-3">
                       <div className="flex items-start justify-between gap-3">
@@ -1039,7 +1083,6 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
 
                   {!hasLogin && assignmentFormJSX}
 
-                  {/* Email + Password */}
                   <div className="space-y-3">
                     <div>
                       <label className="block text-xs font-medium text-slate-600 mb-1">
@@ -1079,7 +1122,6 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
 
         {/* ── Footer ── */}
         <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-slate-50 rounded-b-2xl shrink-0">
-          {/* Dot navigation */}
           <div className="flex gap-1.5">
             {TABS.map((_, i) => (
               <button key={i} onClick={() => setActiveTab(i)}
@@ -1094,7 +1136,6 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
               Cancel
             </button>
 
-            {/* Next button — not on last tab */}
             {activeTab < TABS.length - 1 && (
               <button onClick={() => setActiveTab(t => t + 1)}
                 className="h-9 px-4 text-sm text-teal-700 bg-teal-50 border border-teal-200 hover:bg-teal-100 rounded-lg transition-colors">
@@ -1102,7 +1143,6 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
               </button>
             )}
 
-            {/* Save Staff — hidden on Documents and Login tabs */}
             {activeTab !== DOC_TAB_IDX && activeTab !== LOGIN_TAB_IDX && (
               <button onClick={handleSave} disabled={saving}
                 className="h-9 flex items-center gap-2 px-5 text-sm font-semibold bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-60 transition-colors">

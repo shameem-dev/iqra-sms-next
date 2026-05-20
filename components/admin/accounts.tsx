@@ -729,8 +729,7 @@ export default function AccountsUI({ staffList = [] }: AccountsUIProps) {
   const handleDateToChange   = (v: string) => { setDateTo(v);   setFilterMonth(''); };
 
   // ── Sorted & filtered entries ─────────────────────────
-  const sortedAll = [...entries].sort((a, b) => a.date.localeCompare(b.date));
-
+const sortedAll = [...entries].sort((a, b) => b.date.localeCompare(a.date));
   const effectiveDateFrom = dateFrom;
   const effectiveDateTo   = dateTo;
   const isFiltered        = !!(effectiveDateFrom || effectiveDateTo || typeFilter !== 'all' || search);

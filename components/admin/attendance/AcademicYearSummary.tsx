@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Fragment } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 import {
   GraduationCap, TrendingUp, TrendingDown, Users,
@@ -295,9 +295,9 @@ export default function AcademicYearSummary({ students, selectedStandard }: Prop
                   const isExpanded = expandedId === stat.student.id
 
                   return (
-                    <>
+                    // ✅ KEY ON FRAGMENT, not on inner <tr>
+                    <Fragment key={stat.student.id}>
                       <tr
-                        key={stat.student.id}
                         className={`border-b border-slate-100 transition-colors cursor-pointer group
                           ${isExpanded ? 'bg-slate-50' : 'hover:bg-slate-50'}
                         `}
@@ -374,7 +374,7 @@ export default function AcademicYearSummary({ students, selectedStandard }: Prop
                       </tr>
 
                       {isExpanded && (
-                        <tr key={`${stat.student.id}-expanded`} className="border-b border-slate-200">
+                        <tr className="border-b border-slate-200">
                           <td colSpan={months.length + 3} className="px-4 py-3 bg-slate-50">
                             <div className="flex items-center gap-2 mb-2">
                               <BookOpen className="w-3.5 h-3.5 text-slate-400" />
@@ -423,7 +423,7 @@ export default function AcademicYearSummary({ students, selectedStandard }: Prop
                           </td>
                         </tr>
                       )}
-                    </>
+                    </Fragment>
                   )
                 })}
               </tbody>
