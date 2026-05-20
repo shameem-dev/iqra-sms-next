@@ -81,7 +81,7 @@ export default function FeeTableSingle({ student, onClose, onGoToPayment }: Prop
       <div className="flex justify-between items-center px-4 py-3 border-b border-gray-100">
         <button
           onClick={onClose}
-          className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1 transition-colors">
+          className="text-xs text-white hover:text-white flex items-center gap-1 transition-colors bg-gray-600 hover:bg-gray-700  px-2 py-1 rounded-md border border-gray-400">
           ← Back
         </button>
         <button

@@ -815,7 +815,7 @@ export default function AdmissionRegisterPage() {
               {/* Show warning if parent login exists — deleting student won't remove auth account */}
               {deleteConfirm.parent_auth_user_id && (
                 <p className="text-[10px] text-[#B45309] mt-2 bg-[#FFFBEB] border border-[#FDE68A] rounded-lg px-2 py-1">
-                  ⚠️ Parent login account will NOT be deleted automatically
+                  
                 </p>
               )}
             </div>

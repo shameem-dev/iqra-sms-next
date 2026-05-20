@@ -48,7 +48,6 @@ export default function ParentAttendance({ studentId, studentName }: Props) {
   const monthName    = new Date(year, month).toLocaleString('en-IN', { month: 'long', year: 'numeric' })
   const presentCount = records.filter(r => r.status === 'present').length
   const absentCount  = records.filter(r => r.status === 'absent').length
-  const lateCount    = records.filter(r => r.status === 'late').length
   const totalDays    = records.length
   const pct          = totalDays > 0 ? Math.round((presentCount / totalDays) * 100) : 0
 
@@ -60,12 +59,11 @@ export default function ParentAttendance({ studentId, studentName }: Props) {
   const STATUS_COLOR: Record<string, string> = {
     present: 'bg-teal-500 text-white',
     absent:  'bg-red-400 text-white',
-    late:    'bg-amber-400 text-white',
   }
 
   return (
     <div className="space-y-4">
-      <h2 className="text-base font-bold text-slate-700">Attendance — {studentName}</h2>
+      <h2 className="text-base font-bold text-slate-700">Attendance - {studentName}</h2>
 
       {/* Month nav */}
       <div className="bg-white rounded-xl border border-slate-200 p-4 flex items-center justify-between">
@@ -134,7 +132,6 @@ export default function ParentAttendance({ studentId, studentName }: Props) {
           <div className="flex items-center gap-4 mt-4 pt-3 border-t border-slate-100 text-xs text-slate-400">
             <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-teal-500 inline-block" /> Present</span>
             <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-red-400 inline-block" /> Absent</span>
-            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-amber-400 inline-block" /> Late</span>
             <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-slate-200 inline-block" /> No record</span>
           </div>
         </div>

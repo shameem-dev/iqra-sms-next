@@ -13,12 +13,10 @@ const EXAM_LABELS: Record<string, string> = {
   ut2: 'UT 2',
   ut3: 'UT 3',
   ut4: 'UT 4',
-
   ut5: 'UT 5',
   ut6: 'UT 6',
   ut7: 'UT 7',
   ut8: 'UT 8',
-
   mid_term: 'Mid Term',
   half_yearly: 'Half Yearly',
   final: 'Final',
