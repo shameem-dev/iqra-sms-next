@@ -27,7 +27,7 @@ export function printReceipt(student: Student, receipt: FeePayment) {
     </head>
     <body>
       <div class="header">
-        <h1>IQRA School</h1>
+        <h1>IQRA English School</h1>
         <p>Fee Receipt</p>
       </div>
       <div class="receipt-no">

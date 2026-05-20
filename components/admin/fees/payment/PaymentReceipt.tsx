@@ -75,7 +75,7 @@ export default function PaymentReceipt({
 <body>
   <div class="receipt">
     <div class="header">
-      <h1>IQRA SCHOOL</h1>
+      <h1>IQRA ENGLISH SCHOOL</h1>
       <p>FEE RECEIPT</p>
     </div>
     <div class="body">
@@ -123,7 +123,7 @@ export default function PaymentReceipt({
     </div>
     <div class="footer">
       <p>Thank you for your payment</p>
-      <p>Iqra School — ${new Date().getFullYear()}</p>
+      <p>IQRA English School — ${new Date().getFullYear()}</p>
     </div>
   </div>
 </body>
@@ -167,7 +167,7 @@ export default function PaymentReceipt({
       {/* Receipt preview */}
       <div ref={printRef} className="border-2 border-teal-600 rounded-xl overflow-hidden">
         <div className="bg-teal-600 text-white text-center py-4 px-4">
-          <h2 className="text-base font-bold tracking-wide">IQRA SCHOOL</h2>
+          <h2 className="text-base font-bold tracking-wide">IQRA ENGLISH SCHOOL</h2>
           <p className="text-xs text-teal-100 mt-0.5">FEE RECEIPT</p>
         </div>
         <div className="p-4">
@@ -217,7 +217,7 @@ export default function PaymentReceipt({
         </div>
         <div className="bg-gray-50 border-t border-gray-100 text-center py-3 px-4">
           <p className="text-xs text-gray-400">Thank you for your payment</p>
-          <p className="text-xs text-gray-300 mt-0.5">Iqra School — {new Date().getFullYear()}</p>
+          <p className="text-xs text-gray-300 mt-0.5">IQRA English School - {new Date().getFullYear()}</p>
         </div>
       </div>
 
