@@ -32,7 +32,6 @@ export interface StudentMarks {
   conduct: string
   qualified: boolean
   fees_paid: boolean
-  fee_concession: boolean
   last_attendance: string
   next_school: string | null
   vaccinated: boolean
@@ -81,7 +80,7 @@ function defaultMarks(studentId: number): StudentMarks {
     school_days: 0, days_attended: 0,
     rank: null, moral_rank: null,
     conduct: 'Good',
-    qualified: true, fees_paid: true, fee_concession: false,
+    qualified: true, fees_paid: true,
     last_attendance: '', next_school: null, vaccinated: true,
     nationality: 'Indian', religion: '', caste: '', category: 'General',
     admission_date: '',

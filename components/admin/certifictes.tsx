@@ -31,25 +31,27 @@ const PRINT_BASE = `
   @media print { @page { size: A4; margin: 0; } }
 `
 
-// -- Centered school header used by all three docs
 const SCHOOL_HEADER = (extraAddr = '') => `
-  <div style="text-align:center;margin-bottom:14px;">
-    <img src="/images/logo.png" alt="Iqrah Logo"
-      style="width:62px;height:62px;object-fit:contain;display:block;margin:0 auto 6px;" />
-    <div style="font-family:'EB Garamond',serif;font-size:26px;font-weight:600;color:#1A2C6B;letter-spacing:0.5px;">
-      IQRAH ENGLISH SCHOOL
+  <div style="display:flex;justify-content:center;margin-bottom:14px;">
+    <div style="display:flex;align-items:center;gap:14px;">
+      <img src="/images/logo.png" alt="Iqrah Logo"
+        style="width:62px;height:62px;object-fit:contain;flex-shrink:0;" />
+      <div style="text-align:left;">
+        <div style="font-family:'EB Garamond',serif;font-size:26px;font-weight:600;color:#1A2C6B;letter-spacing:0.5px;">
+          IQRAH ENGLISH SCHOOL
+        </div>
+        <div style="font-size:11px;color:#555;margin-top:3px;">
+          Nediyiruppu, Kondotty (Po) – 673638, Malappuram (Dt), Kerala, India
+        </div>
+        <div style="font-size:11px;color:#555;margin-top:1px;">
+          Ph: 9744636329, 9544696668 &nbsp;|&nbsp; iemskdy@gmail.com
+        </div>
+        ${extraAddr}
+      </div>
     </div>
-    <div style="font-size:11px;color:#555;margin-top:3px;">
-      Nediyiruppu, Kondotty (Po) – 673638, Malappuram (Dt), Kerala, India
-    </div>
-    <div style="font-size:11px;color:#555;margin-top:1px;">
-      Ph: 9744636329, 9544696668 &nbsp;|&nbsp; iemskdy@gmail.com
-    </div>
-    ${extraAddr}
   </div>
 `
 
-// -- Dynamic academic year
 const CURRENT_ACADEMIC_YEAR  = getAcademicYear()
 const ACADEMIC_YEAR_DISPLAY  = CURRENT_ACADEMIC_YEAR.replace('-', '–')
 
@@ -57,7 +59,7 @@ const ACADEMIC_YEAR_DISPLAY  = CURRENT_ACADEMIC_YEAR.replace('-', '–')
 type TCOverrides = {
   nationality: string; religion: string; caste: string; category: string
   admission_date: string; qualified: boolean; fees_paid: boolean
-  fee_concession: boolean; last_attendance: string; next_school: string
+  last_attendance: string; next_school: string
   vaccinated: boolean; school_days: string; days_attended: string
   conduct: string; rank: string; moral_rank: string
 }
@@ -75,7 +77,6 @@ function marksToOverrides(
     admission_date: m.admission_date,
     qualified:      m.qualified,
     fees_paid:      m.fees_paid,
-    fee_concession: m.fee_concession,
     last_attendance:m.last_attendance,
     next_school:    m.next_school ?? '',
     vaccinated:     m.vaccinated,
@@ -94,7 +95,6 @@ function buildTC(s: StudentWithMarks, ov: TCOverrides) {
   const tcNo  = `${Math.floor(Math.random() * 30) + 1} / ${CURRENT_ACADEMIC_YEAR}`
   const today = new Date().toLocaleDateString('en-GB')
 
-  // Use live attendance; fall back to manual override fields
   const schoolDays   = s.attendance.schoolDays   || parseInt(ov.school_days)  || 0
   const daysAttended = s.attendance.daysAttended  || parseInt(ov.days_attended) || 0
 
@@ -111,7 +111,6 @@ function buildTC(s: StudentWithMarks, ov: TCOverrides) {
     ['10', 'Date of admission/promotion', ov.admission_date || '—'],
     ['11', 'Qualified for promotion', ov.qualified ? 'YES' : 'NO'],
     ['12', 'Fees paid', ov.fees_paid ? 'YES' : 'NO'],
-    ['13', 'Fee concession', ov.fee_concession ? 'YES' : 'NO'],
     ['14', 'Date of last attendance', ov.last_attendance || '—'],
     ['15', 'Date name removed from rolls', ov.last_attendance || '—'],
     ['16', 'Date of application', today],
@@ -240,7 +239,6 @@ function buildPRDoc(s: StudentWithMarks, ov: TCOverrides, mode: 'hy' | 'final') 
   const moralTitle= isFinal ? `MORAL EXAMINATION – ${year} (Final)` : `MORAL EXAMINATION – ${year}`
   const pronoun   = s.gender === 'Female' ? 'Girl' : 'Boy'
 
-  // Live attendance
   const schoolDays   = s.attendance.schoolDays   || parseInt(ov.school_days)  || 0
   const daysAttended = s.attendance.daysAttended  || parseInt(ov.days_attended) || 0
 
@@ -497,7 +495,6 @@ function TCEditPanel({ ov, setOv, onSave, saving }: {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4, background: LIGHT, borderRadius: 7, padding: '8px 12px', border: `1px solid ${BORDER}` }}>
         <Toggle label="Qualified for promotion" value={ov.qualified}      onChange={v => setOv(p => ({ ...p, qualified: v }))} />
         <Toggle label="Fees paid"               value={ov.fees_paid}      onChange={v => setOv(p => ({ ...p, fees_paid: v }))} />
-        <Toggle label="Fee concession"          value={ov.fee_concession} onChange={v => setOv(p => ({ ...p, fee_concession: v }))} />
         <Toggle label="Vaccinated"              value={ov.vaccinated}     onChange={v => setOv(p => ({ ...p, vaccinated: v }))} />
       </div>
       <button onClick={onSave} disabled={saving} style={{ marginTop: 4, padding: '8px', fontSize: 12, fontWeight: 600, borderRadius: 7, border: `1px solid ${NAVY}`, background: NAVY, color: WHITE, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'inherit', opacity: saving ? 0.7 : 1 }}>
@@ -598,6 +595,54 @@ export default function DocumentGenerator() {
     win.onload = () => win.print()
   }
 
+function handleBulkPrint() {
+  if (filtered.length === 0) return
+
+  const allDocs = filtered.map(s => {
+    const studentOv = marksToOverrides(s.marks, s.computedRank, s.computedMoralRank)
+    return buildDoc(s, studentOv)
+  })
+
+  // Each doc is a full HTML page. Extract <head> styles from first doc,
+  // extract <body> content from each, wrap in .page-wrapper for page breaks.
+  // The key: include ALL styles from PRINT_BASE + doc-specific styles.
+  
+  // Extract full <style> block from first doc (all docs share same styles)
+  const styleMatch = allDocs[0].match(/<style>([\s\S]*?)<\/style>/i)
+  const sharedStyles = styleMatch ? styleMatch[1] : ''
+
+  // Extract body content from each doc
+  const bodyParts = allDocs.map(html => {
+    const m = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i)
+    return m ? m[1] : html
+  })
+
+  const combined = `<!DOCTYPE html><html><head><meta charset="utf-8">
+<style>
+${sharedStyles}
+.page-wrapper {
+  page-break-after: always;
+  break-after: page;
+}
+.page-wrapper:last-child {
+  page-break-after: avoid;
+  break-after: avoid;
+}
+@media print {
+  @page { size: A4; margin: 0; }
+  .page-wrapper { page-break-after: always; break-after: page; }
+  .page-wrapper:last-child { page-break-after: avoid; break-after: avoid; }
+}
+</style>
+</head><body>
+${bodyParts.map(c => `<div class="page-wrapper">${c}</div>`).join('\n')}
+</body></html>`
+
+  const win = window.open('', '_blank')!
+  win.document.write(combined)
+  win.document.close()
+  win.onload = () => win.print()
+}
   async function handleSave() {
     if (!selected || !ov) return
     setSaving(true); setSaveMsg('')
@@ -624,7 +669,6 @@ export default function DocumentGenerator() {
         conduct:         ov.conduct,
         qualified:       ov.qualified,
         fees_paid:       ov.fees_paid,
-        fee_concession:  ov.fee_concession,
         last_attendance: ov.last_attendance,
         next_school:     ov.next_school || null,
         vaccinated:      ov.vaccinated,
@@ -731,6 +775,20 @@ export default function DocumentGenerator() {
               Edit Fields
             </button>
           )}
+{(docType === 'pr_hy' || docType === 'pr_f') && (
+  <button
+    onClick={handleBulkPrint}
+    disabled={filtered.length === 0}
+    title={`Print all ${filtered.length} student(s) as ${docLabels[docType]}`}
+    style={{
+      padding: '5px 14px', fontSize: 12, fontWeight: 500, borderRadius: 7,
+      border: `1px solid ${NAVY}`, background: WHITE, color: NAVY,
+      cursor: filtered.length === 0 ? 'not-allowed' : 'pointer',
+      fontFamily: 'inherit', opacity: filtered.length === 0 ? 0.4 : 1
+    }}>
+    Print All ({filtered.length})
+  </button>
+)}
           {selected && (
             <button onClick={handlePrint}
               style={{ padding: '5px 16px', fontSize: 12, fontWeight: 600, borderRadius: 7, border: `1px solid ${GOLD}`, background: GOLD, color: WHITE, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
