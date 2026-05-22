@@ -225,7 +225,7 @@ export default function AttendanceGrid({
           <tbody>
             {renderGenderGroup(maleStudents,   'Boy')}
             {renderGenderGroup(femaleStudents, 'Girl')}
-            {renderGenderGroup(otherStudents,  'Other')}
+            {renderGenderGroup(otherStudents,  '')}
           </tbody>
 
           {/* Footer */}

@@ -20,10 +20,10 @@ const STATUS_CYCLE: Record<Status, Status> = {
 }
 
 const TYPE_EMOJI: Record<string, string> = {
-  holiday: '🎉',
-  leave: '📅',
-  exam: '📝',
-  event: '🎊',
+  holiday: '',
+  leave: '',
+  exam: '',
+  event: '',
 }
 
 function formatDisplayDate(dateStr: string) {

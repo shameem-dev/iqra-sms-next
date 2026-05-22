@@ -242,12 +242,12 @@ export default function AdmissionRegisterPage() {
   
   return `
     <div class="card">
-      <div class="school">IQRAH SCHOOL — Parent Login Card</div>
+      <div class="school">IQRAH ENGLISH SCHOOL - Parent Login Card</div>
       <div class="name">${r.name}</div>
       <div class="meta">Admission No: <strong>${r.admission_no}</strong> &nbsp;|&nbsp; Class: <strong>${r.standard}</strong></div>
       <div class="cred-box">
         <div class="cred-title">Login Credentials</div>
-        <div class="cred-row"><span class="label">Email</span><span class="value">${r.admission_no}@iqra.school</span></div>
+        <div class="cred-row"><span class="label">User name</span><span class="value">${r.admission_no}@iqra.school</span></div>
         <div class="cred-row"><span class="label">Password</span><span class="value">${paddedId}</span></div>
       </div>
       <div class="note">Login at: <strong>https://iqra-sms-next.vercel.app/login</strong></div>
@@ -814,7 +814,7 @@ export default function AdmissionRegisterPage() {
               </p>
               {/* Show warning if parent login exists — deleting student won't remove auth account */}
               {deleteConfirm.parent_auth_user_id && (
-                <p className="text-[10px] text-[#B45309] mt-2 bg-[#FFFBEB] border border-[#FDE68A] rounded-lg px-2 py-1">
+                <p>
                   
                 </p>
               )}
