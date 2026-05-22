@@ -222,7 +222,7 @@ export default function AcademicYearSummary({ students, selectedStandard }: Prop
             <div className="bg-emerald-50 rounded-xl p-3 border border-emerald-100">
               <div className="flex items-center gap-2 mb-1">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                <span className="text-xs text-emerald-600">On Track</span>
+                <span className="text-xs text-emerald-600"></span>
               </div>
               <p className="text-2xl font-bold text-emerald-700">{goodCount}</p>
               <p className="text-[10px] text-emerald-500 mt-0.5">≥ 75% attendance</p>
@@ -231,16 +231,16 @@ export default function AcademicYearSummary({ students, selectedStandard }: Prop
             <div className="bg-amber-50 rounded-xl p-3 border border-amber-100">
               <div className="flex items-center gap-2 mb-1">
                 <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-                <span className="text-xs text-amber-600">Warning</span>
+                <span className="text-xs text-amber-600"></span>
               </div>
               <p className="text-2xl font-bold text-amber-700">{warningCount}</p>
-              <p className="text-[10px] text-amber-500 mt-0.5">60–74% attendance</p>
+              <p className="text-[10px] text-amber-500 mt-0.5">60-74% attendance</p>
             </div>
 
             <div className="bg-red-50 rounded-xl p-3 border border-red-100">
               <div className="flex items-center gap-2 mb-1">
                 <TrendingDown className="w-3.5 h-3.5 text-red-500" />
-                <span className="text-xs text-red-600">At Risk</span>
+                <span className="text-xs text-red-600"></span>
               </div>
               <p className="text-2xl font-bold text-red-700">{atRiskCount}</p>
               <p className="text-[10px] text-red-500 mt-0.5">&lt; 60% attendance</p>

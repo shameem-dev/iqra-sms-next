@@ -371,6 +371,50 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
         : r
     ));
 
+
+
+
+  async function validateAssignments() {
+  if (!staff) return null;
+
+  // Check class teacher duplicate
+  if (classTeacherStandard) {
+    const { data: existingClass } = await supabase
+      .from('teacher_assignments')
+      .select('id, staff_id')
+      .eq('type', 'class_teacher')
+      .eq('standard', classTeacherStandard)
+      .neq('staff_id', staff.id)
+      .maybeSingle();
+
+    if (existingClass) {
+      return `Class ${classTeacherStandard} is already assigned to another teacher`;
+    }
+  }
+
+  // Check subject teacher duplicate
+  for (const row of subjectAssignments) {
+    for (const subjectId of row.subjectIds) {
+      const { data: existingSubject } = await supabase
+        .from('teacher_assignments')
+        .select('id, staff_id')
+        .eq('type', 'subject_teacher')
+        .eq('standard', row.standard)
+        .eq('subject_id', subjectId)
+        .neq('staff_id', staff.id)
+        .maybeSingle();
+
+      if (existingSubject) {
+        const subject = subjects.find(s => s.id === subjectId);
+
+        return `${subject?.name} in ${row.standard} is already assigned to another teacher`;
+      }
+    }
+  }
+
+  return null;
+}
+
   // ─────────────────────────────────────────────────────────────────────────
   // LOGIN ACTIONS
   // ─────────────────────────────────────────────────────────────────────────
@@ -391,6 +435,14 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
     });
 
     if (assignments.length === 0) { setLoginError('Please add at least one class or subject assignment'); return; }
+
+
+    const validationError = await validateAssignments();
+
+      if (validationError) {
+        setLoginError(validationError);
+        return;
+      }
 
     setLoginLoading(true); setLoginError(''); setLoginSuccess('');
     const res  = await fetch('/api/admin/create-staff-user', {
@@ -430,6 +482,14 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
   async function handleSaveAssignments() {
     if (!staff) return;
     setAssignSaving(true); setLoginError(''); setLoginSuccess('');
+
+    const validationError = await validateAssignments();
+
+    if (validationError) {
+      setLoginError(validationError);
+      setAssignSaving(false);
+      return;
+    }
 
     const assignments: { type: string; standard: string; subject_id: number | null }[] = [];
     if (classTeacherStandard)
@@ -608,22 +668,44 @@ export function StaffModal({ staff, onClose, onSaved }: Props) {
               )}
             </div>
             {row.standard && (
-              <div className="flex flex-wrap gap-1.5">
-                {subjects.filter(s => s.standard === row.standard).map(s => (
-                  <button key={s.id} onClick={() => toggleSubjectInRow(idx, s.id)}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-all ${
-                      row.subjectIds.includes(s.id)
-                        ? 'bg-violet-600 text-white border-violet-600'
-                        : 'bg-white text-slate-600 border-slate-200 hover:border-violet-300'
-                    }`}>
-                    {s.name}
-                  </button>
-                ))}
-                {subjects.filter(s => s.standard === row.standard).length === 0 && (
-                  <p className="text-xs text-slate-400">No subjects for this class</p>
-                )}
-              </div>
-            )}
+                <div className="flex flex-wrap gap-1.5">
+                  {subjects
+                    .filter(s => s.standard === row.standard)
+                    .map(s => {
+                      const alreadyAssigned = existingAssignments.some(
+                        a =>
+                          a.type === 'subject_teacher' &&
+                          a.standard === row.standard &&
+                          a.subject_id === s.id
+                      );
+
+                      return (
+                        <button
+                          key={s.id}
+                          disabled={alreadyAssigned}
+                          title={alreadyAssigned ? 'Assigned to another teacher' : ''}
+                          onClick={() => toggleSubjectInRow(idx, s.id)}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-all ${
+                            alreadyAssigned
+                              ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
+                              : row.subjectIds.includes(s.id)
+                              ? 'bg-violet-600 text-white border-violet-600'
+                              : 'bg-white text-slate-600 border-slate-200 hover:border-violet-300'
+                          }`}
+                        >
+                          {s.name}
+                          {alreadyAssigned && ' • Assigned'}
+                        </button>
+                      );
+                    })}
+
+                  {subjects.filter(s => s.standard === row.standard).length === 0 && (
+                    <p className="text-xs text-slate-400">
+                      No subjects for this class
+                    </p>
+                  )}
+                </div>
+)}
           </div>
         ))}
       </div>

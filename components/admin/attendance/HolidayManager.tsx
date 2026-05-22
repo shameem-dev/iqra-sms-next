@@ -122,18 +122,18 @@ export default function HolidayManager() {
             <div>
               <label className="block text-xs text-slate-500 mb-1">Date *</label>
               <input type="date" value={date} onChange={e => setDate(e.target.value)}
-                className="w-full h-8 px-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                className="w-full h-8 px-2 text-sm border text-black border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
             </div>
             <div>
               <label className="block text-xs text-slate-500 mb-1">Title *</label>
               <input type="text" value={title} onChange={e => setTitle(e.target.value)}
                 placeholder="e.g. Eid Al-Fitr"
-                className="w-full h-8 px-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                className="w-full h-8 px-2 text-sm  text-black border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
             </div>
             <div>
               <label className="block text-xs text-slate-500 mb-1">Type *</label>
               <select value={type} onChange={e => setType(e.target.value)}
-                className="w-full h-8 px-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
+                className="w-full h-8 px-2 text-sm border text-black border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
                 {TYPE_OPTIONS.map(t => (
                   <option key={t.value} value={t.value}>{t.label}</option>
                 ))}
