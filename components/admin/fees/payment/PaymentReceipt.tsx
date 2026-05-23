@@ -217,7 +217,7 @@ export default function PaymentReceipt({
         </div>
         <div className="bg-gray-50 border-t border-gray-100 text-center py-3 px-4">
           <p className="text-xs text-gray-400">Thank you for your payment</p>
-          <p className="text-xs text-gray-300 mt-0.5">IQRA English School - {new Date().getFullYear()}</p>
+          <p className="text-xs text-gray-300 mt-0.5">IQRAH English School - {new Date().getFullYear()}</p>
         </div>
       </div>
 
