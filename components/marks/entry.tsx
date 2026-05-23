@@ -558,6 +558,7 @@ function getExamToppers(field: keyof Omit<MarkFormData, 'id'>) {
         maxTotal += maxVal
         return {
           subject_name: subject?.name ?? `Subject ${subjectMark.subject_id}`,
+          subject_type: subject?.subject_type ?? 'academic', 
           marks: markVal,
           maxMarks: maxVal,
         }

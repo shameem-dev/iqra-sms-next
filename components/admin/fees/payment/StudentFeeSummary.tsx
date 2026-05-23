@@ -4,6 +4,7 @@ import { FeeRowUI } from '@/type/fees'
 import FeeCard from './FeeCard'
 import TuitionFeeSection from './TuitionFeeSection'
 import VehicleFeeSection from './VehicleFeeSection'
+import PaymentHistory from './PaymentHistory'
 import { getStatusConfig, getFeeStatus } from '@/utils/actions/feeConstants'
 import { Plus, CheckCircle2 } from 'lucide-react'
 
@@ -37,7 +38,7 @@ export default function StudentFeeSummary({
   onAddVehicle, onDeleteVehicle, onEditVehicle,
   onRecordPayment, showPaymentForm,
 }: Props) {
-  const allFees    = [...fixedFees, ...tuitionFees, ...vehicleFees]
+  const allFees      = [...fixedFees, ...tuitionFees, ...vehicleFees]
   const grandTotal   = allFees.reduce((sum, f) => sum + f.total_amount, 0)
   const grandPaid    = allFees.reduce((sum, f) => sum + f.paid_amount,  0)
   const grandBalance = grandTotal - grandPaid
@@ -177,6 +178,15 @@ export default function StudentFeeSummary({
           <p className="text-xs text-teal-400 mt-0.5">No outstanding balance</p>
         </div>
       )}
+
+      {/* ── Payment History ── */}
+      <PaymentHistory
+        studentId={student.id}
+        studentName={student.name}
+        admissionNo={student.admission_no}
+        standard={student.standard}
+      />
+
     </div>
   )
 }
