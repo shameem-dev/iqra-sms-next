@@ -70,8 +70,9 @@ export default function PaymentPage({ preselectedStudent, onBack }: Props) {
         paid_amount: 0, academic_year: ACADEMIC_YEAR,
       })),
       {
-        student_id: student.id, fee_type: 'Tuition Fee 1',
-        total_amount: getDefaultAmount('Tuition Fee 1', student.standard),
+        student_id: student.id, 
+        fee_type: '1st Installment',
+        total_amount: getDefaultAmount('1st Installment', student.standard),
         paid_amount: 0, academic_year: ACADEMIC_YEAR,
       }
     ]
@@ -145,7 +146,7 @@ export default function PaymentPage({ preselectedStudent, onBack }: Props) {
     await fetchStudentFees(student)
   }
 
-  async function handleAddTuition(feeType: string, totalAmount: number) {
+  async function handleAddInstallment(feeType: string, totalAmount: number) {
     if (!selectedStudent) return
     const { data, error } = await supabase
       .from('student_fees')
@@ -162,7 +163,7 @@ export default function PaymentPage({ preselectedStudent, onBack }: Props) {
     }
   }
 
-  async function handleDeleteTuition(feeRowId: number) {
+  async function handleDeleteInstallment(feeRowId: number) {
     const { error } = await supabase.from('student_fees').delete().eq('id', feeRowId)
     if (error) { setError(error.message); return }
     setFees(prev => prev.filter(f => f.id !== feeRowId))
@@ -272,7 +273,14 @@ export default function PaymentPage({ preselectedStudent, onBack }: Props) {
   // ── 4. Derived values ─────────────────────────────────────────────────
 
   const fixedFees   = fees.filter(f => FIXED_FEE_TYPES.includes(f.fee_type as any))
-  const tuitionFees = fees.filter(f => f.fee_type.startsWith('Tuition Fee'))
+  const installmentFees = fees.filter(f =>
+      [
+        '1st Installment',
+        '2nd Installment',
+        '3rd Installment',
+        '4th Installment',
+      ].includes(f.fee_type)
+    )
   const vehicleFees = fees.filter(f => f.fee_type.startsWith('Vehicle Fee'))
   const unpaidFees  = fees.filter(f => f.balance > 0)
 
@@ -290,10 +298,10 @@ export default function PaymentPage({ preselectedStudent, onBack }: Props) {
           <StudentFeeSummary
             student={selectedStudent}
             fixedFees={fixedFees}
-            tuitionFees={tuitionFees}
+            installmentFees={installmentFees}
             vehicleFees={vehicleFees}
-            onAddTuition={handleAddTuition}
-            onDeleteTuition={handleDeleteTuition}
+            onAddInstallment={handleAddInstallment}
+            onDeleteInstallment={handleDeleteInstallment}
             onEditFee={handleEditFee}
             onAddVehicle={handleAddVehicle}
             onDeleteVehicle={handleDeleteVehicle}

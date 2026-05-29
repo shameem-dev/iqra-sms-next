@@ -2,7 +2,7 @@
 
 import { FeeRowUI } from '@/type/fees'
 import FeeCard from './FeeCard'
-import TuitionFeeSection from './TuitionFeeSection'
+import InstallmentFeeSection from './TuitionFeeSection'
 import VehicleFeeSection from './VehicleFeeSection'
 import PaymentHistory from './PaymentHistory'
 import { getStatusConfig, getFeeStatus } from '@/utils/actions/feeConstants'
@@ -18,10 +18,12 @@ interface Student {
 interface Props {
   student: Student
   fixedFees: FeeRowUI[]
-  tuitionFees: FeeRowUI[]
+  installmentFees: FeeRowUI[]
   vehicleFees: FeeRowUI[]
-  onAddTuition: (feeType: string, totalAmount: number) => Promise<void>
-  onDeleteTuition: (feeRowId: number, feeType: string) => Promise<void>
+
+  onAddInstallment: (feeType: string, totalAmount: number) => Promise<void>
+  onDeleteInstallment: (feeRowId: number) => Promise<void>
+
   onEditFee: (feeId: number, newTotalAmount: number) => Promise<void>
   onAddVehicle: (feeType: string, totalAmount: number) => Promise<void>
   onDeleteVehicle: (feeRowId: number) => Promise<void>
@@ -32,13 +34,14 @@ interface Props {
 
 const FIXED_FEE_ORDER = ['Admission Fee', 'Welfare Fee', 'Book Fee', 'Uniform Fee', 'Others']
 
+
 export default function StudentFeeSummary({
-  student, fixedFees, tuitionFees, vehicleFees,
-  onAddTuition, onDeleteTuition, onEditFee,
+  student, fixedFees, installmentFees, vehicleFees,
+  onAddInstallment, onDeleteInstallment, onEditFee,
   onAddVehicle, onDeleteVehicle, onEditVehicle,
   onRecordPayment, showPaymentForm,
 }: Props) {
-  const allFees      = [...fixedFees, ...tuitionFees, ...vehicleFees]
+  const allFees = [...fixedFees, ...installmentFees, ...vehicleFees]
   const grandTotal   = allFees.reduce((sum, f) => sum + f.total_amount, 0)
   const grandPaid    = allFees.reduce((sum, f) => sum + f.paid_amount,  0)
   const grandBalance = grandTotal - grandPaid
@@ -96,13 +99,13 @@ export default function StudentFeeSummary({
 
       {/* ── Tuition Fees ── */}
       <div>
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2 px-1">Tuition Fees</p>
-        <TuitionFeeSection
-          tuitionFees={tuitionFees}
-          studentStandard={student.standard}
-          onAdd={onAddTuition}
-          onDelete={onDeleteTuition}
-        />
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2 px-1">Installment Fees</p>
+        <InstallmentFeeSection
+        installmentFees={installmentFees}
+        studentStandard={student.standard}
+        onAdd={onAddInstallment}
+        onDelete={onDeleteInstallment}
+      />
       </div>
 
       {/* ── Vehicle Fees ── */}

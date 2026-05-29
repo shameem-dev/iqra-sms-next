@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 import {
-  ALL_STANDARDS, TUITION_FEE_TYPES, VEHICLE_FEE_TYPES, ACADEMIC_YEAR,
+  ALL_STANDARDS,INSTALLMENT_FEE_TYPES, VEHICLE_FEE_TYPES, ACADEMIC_YEAR,
 } from '@/utils/actions/feeConstants'
 import {
   Check,
@@ -24,7 +24,7 @@ interface Student {
   standard: string
 }
 
-type FeeCategory = 'tuition' | 'vehicle'
+type FeeCategory = 'installment' | 'vehicle'
 
 export default function BulkFeeAssignment() {
   const supabase = createBrowserClient(
@@ -37,7 +37,7 @@ export default function BulkFeeAssignment() {
 
   // ── Step 1 state ──────────────────────────────────────────────────────
   const [selectedStandard, setSelectedStandard] = useState('')
-  const [feeCategory, setFeeCategory]           = useState<FeeCategory>('tuition')
+  const [feeCategory, setFeeCategory]           = useState<FeeCategory>('installment')
   const [selectedFeeType, setSelectedFeeType]   = useState('')
   const [amount, setAmount]                     = useState<number>(0)
   const [step1Error, setStep1Error]             = useState('')
@@ -58,8 +58,8 @@ export default function BulkFeeAssignment() {
   } | null>(null)
 
   // ── Fee type options based on category ───────────────────────────────
-  const feeTypeOptions = feeCategory === 'tuition'
-    ? [...TUITION_FEE_TYPES]
+  const feeTypeOptions = feeCategory === 'installment'
+    ? [...INSTALLMENT_FEE_TYPES]
     : [...VEHICLE_FEE_TYPES]
 
   // Reset fee type when category changes
@@ -155,7 +155,7 @@ export default function BulkFeeAssignment() {
   function handleReset() {
     setStep(1)
     setSelectedStandard('')
-    setFeeCategory('tuition')
+    setFeeCategory('installment')
     setSelectedFeeType('')
     setAmount(0)
     setStep1Error('')
@@ -242,13 +242,13 @@ export default function BulkFeeAssignment() {
             </label>
             <div className="grid grid-cols-2 gap-2">
               <button
-                onClick={() => setFeeCategory('tuition')}
+                onClick={() => setFeeCategory('installment')}
                 className={`py-2.5 px-4 rounded-lg text-sm font-semibold border transition-all flex items-center justify-center gap-2
-                  ${feeCategory === 'tuition'
+                  ${feeCategory === 'installment'
                     ? 'bg-teal-600 text-white border-teal-600'
                     : 'bg-gray-50 text-gray-500 border-gray-200 hover:border-teal-300'}`}>
                 <GraduationCap className="w-4 h-4" />
-                Tuition Fee
+                Installment
               </button>
               <button
                 onClick={() => setFeeCategory('vehicle')}
@@ -265,7 +265,7 @@ export default function BulkFeeAssignment() {
           {/* Fee Type */}
           <div>
             <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
-              {feeCategory === 'tuition' ? 'Tuition Term' : 'Vehicle Term'}
+              {feeCategory === 'installment' ? 'Installment Term' : 'Vehicle Term'}
             </label>
             <div className="grid grid-cols-2 gap-1.5">
               {feeTypeOptions.map(ft => (
