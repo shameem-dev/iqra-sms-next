@@ -2,7 +2,7 @@ import { createClient } from '@/utils/supabase/client'
 import { FeeRow, Student } from '@/type/fees'
 import {
   FIXED_FEE_TYPES,
-  TUITION_FEE_TYPES,
+  INSTALLMENT_FEE_TYPES,
   VEHICLE_FEE_TYPES,
   getDefaultAmount,
 } from '@/utils/actions/feeConstants'
@@ -14,12 +14,12 @@ export const FEE_TYPES = [
   { key: 'Admission Fee',       label: 'Admission Fee'       },
   { key: 'Welfare Fee',         label: 'Welfare Fee'         },
   { key: 'Book Fee',            label: 'Book Fee'            },
-  { key: 'Uniform Fee',            label: 'Uniform Fee'            },
+  { key: 'Uniform Fee',            label: 'Uniform Fee'      },
   { key: 'Others',              label: 'Others'              },
-  { key: 'Tuition Fee 1',       label: 'Tuition Fee 1'       },
-  { key: 'Tuition Fee 2',       label: 'Tuition Fee 2'       },
-  { key: 'Tuition Fee 3',       label: 'Tuition Fee 3'       },
-  { key: 'Tuition Fee 4',       label: 'Tuition Fee 4'       },
+  { key: '1st Installment', label: '1st Installment' },
+    { key: '2nd Installment', label: '2nd Installment' },
+    { key: '3rd Installment', label: '3rd Installment' },
+    { key: '4th Installment', label: '4th Installment' },
   { key: 'Vehicle Fee - June',      label: 'Vehicle Fee - June' },
   { key: 'Vehicle Fee - July',      label: 'Vehicle Fee - July' },
   { key: 'Vehicle Fee - August',    label: 'Vehicle Fee - August' },
@@ -111,13 +111,13 @@ export async function getOrCreateFeeRows(
   return all || []
 }
 
-// ─── addTuitionFeeRow ─────────────────────────────────────────────────────────
+
 // Called when admin clicks Add Tuition Fee in the UI.
 // Only adds if that term doesn't already exist for this student + year.
 // ─────────────────────────────────────────────────────────────────────────────
-export async function addTuitionFeeRow(
+export async function addInstallmentFeeRow(
   studentId: number,
-  feeType: typeof TUITION_FEE_TYPES[number],
+  feeType: typeof INSTALLMENT_FEE_TYPES[number],
   standard: string
 ): Promise<FeeRow> {
   const year = getAcademicYear()

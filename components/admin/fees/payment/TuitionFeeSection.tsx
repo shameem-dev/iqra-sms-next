@@ -6,23 +6,28 @@ import { getStatusConfig, getDefaultAmount } from '@/utils/actions/feeConstants'
 import { BookOpen, Plus, Trash2, Save } from 'lucide-react'
 
 interface Props {
-  tuitionFees: FeeRowUI[]
+  installmentFees: FeeRowUI[]
   studentStandard: string
   onAdd: (feeType: string, totalAmount: number) => Promise<void>
-  onDelete: (feeRowId: number, feeType: string) => Promise<void>
+  onDelete: (feeRowId: number) => Promise<void>
 }
 
-const TUITION_TYPES = ['Tuition Fee 1', 'Tuition Fee 2', 'Tuition Fee 3', 'Tuition Fee 4']
+const INSTALLMENT_TYPES = [
+  '1st Installment',
+  '2nd Installment',
+  '3rd Installment',
+  '4th Installment'
+]
 
-export default function TuitionFeeSection({ tuitionFees, studentStandard, onAdd, onDelete }: Props) {
+export default function InstallmentFeeSection({installmentFees,studentStandard,onAdd,onDelete}: Props){
   const [showAddInput, setShowAddInput] = useState(false)
   const [addAmount, setAddAmount] = useState(0)
   const [adding, setAdding] = useState(false)
   const [deleting, setDeleting] = useState<number | null>(null)
 
-  const existingTypes = tuitionFees.map(f => f.fee_type)
-  const nextType = TUITION_TYPES.find(t => !existingTypes.includes(t))
-  const canAddMore = !!nextType && tuitionFees.length < 4
+  const existingTypes = installmentFees.map(f => f.fee_type)
+  const nextType = INSTALLMENT_TYPES.find(t => !existingTypes.includes(t))
+  const canAddMore = !!nextType && installmentFees.length < 4
 
   function handleShowAdd() {
     const defaultAmt = nextType ? getDefaultAmount(nextType, studentStandard) : 0
@@ -39,18 +44,18 @@ export default function TuitionFeeSection({ tuitionFees, studentStandard, onAdd,
   }
 
   async function handleDelete(fee: FeeRowUI) {
-    if (!confirm(`Delete "${fee.label}"?`)) return
-    setDeleting(fee.id)
-    await onDelete(fee.id, fee.fee_type)
-    setDeleting(null)
-  }
+  if (!confirm(`Delete "${fee.label}"?`)) return
+  setDeleting(fee.id)
+  await onDelete(fee.id)
+  setDeleting(null)
+}
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-4">
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-sm font-bold text-gray-600 flex items-center gap-2">
             <BookOpen size={16} />
-            Tuition Fees
+            Installment Fees
           </h3>
         {canAddMore && !showAddInput && (
           <button onClick={handleShowAdd}
@@ -64,11 +69,11 @@ export default function TuitionFeeSection({ tuitionFees, studentStandard, onAdd,
       </div>
 
       <div className="space-y-3">
-        {tuitionFees.length === 0 && !showAddInput && (
-          <p className="text-xs text-gray-400 text-center py-4">No tuition fees added yet.</p>
-        )}
+        {installmentFees.length === 0 && !showAddInput && (
+             <p>No installments added yet.</p>
+          )}
 
-        {tuitionFees.map(fee => {
+        {installmentFees.map(fee => {
           const status = fee.total_amount === 0 ? 'paid'
             : fee.paid_amount >= fee.total_amount ? 'paid'
             : fee.paid_amount > 0 ? 'partial' : 'pending'
@@ -165,8 +170,10 @@ export default function TuitionFeeSection({ tuitionFees, studentStandard, onAdd,
         )}
       </div>
 
-      {tuitionFees.length >= 4 && (
-        <p className="text-xs text-gray-400 text-center mt-3">Maximum 4 tuition fees reached</p>
+      {installmentFees.length >= 4 && (
+        <p className="text-xs text-gray-400 text-center mt-3">
+          Maximum 4 installments reached
+        </p>
       )}
     </div>
   )

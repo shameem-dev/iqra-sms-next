@@ -21,10 +21,20 @@ const STANDARDS = [
   "GRADE 1 A", "GRADE 2 A", "GRADE 2 B", "GRADE 3 A", "GRADE 4 A",
 ]
 const VEHICLE_POINTS = [
-  'Point 1', 'Point 2', 'Point 3', 'Point 4', 'Point 5',
-  'Own Transport', 'Walking',
+  'Karimukk',
+  'Cherad',
+  'Kottukkara',
+  'Kodangad',
+  'Evening Coffee Road',
+  'Cheruparamba',
+  'Millumpadi',
+  'Meleparamba',
+  'Kizhakke Paramba',
+  'Kizhakke Chungam',
+  'Chirayil Chungam',
+  'Own Transport',
+  'Walking',
 ]
-
 const EMPTY_FORM: AdmissionRecord = {
   admission_no: '', name: '', standard: '', date_of_birth: '',
   aadhar_no: '', parent_guardian: '', address: '', mobile_no: '',
@@ -247,7 +257,7 @@ export default function AdmissionRegisterPage() {
       <div class="meta">Admission No: <strong>${r.admission_no}</strong> &nbsp;|&nbsp; Class: <strong>${r.standard}</strong></div>
       <div class="cred-box">
         <div class="cred-title">Login Credentials</div>
-        <div class="cred-row"><span class="label">User name</span><span class="value">${r.admission_no}@iqra.school</span></div>
+        <div class="cred-row"><span class="label">User name</span><span class="value">${r.admission_no}@iqrah.school</span></div>
         <div class="cred-row"><span class="label">Password</span><span class="value">${paddedId}</span></div>
       </div>
       <div class="note">Login at: <strong>https://iqra-sms-next.vercel.app/login</strong></div>
@@ -582,7 +592,7 @@ export default function AdmissionRegisterPage() {
                       <td className="px-4 py-3.5">
                         {r.parent_auth_user_id ? (
                           <span
-                            title={`Email: ${r.parent_email ?? r.admission_no + '@iqra.school'}`}
+                            title={`Email: ${r.parent_email ?? r.admission_no + '@iqrah.school'}`}
                             className="inline-flex items-center gap-1 text-[10px] font-extrabold text-[#15803D] bg-[#F0FDF4] border border-[#BBF7D0] px-2.5 py-1 rounded-lg uppercase tracking-wide cursor-default"
                           >
                              Active
@@ -672,7 +682,7 @@ export default function AdmissionRegisterPage() {
                   <p className="text-xs text-[#4C1D95] leading-relaxed">
                     A parent login will be <strong>automatically created</strong> when this student is added.
                     <br />
-                    Login: <strong>{form.admission_no || '<adm_no>'}@iqra.school</strong>
+                    Login: <strong>{form.admission_no || '<adm_no>'}@iqrah.school</strong>
                     &nbsp;/&nbsp;
                     Password: <strong>{form.admission_no || '<adm_no>'}</strong>
                   </p>

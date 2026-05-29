@@ -23,7 +23,14 @@ export default function FeeTableSingle({ student, onClose, onGoToPayment }: Prop
     .map(ft => student.fees.find(f => f.fee_type === ft))
     .filter(Boolean) as FeeRow[]
 
-  const tuitionFees = student.fees.filter(f => f.fee_type.startsWith('Tuition Fee'))
+  const installmentFees = student.fees.filter(f =>
+  [
+    '1st Installment',
+    '2nd Installment',
+    '3rd Installment',
+    '4th Installment',
+  ].includes(f.fee_type)
+)
   const vehicleFees = student.fees.filter(f => f.fee_type.startsWith('Vehicle Fee'))  // ← was missing
 
   function FeeRowCard({ fee }: { fee: FeeRow }) {
@@ -154,11 +161,11 @@ export default function FeeTableSingle({ student, onClose, onGoToPayment }: Prop
         )}
 
         {/* Tuition Fees */}
-        {tuitionFees.length > 0 && (
+        {installmentFees.length > 0 && (
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Tuition Fees</p>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Installments</p>
             <div className="space-y-2">
-              {tuitionFees.map(fee => <FeeRowCard key={fee.id} fee={fee} />)}
+              {installmentFees.map(fee => <FeeRowCard key={fee.id} fee={fee} />)}
             </div>
           </div>
         )}

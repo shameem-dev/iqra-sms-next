@@ -8,11 +8,11 @@ export const FIXED_FEE_TYPES = [
   'Others',
 ] as const
 
-export const TUITION_FEE_TYPES = [
-  'Tuition Fee 1',
-  'Tuition Fee 2',
-  'Tuition Fee 3',
-  'Tuition Fee 4',
+export const INSTALLMENT_FEE_TYPES = [
+  '1st Installment',
+  '2nd Installment',
+  '3rd Installment',
+  '4th Installment',
 ] as const
 
 export const VEHICLE_FEE_TYPES = [
@@ -30,7 +30,7 @@ export const VEHICLE_FEE_TYPES = [
 
 export const ALL_FEE_TYPES = [
   ...FIXED_FEE_TYPES,
-  ...TUITION_FEE_TYPES,
+  ...INSTALLMENT_FEE_TYPES,
   ...VEHICLE_FEE_TYPES,
 ]
 
@@ -55,10 +55,10 @@ export const FS1_FEES: Record<string, number> = {
   'Welfare Fee':    1500,
   'Book Fee':       1500,   // ← updated
   'Uniform Fee':    1200,
-  'Tuition Fee 1': 8500,
-  'Tuition Fee 2': 8500,
-  'Tuition Fee 3': 8500,
-  'Tuition Fee 4': 8500,
+  '1st Installment': 2200,
+  '2nd Installment': 2200,
+  '3rd Installment': 2200,
+  '4th Installment': 1900,
   'Others':           0,
 }
 
@@ -67,10 +67,10 @@ export const FS2_FEES: Record<string, number> = {
   'Welfare Fee':    1500,
   'Book Fee':       1600,   // ← updated
   'Uniform Fee':    1200,
-  'Tuition Fee 1': 8500,
-  'Tuition Fee 2': 8500,
-  'Tuition Fee 3': 8500,
-  'Tuition Fee 4': 8500,
+  '1st Installment': 2200,
+  '2nd Installment': 2200,
+  '3rd Installment': 2200,
+  '4th Installment': 1900,
   'Others':           0,
 }
 
@@ -78,10 +78,10 @@ export const GRADE1_FEES: Record<string, number> = {
   'Admission Fee':  5000,
   'Welfare Fee':    1500,
   'Book Fee':       2300,   // ← updated
-  'Tuition Fee 1': 9000,
-  'Tuition Fee 2': 9000,
-  'Tuition Fee 3': 9000,
-  'Tuition Fee 4': 9000,
+  '1st Installment': 2200,
+  '2nd Installment': 2200,
+  '3rd Installment': 2200,
+  '4th Installment': 2500,
   'Others':           0,
 }
 
@@ -89,10 +89,10 @@ export const GRADE2_FEES: Record<string, number> = {
   'Admission Fee':  5000,
   'Welfare Fee':    1500,
   'Book Fee':       2400,   // ← updated
-  'Tuition Fee 1': 9000,
-  'Tuition Fee 2': 9000,
-  'Tuition Fee 3': 9000,
-  'Tuition Fee 4': 9000,
+  '1st Installment': 2200,
+  '2nd Installment': 2200,
+  '3rd Installment': 2200,
+  '4th Installment': 2500,
   'Others':           0,
 }
 
@@ -100,10 +100,10 @@ export const GRADE3_FEES: Record<string, number> = {
   'Admission Fee':  5000,
   'Welfare Fee':    1500,
   'Book Fee':       2500,   // ← updated
-  'Tuition Fee 1': 9000,
-  'Tuition Fee 2': 9000,
-  'Tuition Fee 3': 9000,
-  'Tuition Fee 4': 9000,
+  '1st Installment': 2200,
+  '2nd Installment': 2200,
+  '3rd Installment': 2200,
+  '4th Installment': 2500,
   'Others':           0,
 }
 
@@ -111,10 +111,10 @@ export const GRADE4_FEES: Record<string, number> = {
   'Admission Fee':  5000,
   'Welfare Fee':    1500,
   'Book Fee':       2600,   // ← updated
-  'Tuition Fee 1': 9000,
-  'Tuition Fee 2': 9000,
-  'Tuition Fee 3': 9000,
-  'Tuition Fee 4': 9000,
+  '1st Installment': 2200,
+  '2nd Installment': 2200,
+  '3rd Installment': 2200,
+  '4th Installment': 2500,
   'Others':           0,
 }
 

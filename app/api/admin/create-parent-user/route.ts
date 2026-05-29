@@ -60,7 +60,7 @@ export async function POST() {
   const errors: { admission_no: string; reason: string }[] = []
 
   for (const student of students) {
-    const email    = `${student.admission_no}@iqra.school`
+    const email    = `${student.admission_no}@iqrah.school`
     const password = makePassword(student.admission_no)
 
     try {
