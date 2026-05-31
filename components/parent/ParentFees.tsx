@@ -46,24 +46,32 @@ export default function ParentFees({ studentId }: Props) {
   return (
     <div className="space-y-4">
       <h2 className="text-base font-bold text-slate-700">Fee Summary — {ACADEMIC_YEAR}</h2>
+<div className="grid grid-cols-3 gap-3">
+  {/* Total Fees — purple to blue */}
+  <div className="rounded-xl p-4 text-center" style={{ background: 'linear-gradient(135deg, #6B4FC8 0%, #4A7FD4 100%)' }}>
+    <p className="text-xs mb-1 font-medium" style={{ color: 'rgba(255,255,255,0.75)' }}>Total Fees</p>
+    <p className="text-lg font-bold text-white">₹{totalAmount.toLocaleString('en-IN')}</p>
+  </div>
 
-      <div className="grid grid-cols-3 gap-3">
-        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-center">
-          <p className="text-xs text-slate-500 mb-1">Total Fees</p>
-          <p className="text-lg font-bold text-slate-700">₹{totalAmount.toLocaleString('en-IN')}</p>
-        </div>
-        <div className="bg-teal-50 border border-teal-200 rounded-xl p-4 text-center">
-          <p className="text-xs text-teal-600 mb-1">Paid</p>
-          <p className="text-lg font-bold text-teal-700">₹{totalPaid.toLocaleString('en-IN')}</p>
-        </div>
-        <div className={`rounded-xl p-4 text-center border ${totalBalance > 0 ? 'bg-red-50 border-red-200' : 'bg-teal-50 border-teal-200'}`}>
-          <p className={`text-xs mb-1 ${totalBalance > 0 ? 'text-red-600' : 'text-teal-600'}`}>Balance</p>
-          <p className={`text-lg font-bold ${totalBalance > 0 ? 'text-red-700' : 'text-teal-700'}`}>
-            ₹{totalBalance.toLocaleString('en-IN')}
-          </p>
-        </div>
-      </div>
+  {/* Paid — teal to green */}
+  <div className="rounded-xl p-4 text-center" style={{ background: 'linear-gradient(135deg, #1A9E7A 0%, #2DC9A0 100%)' }}>
+    <p className="text-xs mb-1 font-medium" style={{ color: 'rgba(255,255,255,0.75)' }}>Paid</p>
+    <p className="text-lg font-bold text-white">₹{totalPaid.toLocaleString('en-IN')}</p>
+  </div>
 
+  {/* Balance — red/orange if owing, blue/purple if clear */}
+  <div
+    className="rounded-xl p-4 text-center"
+    style={{
+      background: totalBalance > 0
+        ? 'linear-gradient(135deg, #F5A623 0%, #E8453C 100%)'
+        : 'linear-gradient(135deg, #4A7FD4 0%, #7B52D3 100%)'
+    }}
+  >
+    <p className="text-xs mb-1 font-medium" style={{ color: 'rgba(255,255,255,0.75)' }}>Balance</p>
+    <p className="text-lg font-bold text-white">₹{totalBalance.toLocaleString('en-IN')}</p>
+  </div>
+</div>
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         <div className="px-4 py-3 border-b border-slate-100 bg-slate-50">
           <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Fee Breakdown</p>

@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@ducanh2912/next-pwa": "^10.2.9",
+    "@phosphor-icons/react": "^2.1.10",
     "@serwist/next": "^9.5.11",
     "@supabase/ssr": "^0.10.0",
     "@supabase/supabase-js": "^2.102.1",

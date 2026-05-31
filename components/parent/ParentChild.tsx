@@ -42,18 +42,7 @@ export default function ParentChild({ student }: Props) {
         <Row label="Address"         value={student.address} />
       </div>
 
-      <div className="bg-teal-50 border border-teal-100 rounded-xl p-4">
-        <p className="text-xs font-bold text-teal-800 mb-2">🔐 Your Login Credentials</p>
-        <div className="flex justify-between text-xs mb-1">
-          <span className="text-teal-600">Email</span>
-          <span className="font-mono font-bold text-teal-800">{student.admission_no}@iqra.school</span>
-        </div>
-        <div className="flex justify-between text-xs">
-          <span className="text-teal-600">Password</span>
-          <span className="font-mono font-bold text-teal-800">{String(student.admission_no).padEnd(6, '0')}</span>
-        </div>
-        <p className="text-xs text-teal-400 mt-2">Please keep these credentials safe.</p>
-      </div>
+    
     </div>
   )
 }

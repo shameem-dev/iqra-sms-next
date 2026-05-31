@@ -90,25 +90,33 @@ export default function ParentAttendance({ studentId, studentName }: Props) {
         </button>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-4 gap-3">
-        <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-center">
-          <p className="text-xs text-slate-400">Total</p>
-          <p className="text-xl font-bold text-slate-700">{totalDays}</p>
-        </div>
-        <div className="bg-teal-50 border border-teal-200 rounded-xl p-3 text-center">
-          <p className="text-xs text-teal-500">Present</p>
-          <p className="text-xl font-bold text-teal-700">{presentCount}</p>
-        </div>
-        <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-center">
-          <p className="text-xs text-red-400">Absent</p>
-          <p className="text-xl font-bold text-red-600">{absentCount}</p>
-        </div>
-        <div className={`rounded-xl p-3 text-center border ${pct >= 75 ? 'bg-teal-50 border-teal-200' : 'bg-red-50 border-red-200'}`}>
-          <p className={`text-xs ${pct >= 75 ? 'text-teal-500' : 'text-red-400'}`}>%</p>
-          <p className={`text-xl font-bold ${pct >= 75 ? 'text-teal-700' : 'text-red-600'}`}>{pct}%</p>
-        </div>
-      </div>
+ {/* Stats */}
+<div className="grid grid-cols-4 gap-3">
+  <div className="rounded-xl p-3 text-center" style={{ background: 'linear-gradient(135deg, #6B4FC8 0%, #4A7FD4 100%)' }}>
+    <p className="text-xs font-medium" style={{ color: 'rgba(255,255,255,0.75)' }}>Total</p>
+    <p className="text-xl font-bold text-white">{totalDays}</p>
+  </div>
+  <div className="rounded-xl p-3 text-center" style={{ background: 'linear-gradient(135deg, #1A9E7A 0%, #2DC9A0 100%)' }}>
+    <p className="text-xs font-medium" style={{ color: 'rgba(255,255,255,0.75)' }}>Present</p>
+    <p className="text-xl font-bold text-white">{presentCount}</p>
+  </div>
+  <div className="rounded-xl p-3 text-center" style={{ background: 'linear-gradient(135deg, #F5A623 0%, #E8453C 100%)' }}>
+    <p className="text-xs font-medium" style={{ color: 'rgba(255,255,255,0.75)' }}>Absent</p>
+    <p className="text-xl font-bold text-white">{absentCount}</p>
+  </div>
+  <div
+    className="rounded-xl p-3 text-center"
+    style={{
+      background: pct >= 75
+        ? 'linear-gradient(135deg, #4A7FD4 0%, #7B52D3 100%)'
+        : 'linear-gradient(135deg, #F5A623 0%, #E8453C 100%)'
+    }}
+  >
+    <p className="text-xs font-medium" style={{ color: 'rgba(255,255,255,0.75)' }}>%</p>
+    <p className="text-xl font-bold text-white">{pct}%</p>
+  </div>
+</div>
+
 
       {/* Calendar */}
       {loading ? (
