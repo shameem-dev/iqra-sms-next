@@ -17,7 +17,7 @@ export default function AdminAttendance() {
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!
   )
 
-  const [selectedStandard, setSelectedStandard] = useState('FS1 A')
+  const [selectedStandard, setSelectedStandard] = useState('LKG A')
   const [year, setYear]   = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth())
   const [holidays, setHolidays] = useState<Record<string, string>>({})

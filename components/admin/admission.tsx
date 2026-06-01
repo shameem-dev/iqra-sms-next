@@ -17,7 +17,7 @@ import {
 
 /* ─── Constants ────────────────────────────────────────────────────────── */
 const STANDARDS = [
-  "FS1 A", "FS1 B", "FS2 A", "FS2 B",
+  "LKG A", "LKG B", "UKG A", "UKG B",
   "GRADE 1 A", "GRADE 2 A", "GRADE 2 B", "GRADE 3 A", "GRADE 4 A",
 ]
 const VEHICLE_POINTS = [
