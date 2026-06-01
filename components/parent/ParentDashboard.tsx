@@ -3,7 +3,15 @@
 import { useState } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 import { useRouter } from 'next/navigation'
-import { User, CreditCard, BookOpen, CalendarCheck, LogOut } from 'lucide-react'
+import { LogOut } from 'lucide-react'
+import {
+  User,
+  CreditCard,
+  BookOpen,
+  CalendarCheck,
+  // LogOut,
+} from '@phosphor-icons/react'
+
 import ParentChild from './ParentChild'
 import ParentFees from './ParentFees'
 import ParentMarks from './ParentMarks'
@@ -15,6 +23,13 @@ interface Props {
 }
 
 type Tab = 'child' | 'fees' | 'marks' | 'attendance'
+
+const tabs = [
+  { id: 'child',      label: 'My Child',  Icon: User },
+  { id: 'fees',       label: 'Fees',       Icon: CreditCard },
+  { id: 'marks',      label: 'Marks',      Icon: BookOpen },
+  { id: 'attendance', label: 'Attendance', Icon: CalendarCheck },
+] as const
 
 export default function ParentDashboard({ student, studentId }: Props) {
   const router = useRouter()
@@ -30,13 +45,6 @@ export default function ParentDashboard({ student, studentId }: Props) {
     router.push('/login')
   }
 
-  const tabs = [
-    { id: 'child',      label: 'My Child',   icon: User },
-    { id: 'fees',       label: 'Fees',        icon: CreditCard },
-    { id: 'marks',      label: 'Marks',       icon: BookOpen },
-    { id: 'attendance', label: 'Attendance',  icon: CalendarCheck },
-  ] as const
-
   return (
     <div className="min-h-screen bg-slate-50">
 
@@ -47,8 +55,8 @@ export default function ParentDashboard({ student, studentId }: Props) {
             {student?.name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
           </div>
           <div>
-            <p className="text-xl font-semibold leading-tight pb-[-30px]">{student?.name} </p>
-            <p className='opacity-80 text-xs pt-[-30px]'> {student?.standard}</p>
+            <p className="text-xl font-semibold leading-tight">{student?.name}</p>
+            <p className="opacity-80 text-xs">{student?.standard}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -61,8 +69,6 @@ export default function ParentDashboard({ student, studentId }: Props) {
         </div>
       </div>
 
-      
-
       {/* Content */}
       <div className="max-w-4xl mx-auto p-4 sm:p-6">
         {activeTab === 'child'      && <ParentChild student={student} />}
@@ -70,21 +76,26 @@ export default function ParentDashboard({ student, studentId }: Props) {
         {activeTab === 'marks'      && <ParentMarks studentId={studentId} standard={student?.standard} />}
         {activeTab === 'attendance' && <ParentAttendance studentId={studentId} studentName={student?.name} />}
       </div>
+
+      {/* Bottom Nav */}
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 shadow-lg">
         <div className="max-w-4xl mx-auto flex">
-          {tabs.map(tab => (
-            <button key={tab.id}
-              onClick={() => setActiveTab(tab.id as Tab)}
-              className={`relative flex-1 flex flex-col items-center justify-center gap-1 py-3 transition-colors ${
-                activeTab === tab.id ? 'text-teal-600' : 'text-slate-400 hover:text-slate-600'
-              }`}>
-              <tab.icon className="w-5 h-5" />
-              <span className="text-xs font-medium">{tab.label}</span>
-              {activeTab === tab.id && (
-                <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-0.5 bg-teal-500 rounded-full" />
-              )}
-            </button>
-          ))}
+         {tabs.map(({ id, label, Icon }) => {
+  const active = activeTab === id
+  return (
+    <button key={id}
+      onClick={() => setActiveTab(id as Tab)}
+      className={`relative flex-1 flex flex-col items-center justify-center gap-1 py-3 transition-colors ${
+        active ? 'text-teal-600' : 'text-slate-400 hover:text-slate-600'
+      }`}>
+      <Icon size={20} weight={active ? 'fill' : 'regular'} />
+      <span className="text-xs font-medium">{label}</span>
+      {active && (
+        <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-0.5 bg-teal-500 rounded-full" />
+      )}
+    </button>
+  )
+})}
         </div>
       </div>
     </div>

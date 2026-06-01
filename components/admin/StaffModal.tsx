@@ -10,9 +10,7 @@ import {
 import { CERTIFICATE_OPTIONS, DEPARTMENTS, DESIGNATIONS, Staff, StaffFormData } from '@/type/staff';
 import { createStaff, updateStaff } from '@/utils/actions/staff-actions';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// TYPES
-// ─────────────────────────────────────────────────────────────────────────────
+
 
 interface Props {
   staff: Staff | null;

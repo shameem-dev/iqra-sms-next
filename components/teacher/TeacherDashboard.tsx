@@ -3,12 +3,11 @@
 import { useState } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 import { useRouter } from 'next/navigation'
-// At the top of your file, update your lucide-react imports:
 import {
-  CalendarCheck, CalendarCheck2,   // outline → filled pair for attendance
+  CalendarCheck, CalendarCheck2,   
   LogOut, User, BookOpen,
-  BookMarked,                        // filled version for marks
-  UserRound,                         // filled version for profile
+  BookMarked,                       
+  UserRound,                        
 } from 'lucide-react'
 
 import TeacherMarks from './TeacherMarks'
