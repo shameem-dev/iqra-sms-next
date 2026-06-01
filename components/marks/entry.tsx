@@ -26,15 +26,15 @@
   import { getAcademicYear } from '@/lib/academicYear'
 
   const STANDARDS = [
-    'FS1 A', 'FS1 B',
-    'FS2 A', 'FS2 B',
-    'GRADE 1 A',
-    'GRADE 2 A', 'GRADE 2 B',
-    'GRADE 3 A',
-    'GRADE 4 A',
-  ]
+  'LKG A', 'LKG B',
+  'UKG A', 'UKG B',
+  'GRADE 1 A',
+  'GRADE 2 A', 'GRADE 2 B',
+  'GRADE 3 A',
+  'GRADE 4 A',
+]
 
-  const DEFAULT_STANDARD = 'FS1 A'
+const DEFAULT_STANDARD = 'LKG A'
   const ACADEMIC_YEAR = getAcademicYear()
 
 

@@ -36,7 +36,7 @@ export const ALL_FEE_TYPES = [
 
 export const ACADEMIC_YEAR = getAcademicYear()
 
-export const FS_STANDARDS = ['FS1 A', 'FS1 B', 'FS2 A', 'FS2 B']
+export const FS_STANDARDS = ['LKG A', 'LKG B', 'UKG A', 'UKG B']
 
 export const GRADE_STANDARDS = [
   'GRADE 1 A',
@@ -128,12 +128,12 @@ export const GRADE_FEES = GRADE1_FEES
 export function getDefaultAmount(feeType: string, standard: string): number {
   const s = standard.toUpperCase()
 
-  if (s.startsWith('FS1'))     return FS1_FEES[feeType]    ?? 0
-  if (s.startsWith('FS2'))     return FS2_FEES[feeType]    ?? 0
-  if (s.startsWith('GRADE 1')) return GRADE1_FEES[feeType] ?? 0
-  if (s.startsWith('GRADE 2')) return GRADE2_FEES[feeType] ?? 0
-  if (s.startsWith('GRADE 3')) return GRADE3_FEES[feeType] ?? 0
-  if (s.startsWith('GRADE 4')) return GRADE4_FEES[feeType] ?? 0
+    if (s.startsWith('LKG'))     return FS1_FEES[feeType] ?? 0
+    if (s.startsWith('UKG'))     return FS2_FEES[feeType] ?? 0
+    if (s.startsWith('GRADE 1')) return GRADE1_FEES[feeType] ?? 0
+    if (s.startsWith('GRADE 2')) return GRADE2_FEES[feeType] ?? 0
+    if (s.startsWith('GRADE 3')) return GRADE3_FEES[feeType] ?? 0
+    if (s.startsWith('GRADE 4')) return GRADE4_FEES[feeType] ?? 0
 
   return 0
 }

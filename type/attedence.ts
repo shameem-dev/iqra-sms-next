@@ -7,7 +7,7 @@ export interface Student {
 }
 export const GENDER_ORDER: Record<string, number> = { Male: 0, Female: 1 }
 export const STANDARDS = [
-  'FS1 A', 'FS1 B', 'FS2 A', 'FS2 B',
+  'LKG A', 'LKG B', 'UKG A', 'UKG B',
   'GRADE 1 A', 'GRADE 2 A', 'GRADE 2 B', 'GRADE 3 A', 'GRADE 4 A'
 ]
 export function getDaysInMonth(year: number, month: number) {
