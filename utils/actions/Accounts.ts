@@ -87,6 +87,7 @@ export async function updateEntry(id: string, patch: Partial<NewEntry>): Promise
 }
 
 // ── Soft-delete entry ─────────────────────────────────────
+
 export async function deleteEntry(id: string): Promise<void> {
   const supabase = await createClient()
 
@@ -97,9 +98,10 @@ export async function deleteEntry(id: string): Promise<void> {
 
   if (error) throw new Error(`deleteEntry: ${error.message}`)
 
+  // Clear data cache instances on both operational tracks concurrently
   revalidatePath('/admin/accounts')
+  revalidatePath('/admin/staff')
 }
-
 // ── Overall totals ────────────────────────────────────────
 export async function fetchTotals(): Promise<{ income: number; expenditure: number; balance: number }> {
   const supabase = await createClient()

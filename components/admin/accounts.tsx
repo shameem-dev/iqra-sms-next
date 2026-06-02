@@ -150,18 +150,6 @@ function emptyIncome() {
   };
 }
 
-function emptyExpenditure() {
-  return {
-    date:                 new Date().toISOString().split('T')[0],
-    amount:               '' as unknown as number,
-    bill_voucher_no:      '',
-    notes:                '',
-    expenditure_category: 'salary' as ExpenditureCategory,
-    staff_name:           '',
-    vehicle_no:           '',
-  };
-}
-
 // ─── Income Form ──────────────────────────────────────────────────────────────
 
 interface IncomeFormProps {
@@ -250,6 +238,18 @@ function IncomeForm({ initial, onSave, onCancel, saving }: IncomeFormProps) {
 }
 
 // ─── Expenditure Form ─────────────────────────────────────────────────────────
+
+function emptyExpenditure() {
+  return {
+    date:                 new Date().toISOString().split('T')[0],
+    amount:               '' as unknown as number,
+    bill_voucher_no:      '',
+    notes:                '',
+    expenditure_category: 'salary' as ExpenditureCategory,
+    staff_name:           '',
+    vehicle_no:           '',
+  };
+}
 
 interface ExpenditureFormProps {
   initial?: Partial<AccountEntry>;
@@ -356,7 +356,7 @@ function ExpenditureForm({ initial, onSave, onCancel, saving, staffList }: Expen
 function BSRow({ entry, index, onDelete, onEdit }: {
   entry: AccountEntry;
   index: number;
-  onDelete: (id: string) => void;
+  onDelete: (entry: AccountEntry) => void;
   onEdit: (entry: AccountEntry) => void;
 }) {
   const isIncome = entry.type === 'income';
@@ -404,7 +404,7 @@ function BSRow({ entry, index, onDelete, onEdit }: {
           <button onClick={() => onEdit(entry)} className="p-1.5 text-slate-50 hover:text-white bg-blue-700 hover:bg-blue-800 rounded-md transition-colors" title="Edit">
             <FilePen className="w-3.5 h-3.5" />
           </button>
-          <button onClick={() => onDelete(entry.id)} className="p-1.5 rounded-md text-slate-50 hover:text-white bg-red-700 hover:bg-red-800 transition-colors" title="Delete">
+          <button onClick={() => onDelete(entry)} className="p-1.5 rounded-md text-slate-50 hover:text-white bg-red-700 hover:bg-red-800 transition-colors" title="Delete">
             <Trash2 className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -413,18 +413,63 @@ function BSRow({ entry, index, onDelete, onEdit }: {
   );
 }
 
-// ─── Delete Confirm Dialog ────────────────────────────────────────────────────
+// ─── Strict Delete Confirm Dialog ─────────────────────────────────────────────
 
-function ConfirmDialog({ message, onConfirm, onCancel }: {
-  message: string; onConfirm: () => void; onCancel: () => void;
+function ConfirmDialog({ target, onConfirm, onCancel }: {
+  target: AccountEntry; onConfirm: () => void; onCancel: () => void;
 }) {
+  const isIncome = target.type === 'income';
+  const label = isIncome ? resolveIncomeLabel(target.income_category) : resolveExpenditureLabel(target.expenditure_category);
+  const dateFormatted = new Date(target.date + 'T00:00:00').toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-      <div className="bg-white rounded-xl border border-slate-200 shadow-xl p-6 max-w-sm w-full mx-4">
-        <p className="text-sm text-slate-700 mb-5">{message}</p>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl p-6 max-w-md w-full">
+        <div className="flex items-center gap-3 text-red-600 mb-4">
+          <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center shrink-0">
+            <AlertCircle className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-slate-950">Confirm.....?</h3>
+            <p className="text-xs text-slate-500">This operations will permanently reverse ledger mappings.</p>
+          </div>
+        </div>
+
+        {/* Breakdown Panel */}
+        <div className="bg-slate-50 border border-slate-100 rounded-xl p-3.5 space-y-2 text-sm text-slate-700 mb-5">
+          <div className="flex justify-between items-center">
+            <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">Particulars</span>
+            <span className="font-semibold text-slate-900">{label}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">Date</span>
+            <span className="font-medium tabular-nums">{dateFormatted}</span>
+          </div>
+          {target.bill_voucher_no && (
+            <div className="flex justify-between items-center">
+              <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">Reference No.</span>
+              <span className="font-mono text-xs bg-slate-200/60 px-1.5 py-0.5 rounded text-slate-800">{target.bill_voucher_no}</span>
+            </div>
+          )}
+          <div className="flex justify-between items-center pt-2 border-t border-slate-200/60">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">Value Impact</span>
+            <span className={`text-base font-black tabular-nums ${isIncome ? 'text-teal-700' : 'text-rose-600'}`}>
+              ₹{fmt(Number(target.amount))}
+            </span>
+          </div>
+        </div>
+
+        <p className="text-xs text-slate-500 bg-red-50/50 border border-red-100 text-red-800 rounded-lg p-3 mb-5">
+          <strong>Warning:</strong> Deleting salary transactions will simultaneously pull matching payroll balances down from the structural operations log tracks.
+        </p>
+
         <div className="flex justify-end gap-2">
-          <button onClick={onCancel} className="h-9 px-4 text-sm text-slate-600 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors">Cancel</button>
-          <button onClick={onConfirm} className="h-9 px-4 text-sm font-semibold bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">Delete</button>
+          <button onClick={onCancel} className="h-9 px-4 text-sm font-semibold text-slate-600 bg-white rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors">
+            Cancel
+          </button>
+          <button onClick={onConfirm} className="h-9 px-5 text-sm font-bold bg-red-600 text-white rounded-lg hover:bg-red-700 shadow-sm transition-colors">
+            Confirm Delete
+          </button>
         </div>
       </div>
     </div>
@@ -448,7 +493,6 @@ function DayBalanceModal({
   const isFuture = selectedDate > todayStr;
   const isSelectedToday = selectedDate === todayStr;
 
-  // Opening balance = everything strictly before selected date
   const openingBalance = entries
     .filter(e => e.date < selectedDate)
     .reduce((sum, e) => sum + (e.type === 'income' ? Number(e.amount) : -Number(e.amount)), 0);
@@ -493,7 +537,7 @@ function DayBalanceModal({
     >
       <div className="bg-white rounded-xl border border-slate-200 shadow-xl w-full max-w-lg overflow-hidden">
 
-        {/* ── Header ───────────────────────────────────── */}
+        {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
@@ -513,7 +557,7 @@ function DayBalanceModal({
           </button>
         </div>
 
-        {/* ── Date navigator ───────────────────────────── */}
+        {/* Date navigator */}
         <div className="flex items-center gap-2 px-4 py-2.5 border-b border-slate-100 bg-slate-50/70">
           <button
             onClick={goToPrev}
@@ -556,7 +600,7 @@ function DayBalanceModal({
           )}
         </div>
 
-        {/* ── Balance strip ─────────────────────────────── */}
+        {/* Balance strip */}
         <div className="grid grid-cols-3 divide-x divide-slate-100 border-b border-slate-100">
           <div className="px-4 py-3.5">
             <p className="text-[11px] text-slate-400 uppercase tracking-wide mb-1.5">Opening balance</p>
@@ -599,7 +643,7 @@ function DayBalanceModal({
           </div>
         </div>
 
-        {/* ── Transaction list ──────────────────────────── */}
+        {/* Transaction list */}
         <div className="px-5 pt-3.5 pb-1 max-h-60 overflow-y-auto">
           <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-2">
             {isFuture
@@ -657,13 +701,9 @@ function DayBalanceModal({
           )}
         </div>
 
-        {/* ── Footer ───────────────────────────────────── */}
+        {/* Footer */}
         <div className="flex items-center justify-end px-5 py-3 mt-2 border-t border-slate-100 bg-slate-50/60">
-        
-          <button
-            onClick={onClose}
-            className="h-8 px-4 text-xs font-medium bg-red-600 text-slate-50 rounded-lg border border-slate-200 hover:bg-red-700 transition-colors"
-          >
+          <button onClick={onClose} className="h-8 px-4 text-xs font-medium bg-red-600 text-slate-50 rounded-lg border border-slate-200 hover:bg-red-700 transition-colors">
             Close
           </button>
         </div>
@@ -693,7 +733,9 @@ export default function AccountsUI({ staffList = [] }: AccountsUIProps) {
   const [typeFilter, setTypeFilter]       = useState<TypeFilter>('all');
   const [totals, setTotals]               = useState({ income: 0, expenditure: 0, balance: 0 });
   const [editTarget, setEditTarget]       = useState<AccountEntry | null>(null);
-  const [deleteTarget, setDeleteTarget]   = useState<string | null>(null);
+  
+  // Set delete target to hold the entire AccountEntry object instead of just string
+  const [deleteTarget, setDeleteTarget]   = useState<AccountEntry | null>(null);
   const [toast, setToast]                 = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [showDayModal, setShowDayModal]   = useState(false);
 
@@ -729,7 +771,7 @@ export default function AccountsUI({ staffList = [] }: AccountsUIProps) {
   const handleDateToChange   = (v: string) => { setDateTo(v);   setFilterMonth(''); };
 
   // ── Sorted & filtered entries ─────────────────────────
-const sortedAll = [...entries].sort((a, b) => b.date.localeCompare(a.date));
+  const sortedAll = [...entries].sort((a, b) => b.date.localeCompare(a.date));
   const effectiveDateFrom = dateFrom;
   const effectiveDateTo   = dateTo;
   const isFiltered        = !!(effectiveDateFrom || effectiveDateTo || typeFilter !== 'all' || search);
@@ -783,13 +825,13 @@ const sortedAll = [...entries].sort((a, b) => b.date.localeCompare(a.date));
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (entry: AccountEntry) => {
     try {
-      await deleteEntry(id);
-      setEntries(prev => prev.filter(e => e.id !== id));
+      await deleteEntry(entry.id);
+      setEntries(prev => prev.filter(e => e.id !== entry.id));
       const t = await fetchTotals();
       setTotals(t);
-      setToast({ message: 'Entry deleted', type: 'success' });
+      setToast({ message: 'Entry strictly deleted', type: 'success' });
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'Failed to delete entry';
       setToast({ message, type: 'error' });
@@ -809,7 +851,6 @@ const sortedAll = [...entries].sort((a, b) => b.date.localeCompare(a.date));
 
   const hasActiveFilter = !!(dateFrom || dateTo || filterMonth || search || typeFilter !== 'all');
 
-  // ── Render ────────────────────────────────────────────
   return (
     <div className="w-full space-y-4">
 
@@ -817,7 +858,7 @@ const sortedAll = [...entries].sort((a, b) => b.date.localeCompare(a.date));
 
       {deleteTarget && (
         <ConfirmDialog
-          message="Delete this entry? This action cannot be undone."
+          target={deleteTarget}
           onConfirm={() => handleDelete(deleteTarget)}
           onCancel={() => setDeleteTarget(null)}
         />
@@ -831,41 +872,42 @@ const sortedAll = [...entries].sort((a, b) => b.date.localeCompare(a.date));
         />
       )}
 
- {/* ── Summary Cards ─────────────────────────────── */}
-<div className="grid grid-cols-3 gap-3">
-  <div className="relative overflow-hidden rounded-2xl px-5 py-4 bg-[linear-gradient(135deg,_#059669_0%,_#0D9488_55%,_#0891B2_100%)] shadow-lg shadow-emerald-200">
-    <div className="absolute -right-5 -top-5 w-24 h-24 rounded-full bg-white/10" />
-    <div className="absolute right-3 bottom-2 w-12 h-12 rounded-full bg-black/10" />
-    <div className="relative z-10">
-      <p className="text-[10px] font-bold uppercase tracking-[.18em] text-white/60 mb-2">Total Income</p>
-      <p className="text-xl font-black text-white tabular-nums">₹{fmt(totals.income)}</p>
-    </div>
-  </div>
+      {/* ── Summary Cards ─────────────────────────────── */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="relative overflow-hidden rounded-2xl px-5 py-4 bg-[linear-gradient(135deg,_#059669_0%,_#0D9488_55%,_#0891B2_100%)] shadow-lg shadow-emerald-200">
+          <div className="absolute -right-5 -top-5 w-24 h-24 rounded-full bg-white/10" />
+          <div className="absolute right-3 bottom-2 w-12 h-12 rounded-full bg-black/10" />
+          <div className="relative z-10">
+            <p className="text-[10px] font-bold uppercase tracking-[.18em] text-white/60 mb-2">Total Income</p>
+            <p className="text-xl font-black text-white tabular-nums">₹{fmt(totals.income)}</p>
+          </div>
+        </div>
 
-  <div className="relative overflow-hidden rounded-2xl px-5 py-4 bg-[linear-gradient(135deg,_#DC2626_0%,_#DB2777_60%,_#9333EA_100%)] shadow-lg shadow-rose-200">
-    <div className="absolute -right-5 -top-5 w-24 h-24 rounded-full bg-white/10" />
-    <div className="absolute right-3 bottom-2 w-12 h-12 rounded-full bg-black/10" />
-    <div className="relative z-10">
-      <p className="text-[10px] font-bold uppercase tracking-[.18em] text-white/60 mb-2">Total Expenditure</p>
-      <p className="text-xl font-black text-white tabular-nums">₹{fmt(totals.expenditure)}</p>
-    </div>
-  </div>
+        <div className="relative overflow-hidden rounded-2xl px-5 py-4 bg-[linear-gradient(135deg,_#DC2626_0%,_#DB2777_60%,_#9333EA_100%)] shadow-lg shadow-rose-200">
+          <div className="absolute -right-5 -top-5 w-24 h-24 rounded-full bg-white/10" />
+          <div className="absolute right-3 bottom-2 w-12 h-12 rounded-full bg-black/10" />
+          <div className="relative z-10">
+            <p className="text-[10px] font-bold uppercase tracking-[.18em] text-white/60 mb-2">Total Expenditure</p>
+            <p className="text-xl font-black text-white tabular-nums">₹{fmt(totals.expenditure)}</p>
+          </div>
+        </div>
 
-  <div className={`relative overflow-hidden rounded-2xl px-5 py-4 shadow-lg ${
-    totals.balance >= 0
-      ? 'bg-[linear-gradient(135deg,_#2563EB_0%,_#7C3AED_55%,_#DB2777_100%)] shadow-blue-200'
-      : 'bg-[linear-gradient(135deg,_#F59E0B_0%,_#EF4444_55%,_#EC4899_100%)] shadow-amber-200'
-  }`}>
-    <div className="absolute -right-5 -top-5 w-24 h-24 rounded-full bg-white/10" />
-    <div className="absolute right-3 bottom-2 w-12 h-12 rounded-full bg-black/10" />
-    <div className="relative z-10">
-      <p className="text-[10px] font-bold uppercase tracking-[.18em] text-white/60 mb-2">Balance</p>
-      <p className="text-xl font-black text-white tabular-nums">
-        {totals.balance >= 0 ? '+' : ''}₹{fmt(totals.balance)}
-      </p>
-    </div>
-  </div>
-</div>
+        <div className={`relative overflow-hidden rounded-2xl px-5 py-4 shadow-lg ${
+          totals.balance >= 0
+            ? 'bg-[linear-gradient(135deg,_#2563EB_0%,_#7C3AED_55%,_#DB2777_100%)] shadow-blue-200'
+            : 'bg-[linear-gradient(135deg,_#F59E0B_0%,_#EF4444_55%,_#EC4899_100%)] shadow-amber-200'
+        }`}>
+          <div className="absolute -right-5 -top-5 w-24 h-24 rounded-full bg-white/10" />
+          <div className="absolute right-3 bottom-2 w-12 h-12 rounded-full bg-black/10" />
+          <div className="relative z-10">
+            <p className="text-[10px] font-bold uppercase tracking-[.18em] text-white/60 mb-2">Balance</p>
+            <p className="text-xl font-black text-white tabular-nums">
+              {totals.balance >= 0 ? '+' : ''}₹{fmt(totals.balance)}
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* ── Opening / Closing Balance Bar ─────────────── */}
       {isFiltered && effectiveDateFrom && (
         <div className="grid grid-cols-3 gap-3">
@@ -1040,7 +1082,7 @@ const sortedAll = [...entries].sort((a, b) => b.date.localeCompare(a.date));
                     </tr>
                   )}
                   {filtered.map((entry, i) => (
-                    <BSRow key={entry.id} entry={entry} index={i} onDelete={id => setDeleteTarget(id)} onEdit={openEdit} />
+                    <BSRow key={entry.id} entry={entry} index={i} onDelete={item => setDeleteTarget(item)} onEdit={openEdit} />
                   ))}
                 </tbody>
                 <tfoot>

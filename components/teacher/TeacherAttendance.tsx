@@ -12,9 +12,10 @@ interface Props {
   userId: string
 }
 
-type Status = 'present' | 'absent'
+// Added 'unmarked' to represent a pristine, untouched day state
+type Status = 'present' | 'absent' | 'unmarked'
 
-const STATUS_CYCLE: Record<Status, Status> = {
+const STATUS_CYCLE: Record<Exclude<Status, 'unmarked'>, Exclude<Status, 'unmarked'>> = {
   present: 'absent',
   absent: 'present',
 }
@@ -101,7 +102,8 @@ export default function TeacherAttendance({ classAssignment, userId }: Props) {
       const attMap: Record<number, Status> = {}
       studentData.forEach(s => {
         const existing = attData?.find(a => a.student_id === s.id)
-        attMap[s.id] = (existing?.status as Status) || 'present'
+        // Changed fallback from 'present' to 'unmarked' to align with neutral starting logic
+        attMap[s.id] = (existing?.status as Status) || 'unmarked'
       })
       setAttendance(attMap)
       setLoading(false)
@@ -114,17 +116,27 @@ export default function TeacherAttendance({ classAssignment, userId }: Props) {
   const presentCount = Object.values(attendance).filter(s => s === 'present').length
   const absentCount = Object.values(attendance).filter(s => s === 'absent').length
   const totalCount = students.length
+  
+  // Calculate stats based purely on non-empty assignments to avoid false 100% states
+  const totalMarked = Object.values(attendance).filter(s => s === 'present' || s === 'absent').length
   const presentPct = totalCount > 0 ? Math.round((presentCount / totalCount) * 100) : 0
   const dateDisplay = formatDisplayDate(selectedDate)
 
   function toggleStatus(studentId: number) {
-    setAttendance(prev => ({
-      ...prev,
-      [studentId]: STATUS_CYCLE[prev[studentId] || 'present'],
-    }))
+    setAttendance(prev => {
+      const current = prev[studentId] || 'unmarked'
+      // If unmarked, default cycle directly into present
+      if (current === 'unmarked') {
+        return { ...prev, [studentId]: 'present' }
+      }
+      return {
+        ...prev,
+        [studentId]: STATUS_CYCLE[current as Exclude<Status, 'unmarked'>],
+      }
+    })
   }
 
-  function markAll(status: Status) {
+  function markAll(status: Exclude<Status, 'unmarked'>) {
     const allMap: Record<number, Status> = {}
     students.forEach(s => { allMap[s.id] = status })
     setAttendance(allMap)
@@ -134,13 +146,17 @@ export default function TeacherAttendance({ classAssignment, userId }: Props) {
     if (isHoliday) return
     setSaving(true); setError(''); setSaved(false)
     try {
-      const rows = students.map(student => ({
-        student_id: student.id,
-        standard,
-        date: selectedDate,
-        status: attendance[student.id] || 'present',
-        marked_by: userId,
-      }))
+      const rows = students.map(student => {
+        const status = attendance[student.id] || 'unmarked'
+        return {
+          student_id: student.id,
+          standard,
+          date: selectedDate,
+          // Converts untoggled items cleanly to 'present' on final submission to DB
+          status: status === 'unmarked' ? 'present' : status,
+          marked_by: userId,
+        }
+      })
       const { error: upsertError } = await supabase
         .from('attendance')
         .upsert(rows, { onConflict: 'student_id,date' })
@@ -294,8 +310,8 @@ export default function TeacherAttendance({ classAssignment, userId }: Props) {
             <table className="w-full border-collapse">
               <tbody>
                 {students.map((student, i) => {
-                  const status = attendance[student.id] || 'present'
-                  const present = status === 'present'
+                  const status = attendance[student.id] || 'unmarked'
+                  const present = status !== 'absent' // Keeps visual default as P unless explicitly toggled A
                   return (
                     <tr
                       key={student.id}
