@@ -122,7 +122,7 @@ export default function FeeTrackerPage({ onGoToPayment }: Props) {
         <button
           onClick={() => onGoToPayment({ id: 0, name: '', admission_no: '', standard: '' })}
           className="bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-teal-700 transition-all">
-          + Record Payment
+          Assign Payment
         </button>
       </div>
 

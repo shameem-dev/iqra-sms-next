@@ -246,8 +246,15 @@ export default function PaymentPage({ preselectedStudent, onBack }: Props) {
 
     const { error: accountError } = await supabase.from('account_entries').insert(
       details.map(d => ({
-        type: 'income', date, amount: d.amount,
-        income_category: d.fee_type, receipt_no: receiptNo,
+        type: 'income',
+        date,
+        amount: d.amount,
+        income_category: 'daily_fees',
+
+        student_id: selectedStudent.id,
+        fee_type: d.fee_type,
+
+        receipt_no: receiptNo,
         notes: `${selectedStudent.name} - ${selectedStudent.standard}`,
         is_deleted: false,
       }))

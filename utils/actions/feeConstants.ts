@@ -63,10 +63,10 @@ export const FS1_FEES: Record<string, number> = {
 }
 
 export const FS2_FEES: Record<string, number> = {
-  'Admission Fee':  5000,
+  'Admission Fee':  0,
   'Welfare Fee':    1500,
   'Book Fee':       1600,   // ← updated
-  'Uniform Fee':    1200,
+  'Uniform Fee':     0,
   '1st Installment': 2200,
   '2nd Installment': 2200,
   '3rd Installment': 2200,
@@ -75,7 +75,7 @@ export const FS2_FEES: Record<string, number> = {
 }
 
 export const GRADE1_FEES: Record<string, number> = {
-  'Admission Fee':  5000,
+  'Admission Fee':  0,
   'Welfare Fee':    1500,
   'Book Fee':       2300,   // ← updated
   '1st Installment': 2200,
@@ -86,7 +86,7 @@ export const GRADE1_FEES: Record<string, number> = {
 }
 
 export const GRADE2_FEES: Record<string, number> = {
-  'Admission Fee':  5000,
+  'Admission Fee':  0,
   'Welfare Fee':    1500,
   'Book Fee':       2400,   // ← updated
   '1st Installment': 2200,
@@ -97,7 +97,7 @@ export const GRADE2_FEES: Record<string, number> = {
 }
 
 export const GRADE3_FEES: Record<string, number> = {
-  'Admission Fee':  5000,
+  'Admission Fee':  0,
   'Welfare Fee':    1500,
   'Book Fee':       2500,   // ← updated
   '1st Installment': 2200,
@@ -108,7 +108,7 @@ export const GRADE3_FEES: Record<string, number> = {
 }
 
 export const GRADE4_FEES: Record<string, number> = {
-  'Admission Fee':  5000,
+  'Admission Fee':  0,
   'Welfare Fee':    1500,
   'Book Fee':       2600,   // ← updated
   '1st Installment': 2200,

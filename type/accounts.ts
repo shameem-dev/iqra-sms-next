@@ -28,21 +28,26 @@ export interface AccountEntry {
   created_at: string;
   updated_at: string;
   type: EntryType;
-  date: string;               
+  date: string;
   amount: number;
   bill_voucher_no?: string | null;
   notes?: string | null;
-  
+
   // Income-specific fields
   income_category?: IncomeCategory | null;
   book_no?: string | null;
   receipt_no?: string | null;
+
+  // Fee linkage
+  student_id?: number | null;
+  fee_type?: string | null;
   
+
   // Expenditure-specific fields
   expenditure_category?: ExpenditureCategory | null;
   staff_name?: string | null;
   vehicle_no?: string | null;
-  
+
   is_deleted: boolean;
 }
 
