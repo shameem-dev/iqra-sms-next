@@ -361,8 +361,8 @@ function BSRow({ entry, index, onDelete, onEdit }: {
 }) {
   const isIncome = entry.type === 'income';
   const categoryLabel = isIncome
-    ? resolveIncomeLabel(entry.income_category)
-    : resolveExpenditureLabel(entry.expenditure_category);
+  ? (entry.fee_type || resolveIncomeLabel(entry.income_category))
+  : resolveExpenditureLabel(entry.expenditure_category);
 
   const subLabel = entry.staff_name
     ? entry.staff_name
@@ -665,8 +665,8 @@ function DayBalanceModal({
             <div className="divide-y divide-slate-100">
               {dayEntries.map(e => {
                 const isIncome = e.type === 'income';
-                const label    = isIncome
-                  ? resolveIncomeLabel(e.income_category)
+                const label = isIncome
+                  ? (e.fee_type || resolveIncomeLabel(e.income_category))
                   : resolveExpenditureLabel(e.expenditure_category);
                 const sub = e.staff_name
                   ?? e.vehicle_no

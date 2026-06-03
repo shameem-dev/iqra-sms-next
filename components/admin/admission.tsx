@@ -305,7 +305,7 @@ export default function AdmissionRegisterPage() {
           <div className="border-2 border-slate-800 p-8 max-w-2xl mx-auto rounded-2xl">
             <div className="text-center mb-6 border-b pb-4 border-slate-300">
               <h1 className="text-2xl font-bold tracking-wide uppercase">Admission Extract</h1>
-              <p className="text-sm text-slate-500 mt-1">Iqrah School Management System</p>
+              <p className="text-sm text-slate-500 mt-1">IQRAH ENGLISH SCHOOL</p>
             </div>
             <div className="grid grid-cols-2 gap-x-8 gap-y-4 text-sm">
               {([
