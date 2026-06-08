@@ -25,7 +25,7 @@ export const INCOME_CATEGORIES: { value: IncomeCategory; label: string }[] = [
 ];
 
 export const EXPENDITURE_CATEGORIES: { value: ExpenditureCategory; label: string }[] = [
-  { value: 'salary',         label: 'Salary' },
+  // { value: 'salary',         label: 'Salary' },
   { value: 'vehicle_rent',  label: 'Vehicle Rent' },
   { value: 'kseb_bill',     label: 'KSEB Bill' },
   { value: 'gas',           label: 'Gas' },
