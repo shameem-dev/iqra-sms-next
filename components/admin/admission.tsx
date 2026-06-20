@@ -12,9 +12,9 @@ import {
   SquarePen, Trash, Printer, RefreshCw,
   AlertTriangle, Download, KeyRound,
   Users, ChevronDown,
-  Search, X, Plus,
+  Search, X, Plus, Upload,
 } from 'lucide-react'
-
+import BulkImportModal from '@/components/admin/BulkImportModal'  
 /* ─── Constants ────────────────────────────────────────────────────────── */
 const STANDARDS = [
   "LKG A", "LKG B", "UKG A", "UKG B",
@@ -124,6 +124,7 @@ export default function AdmissionRegisterPage() {
   const [deleteConfirmName, setDeleteConfirmName] = useState('')
   const [generatingLogins, setGeneratingLogins]   = useState(false)
   const [genResult, setGenResult]                 = useState<{ created: number; failed: number } | null>(null)
+  const [showBulkImport, setShowBulkImport]       = useState(false)
 
   /* ─── Load records ──────────────────────────────────────────────────── */
   async function loadRecords() {
@@ -372,6 +373,13 @@ export default function AdmissionRegisterPage() {
                 title="Refresh"
               >
                 <RefreshCw className="w-4 h-4" />
+              </button>
+
+              <button
+                onClick={() => setShowBulkImport(true)}
+                className="inline-flex items-center gap-2 h-9 px-4 rounded-xl border border-[#BFDBFE] bg-[#EFF6FF] text-[#1D4ED8] hover:bg-[#DBEAFE] text-xs font-bold transition-all"
+              >
+                <Upload className="w-3.5 h-3.5" /> Import Students
               </button>
 
               <button
@@ -870,6 +878,15 @@ export default function AdmissionRegisterPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ══════════════════ Bulk Import Modal ═══════════════════════════════ */}
+      {showBulkImport && (
+        <BulkImportModal
+          existingRecords={records}
+          onClose={() => setShowBulkImport(false)}
+          onComplete={() => { setShowBulkImport(false); loadRecords() }}
+        />
       )}
     </div>
   )
