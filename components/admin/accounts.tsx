@@ -25,7 +25,7 @@ export const INCOME_CATEGORIES: { value: IncomeCategory; label: string }[] = [
 ];
 
 export const EXPENDITURE_CATEGORIES: { value: ExpenditureCategory; label: string }[] = [
-  { value: 'salary',         label: 'Salary' },
+  // { value: 'salary',        label: 'Salary' },
   { value: 'vehicle_rent',  label: 'Vehicle Rent' },
   { value: 'kseb_bill',     label: 'KSEB Bill' },
   { value: 'gas',           label: 'Gas' },
@@ -245,7 +245,7 @@ function emptyExpenditure() {
     amount:               '' as unknown as number,
     bill_voucher_no:      '',
     notes:                '',
-    expenditure_category: 'salary' as ExpenditureCategory,
+    expenditure_category: 'medical' as ExpenditureCategory,
     staff_name:           '',
     vehicle_no:           '',
   };
@@ -285,7 +285,7 @@ function ExpenditureForm({ initial, onSave, onCancel, saving, staffList }: Expen
     });
   };
 
-  const needsStaff   = ['salary', 'staff_ta', 'training', 'medical'].includes(form.expenditure_category);
+  const needsStaff   = ['training', 'medical'].includes(form.expenditure_category);
   const needsVehicle = form.expenditure_category === 'vehicle_rent';
 
   return (
