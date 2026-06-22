@@ -146,19 +146,40 @@ export default function AdmissionRegisterPage() {
 
   /* ─── Filter effect ─────────────────────────────────────────────────── */
   useEffect(() => {
-    let r = [...records]
-    if (search) {
-      const q = search.toLowerCase()
-      r = r.filter(x =>
-        x.name.toLowerCase().includes(q) ||
-        x.admission_no.toLowerCase().includes(q) ||
-        x.mobile_no.includes(q)
-      )
-    }
-    if (filterStd)    r = r.filter(x => x.standard === filterStd)
-    if (filterGender) r = r.filter(x => x.gender   === filterGender)
-    setFiltered(r)
-  }, [search, filterStd, filterGender, records])
+  let r = [...records]
+
+  if (search) {
+    const q = search.toLowerCase()
+    r = r.filter(x =>
+      x.name.toLowerCase().includes(q) ||
+      x.admission_no.toLowerCase().includes(q) ||
+      x.mobile_no.includes(q)
+    )
+  }
+
+  if (filterStd)
+    r = r.filter(x => x.standard === filterStd)
+
+  if (filterGender)
+    r = r.filter(x => x.gender === filterGender)
+
+  // Sort: Class → Boys → Girls → Name
+  r.sort((a, b) => {
+    const stdA = STANDARDS.indexOf(a.standard)
+    const stdB = STANDARDS.indexOf(b.standard)
+
+    if (stdA !== stdB) return stdA - stdB
+
+    const genderA = a.gender === 'Male' ? 0 : 1
+    const genderB = b.gender === 'Male' ? 0 : 1
+
+    if (genderA !== genderB) return genderA - genderB
+
+    return a.name.localeCompare(b.name)
+  })
+
+  setFiltered(r)
+}, [search, filterStd, filterGender, records])
 
   const boyCount  = filtered.filter(r => r.gender === 'Male').length
   const girlCount = filtered.filter(r => r.gender === 'Female').length
