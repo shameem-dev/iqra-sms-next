@@ -5,7 +5,7 @@ import {
   Plus, Trash2, Save, Loader2,
   AlertCircle, X, Search, FileText, RefreshCw,
   CheckCircle2, FilePen, CalendarDays, 
-  ChevronLeft, ChevronRight,
+  ChevronLeft, ChevronRight, Eye, Info,
 } from 'lucide-react';
 import {
   fetchEntries, createEntry, updateEntry, deleteEntry,
@@ -353,16 +353,17 @@ function ExpenditureForm({ initial, onSave, onCancel, saving, staffList }: Expen
 
 // ─── Balance Sheet Row ────────────────────────────────────────────────────────
 
-function BSRow({ entry, index, onDelete, onEdit }: {
+function BSRow({ entry, index, onDelete, onEdit, onView }: {
   entry: AccountEntry;
   index: number;
   onDelete: (entry: AccountEntry) => void;
   onEdit: (entry: AccountEntry) => void;
+  onView: (entry: AccountEntry) => void;
 }) {
   const isIncome = entry.type === 'income';
   const categoryLabel = isIncome
-  ? (entry.fee_type || resolveIncomeLabel(entry.income_category))
-  : resolveExpenditureLabel(entry.expenditure_category);
+    ? (entry.fee_type || resolveIncomeLabel(entry.income_category))
+    : resolveExpenditureLabel(entry.expenditure_category);
 
   const subLabel = entry.staff_name
     ? entry.staff_name
@@ -399,8 +400,11 @@ function BSRow({ entry, index, onDelete, onEdit }: {
           ? <span className="text-sm font-semibold tabular-nums text-rose-600">₹{fmt(amount)}</span>
           : <span className="text-slate-200 text-sm">—</span>}
       </td>
-      <td className="px-3 py-2.5 w-16 border-l border-slate-100">
+      <td className="px-3 py-2.5 w-24 border-l border-slate-100">
         <div className="flex items-center justify-center gap-0.5">
+          <button onClick={() => onView(entry)} className="p-1.5 text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-md transition-colors" title="View Entry Details">
+            <Eye className="w-3.5 h-3.5" />
+          </button>
           <button onClick={() => onEdit(entry)} className="p-1.5 text-slate-50 hover:text-white bg-blue-700 hover:bg-blue-800 rounded-md transition-colors" title="Edit">
             <FilePen className="w-3.5 h-3.5" />
           </button>
@@ -410,6 +414,97 @@ function BSRow({ entry, index, onDelete, onEdit }: {
         </div>
       </td>
     </tr>
+  );
+}
+
+// ─── Single Row View Entry Modal ──────────────────────────────────────────────
+
+function ViewEntryModal({ target, onClose }: { target: AccountEntry; onClose: () => void }) {
+  const isIncome = target.type === 'income';
+  const label = isIncome ? resolveIncomeLabel(target.income_category) : resolveExpenditureLabel(target.expenditure_category);
+  const dateFormatted = new Date(target.date + 'T00:00:00').toLocaleDateString('en-IN', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl p-6 max-w-md w-full">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3.5 mb-4">
+          <div className="flex items-center gap-2.5">
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isIncome ? 'bg-teal-50 text-teal-700' : 'bg-rose-50 text-rose-700'}`}>
+              <Info className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-950">Transaction Details</h3>
+              <p className="text-xs text-slate-400 capitalize">{target.type} Ledger Item</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-1 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="bg-slate-50 border border-slate-100 rounded-xl p-4 space-y-3 text-sm text-slate-700 mb-5">
+          <div className="flex justify-between items-start">
+            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider pt-0.5">Category</span>
+            <span className="font-bold text-slate-900 text-right max-w-[65%]">{label}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Date</span>
+            <span className="font-medium text-slate-800 tabular-nums">{dateFormatted}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Ref Voucher / Bill</span>
+            <span className="font-mono text-xs bg-slate-200/60 px-2 py-0.5 rounded text-slate-800 font-medium">
+              {target.bill_voucher_no || '—'}
+            </span>
+          </div>
+          
+          {target.receipt_no && (
+            <div className="flex justify-between items-center">
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Receipt No.</span>
+              <span className="font-medium text-slate-800 font-mono text-xs">{target.receipt_no}</span>
+            </div>
+          )}
+          {target.book_no && (
+            <div className="flex justify-between items-center">
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Book No.</span>
+              <span className="font-medium text-slate-800 font-mono text-xs">{target.book_no}</span>
+            </div>
+          )}
+          {target.staff_name && (
+            <div className="flex justify-between items-center">
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Staff Associate</span>
+              <span className="font-semibold text-slate-800">{target.staff_name}</span>
+            </div>
+          )}
+          {target.vehicle_no && (
+            <div className="flex justify-between items-center">
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Vehicle Assigned</span>
+              <span className="font-mono text-xs bg-slate-200/60 px-2 py-0.5 rounded text-slate-800 font-medium">{target.vehicle_no}</span>
+            </div>
+          )}
+
+          <div className="pt-2 border-t border-slate-200/60 flex flex-col gap-1">
+            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Attached Notes</span>
+            <p className="text-xs text-slate-600 bg-white border border-slate-100 rounded-lg p-2 mt-1 min-h-[48px] whitespace-pre-wrap leading-relaxed">
+              {target.notes || <span className="text-slate-300 italic">No notes attached to this ledger log entry.</span>}
+            </p>
+          </div>
+
+          <div className="flex justify-between items-center pt-3 border-t border-slate-200/60">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Statement Impact</span>
+            <span className={`text-lg font-black tabular-nums ${isIncome ? 'text-teal-700' : 'text-rose-600'}`}>
+              ₹{fmt(Number(target.amount))}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex justify-end">
+          <button onClick={onClose} className="h-9 px-5 text-sm font-semibold bg-slate-900 hover:bg-slate-800 text-white rounded-lg shadow-sm transition-colors">
+            Dismiss Details
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -734,8 +829,8 @@ export default function AccountsUI({ staffList = [] }: AccountsUIProps) {
   const [totals, setTotals]               = useState({ income: 0, expenditure: 0, balance: 0 });
   const [editTarget, setEditTarget]       = useState<AccountEntry | null>(null);
   
-  // Set delete target to hold the entire AccountEntry object instead of just string
   const [deleteTarget, setDeleteTarget]   = useState<AccountEntry | null>(null);
+  const [viewTarget, setViewTarget]       = useState<AccountEntry | null>(null);
   const [toast, setToast]                 = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [showDayModal, setShowDayModal]   = useState(false);
 
@@ -855,6 +950,13 @@ export default function AccountsUI({ staffList = [] }: AccountsUIProps) {
     <div className="w-full space-y-4">
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+
+      {viewTarget && (
+        <ViewEntryModal
+          target={viewTarget}
+          onClose={() => setViewTarget(null)}
+        />
+      )}
 
       {deleteTarget && (
         <ConfirmDialog
@@ -1061,7 +1163,7 @@ export default function AccountsUI({ staffList = [] }: AccountsUIProps) {
                     <th className="px-3 py-2.5 text-left text-xs font-semibold text-slate-500 whitespace-nowrap">Bill / Voucher</th>
                     <th className="px-3 py-2.5 text-right text-xs font-semibold text-teal-700 whitespace-nowrap border-l border-slate-200 bg-teal-50/40">Income (₹)</th>
                     <th className="px-3 py-2.5 text-right text-xs font-semibold text-rose-600 whitespace-nowrap border-l border-slate-200 bg-rose-50/40">Expenditure (₹)</th>
-                    <th className="px-3 py-2.5 w-16 border-l border-slate-200" />
+                    <th className="px-3 py-2.5 w-24 border-l border-slate-200" />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -1082,7 +1184,14 @@ export default function AccountsUI({ staffList = [] }: AccountsUIProps) {
                     </tr>
                   )}
                   {filtered.map((entry, i) => (
-                    <BSRow key={entry.id} entry={entry} index={i} onDelete={item => setDeleteTarget(item)} onEdit={openEdit} />
+                    <BSRow 
+                      key={entry.id} 
+                      entry={entry} 
+                      index={i} 
+                      onDelete={item => setDeleteTarget(item)} 
+                      onEdit={openEdit}
+                      onView={item => setViewTarget(item)} 
+                    />
                   ))}
                 </tbody>
                 <tfoot>
