@@ -12,9 +12,9 @@ import {
   SquarePen, Trash, Printer, RefreshCw,
   AlertTriangle, Download, KeyRound,
   Users, ChevronDown,
-  Search, X, Plus,
+  Search, X, Plus, Upload,
 } from 'lucide-react'
-
+import BulkImportModal from '@/components/admin/BulkImportModal'  
 /* ─── Constants ────────────────────────────────────────────────────────── */
 const STANDARDS = [
   "LKG A", "LKG B", "UKG A", "UKG B",
@@ -124,6 +124,7 @@ export default function AdmissionRegisterPage() {
   const [deleteConfirmName, setDeleteConfirmName] = useState('')
   const [generatingLogins, setGeneratingLogins]   = useState(false)
   const [genResult, setGenResult]                 = useState<{ created: number; failed: number } | null>(null)
+  const [showBulkImport, setShowBulkImport]       = useState(false)
 
   /* ─── Load records ──────────────────────────────────────────────────── */
   async function loadRecords() {
@@ -145,19 +146,40 @@ export default function AdmissionRegisterPage() {
 
   /* ─── Filter effect ─────────────────────────────────────────────────── */
   useEffect(() => {
-    let r = [...records]
-    if (search) {
-      const q = search.toLowerCase()
-      r = r.filter(x =>
-        x.name.toLowerCase().includes(q) ||
-        x.admission_no.toLowerCase().includes(q) ||
-        x.mobile_no.includes(q)
-      )
-    }
-    if (filterStd)    r = r.filter(x => x.standard === filterStd)
-    if (filterGender) r = r.filter(x => x.gender   === filterGender)
-    setFiltered(r)
-  }, [search, filterStd, filterGender, records])
+  let r = [...records]
+
+  if (search) {
+    const q = search.toLowerCase()
+    r = r.filter(x =>
+      x.name.toLowerCase().includes(q) ||
+      x.admission_no.toLowerCase().includes(q) ||
+      x.mobile_no.includes(q)
+    )
+  }
+
+  if (filterStd)
+    r = r.filter(x => x.standard === filterStd)
+
+  if (filterGender)
+    r = r.filter(x => x.gender === filterGender)
+
+  // Sort: Class → Boys → Girls → Name
+  r.sort((a, b) => {
+    const stdA = STANDARDS.indexOf(a.standard)
+    const stdB = STANDARDS.indexOf(b.standard)
+
+    if (stdA !== stdB) return stdA - stdB
+
+    const genderA = a.gender === 'Male' ? 0 : 1
+    const genderB = b.gender === 'Male' ? 0 : 1
+
+    if (genderA !== genderB) return genderA - genderB
+
+    return a.name.localeCompare(b.name)
+  })
+
+  setFiltered(r)
+}, [search, filterStd, filterGender, records])
 
   const boyCount  = filtered.filter(r => r.gender === 'Male').length
   const girlCount = filtered.filter(r => r.gender === 'Female').length
@@ -372,6 +394,13 @@ export default function AdmissionRegisterPage() {
                 title="Refresh"
               >
                 <RefreshCw className="w-4 h-4" />
+              </button>
+
+              <button
+                onClick={() => setShowBulkImport(true)}
+                className="inline-flex items-center gap-2 h-9 px-4 rounded-xl border border-[#BFDBFE] bg-[#EFF6FF] text-[#1D4ED8] hover:bg-[#DBEAFE] text-xs font-bold transition-all"
+              >
+                <Upload className="w-3.5 h-3.5" /> Import Students
               </button>
 
               <button
@@ -870,6 +899,15 @@ export default function AdmissionRegisterPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ══════════════════ Bulk Import Modal ═══════════════════════════════ */}
+      {showBulkImport && (
+        <BulkImportModal
+          existingRecords={records}
+          onClose={() => setShowBulkImport(false)}
+          onComplete={() => { setShowBulkImport(false); loadRecords() }}
+        />
       )}
     </div>
   )
