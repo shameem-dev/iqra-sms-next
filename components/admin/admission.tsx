@@ -32,9 +32,16 @@ const VEHICLE_POINTS = [
   'Kizhakke Paramba',
   'Kizhakke Chungam',
   'Chirayil Chungam',
+  'Elaneerkkara',
+  'Ariyambil',
+  'Nediyiruppu',
+  'Cholamukk',
+  'Nottanampara',
+  'Panakkaparamb',
+  'Cherlakund',
   'Own Transport',
   'Walking',
-]
+];
 const EMPTY_FORM: AdmissionRecord = {
   admission_no: '', name: '', standard: '', date_of_birth: '',
   aadhar_no: '', parent_guardian: '', address: '', mobile_no: '',
