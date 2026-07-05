@@ -19,9 +19,9 @@ jobs:
       - name: Backup Tables
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
         run: |
-          mkdir backup
+          mkdir -p backup
 
           TABLES=(
             account_profiles
@@ -51,11 +51,11 @@ jobs:
           do
             echo "Backing up $table..."
 
-            curl \
+            curl --fail \
               "$SUPABASE_URL/rest/v1/$table?select=*" \
-              -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
-              -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
-              -H "Content-Type: application/json" \
+              -H "apikey: $SUPABASE_SERVICE_KEY" \
+              -H "Authorization: Bearer $SUPABASE_SERVICE_KEY" \
+              -H "Accept: application/json" \
               -o "backup/$table.json"
           done
 
