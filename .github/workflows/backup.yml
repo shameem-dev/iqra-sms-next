@@ -1,10 +1,9 @@
-name: Supabase Daily Backup
+name: Supabase Backup
 
 on:
   workflow_dispatch:
-
   schedule:
-    - cron: "0 0 * * *"
+    - cron: "0 2 * * *"
 
 jobs:
   backup:
@@ -13,22 +12,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install PostgreSQL Client
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y postgresql-client
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
 
-      - name: Backup Database
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      - name: Login
         run: |
-          mkdir backups
-          pg_dump "$DATABASE_URL" > backups/backup-$(date +%F-%H-%M).sql
+          supabase login --token ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Dump Database
+        run: |
+          mkdir backup
+          supabase db dump \
+            --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} \
+            --file backup/database.sql
 
       - name: Upload Backup
         uses: actions/upload-artifact@v4
         with:
           name: supabase-backup
-          path: backups/
-
-          
+          path: backup/database.sql
