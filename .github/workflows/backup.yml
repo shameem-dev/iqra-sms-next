@@ -2,6 +2,7 @@ name: Supabase JSON Backup
 
 on:
   workflow_dispatch:
+
   schedule:
     - cron: "0 2 * * *"
 
@@ -10,13 +11,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Install jq
-        run: sudo apt-get update && sudo apt-get install -y jq zip
+      - name: Install zip
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y zip
 
-      - name: Backup Tables
+      - name: Backup Supabase Tables
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
@@ -24,45 +27,47 @@ jobs:
           mkdir -p backup
 
           TABLES=(
-            account_profiles
+            account_entries
             attendance
-            category_summary
-            courses
+            exams
             fee_payments
             marks
-            monthly_summary
             profiles
             result_status
             school_holidays
             staff
             staff_documents
-            staff_leave
+            staff_leaves
             staff_payroll
             staff_projects
-            staff_salaries
-            student_fee
+            staff_trainings
+            student_fees
             student_marks
-            students
+            students_list
             subjects
             teacher_assignments
           )
 
           for table in "${TABLES[@]}"
           do
+            echo "======================================="
             echo "Backing up $table..."
 
-            curl --fail \
+            curl --fail --silent --show-error \
               "$SUPABASE_URL/rest/v1/$table?select=*" \
               -H "apikey: $SUPABASE_SERVICE_KEY" \
               -H "Authorization: Bearer $SUPABASE_SERVICE_KEY" \
               -H "Accept: application/json" \
               -o "backup/$table.json"
+
+            echo "✓ $table completed"
           done
 
-          zip -r supabase-backup.zip backup
+          zip -r supabase-backup-$(date +%F).zip backup
 
       - name: Upload Backup
         uses: actions/upload-artifact@v4
         with:
           name: supabase-json-backup
-          path: supabase-backup.zip
+          path: supabase-backup-*.zip
+          retention-days: 90
