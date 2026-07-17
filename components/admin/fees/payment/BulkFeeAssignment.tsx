@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 import {
-  ALL_STANDARDS,INSTALLMENT_FEE_TYPES, VEHICLE_FEE_TYPES, ACADEMIC_YEAR,
+  ALL_STANDARDS, INSTALLMENT_FEE_TYPES, VEHICLE_FEE_TYPES, ACADEMIC_YEAR,
 } from '@/utils/actions/feeConstants'
 import {
   Check,
@@ -38,7 +38,10 @@ export default function BulkFeeAssignment() {
   // ── Step 1 state ──────────────────────────────────────────────────────
   const [selectedStandard, setSelectedStandard] = useState('')
   const [feeCategory, setFeeCategory]           = useState<FeeCategory>('installment')
-  const [selectedFeeType, setSelectedFeeType]   = useState('')
+  // Multiple fee types can now be selected. Only one is pre-selected by default;
+  // the rest start unchecked and the admin opts in to any additional terms.
+  const [selectedFeeTypes, setSelectedFeeTypes] = useState<Set<string>>(new Set())
+  // One shared amount, applied to every selected fee type for every selected student.
   const [amount, setAmount]                     = useState<number>(0)
   const [step1Error, setStep1Error]             = useState('')
 
@@ -62,9 +65,11 @@ export default function BulkFeeAssignment() {
     ? [...INSTALLMENT_FEE_TYPES]
     : [...VEHICLE_FEE_TYPES]
 
-  // Reset fee type when category changes
+  // Reset fee type selection when category changes — pre-select only the
+  // first term in the new list, everything else starts unchecked.
   useEffect(() => {
-    setSelectedFeeType('')
+    setSelectedFeeTypes(feeTypeOptions.length > 0 ? new Set([feeTypeOptions[0]]) : new Set())
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [feeCategory])
 
   // ── Fetch students when standard selected ─────────────────────────────
@@ -83,12 +88,21 @@ export default function BulkFeeAssignment() {
     setLoadingStudents(false)
   }
 
+  // ── Toggle a fee type checkbox ─────────────────────────────────────────
+  function toggleFeeType(ft: string) {
+    setSelectedFeeTypes(prev => {
+      const next = new Set(prev)
+      next.has(ft) ? next.delete(ft) : next.add(ft)
+      return next
+    })
+  }
+
   // ── Step 1 → Step 2 ───────────────────────────────────────────────────
   function handleProceedToStudents() {
     setStep1Error('')
-    if (!selectedStandard) { setStep1Error('Please select a class.'); return }
-    if (!selectedFeeType)  { setStep1Error('Please select a fee type.'); return }
-    if (amount <= 0)       { setStep1Error('Please enter a valid amount.'); return }
+    if (!selectedStandard)        { setStep1Error('Please select a class.'); return }
+    if (selectedFeeTypes.size === 0) { setStep1Error('Please select at least one fee type.'); return }
+    if (amount <= 0)              { setStep1Error('Please enter a valid amount.'); return }
     fetchStudents(selectedStandard)
     setStep(2)
   }
@@ -113,37 +127,45 @@ export default function BulkFeeAssignment() {
   }
 
   // ── Assign fees ───────────────────────────────────────────────────────
+  // Nested loop: for each selected student, for each selected fee type,
+  // check for an existing row before inserting. The same `amount` is used
+  // for every (student, feeType) pair.
   async function handleAssign() {
     setAssigning(true)
     const results = { success: [] as string[], skipped: [] as string[], failed: [] as string[] }
     const selectedStudents = students.filter(s => selectedIds.has(s.id))
+    const feeTypesToAssign = Array.from(selectedFeeTypes)
 
     for (const student of selectedStudents) {
-      const { data: existing } = await supabase
-        .from('student_fees')
-        .select('id')
-        .eq('student_id', student.id)
-        .eq('fee_type', selectedFeeType)
-        .eq('academic_year', ACADEMIC_YEAR)
-        .single()
+      for (const feeType of feeTypesToAssign) {
+        const label = `${student.name} (${student.admission_no}) — ${feeType}`
 
-      if (existing) {
-        results.skipped.push(`${student.name} (${student.admission_no})`)
-        continue
-      }
+        const { data: existing } = await supabase
+          .from('student_fees')
+          .select('id')
+          .eq('student_id', student.id)
+          .eq('fee_type', feeType)
+          .eq('academic_year', ACADEMIC_YEAR)
+          .single()
 
-      const { error } = await supabase.from('student_fees').insert({
-        student_id:    student.id,
-        fee_type:      selectedFeeType,
-        total_amount:  amount,
-        paid_amount:   0,
-        academic_year: ACADEMIC_YEAR,
-      })
+        if (existing) {
+          results.skipped.push(label)
+          continue
+        }
 
-      if (error) {
-        results.failed.push(`${student.name} (${student.admission_no})`)
-      } else {
-        results.success.push(`${student.name} (${student.admission_no})`)
+        const { error } = await supabase.from('student_fees').insert({
+          student_id:    student.id,
+          fee_type:      feeType,
+          total_amount:  amount,
+          paid_amount:   0,
+          academic_year: ACADEMIC_YEAR,
+        })
+
+        if (error) {
+          results.failed.push(label)
+        } else {
+          results.success.push(label)
+        }
       }
     }
 
@@ -156,7 +178,7 @@ export default function BulkFeeAssignment() {
     setStep(1)
     setSelectedStandard('')
     setFeeCategory('installment')
-    setSelectedFeeType('')
+    setSelectedFeeTypes(new Set(INSTALLMENT_FEE_TYPES.length > 0 ? [INSTALLMENT_FEE_TYPES[0]] : []))
     setAmount(0)
     setStep1Error('')
     setStudents([])
@@ -171,6 +193,10 @@ export default function BulkFeeAssignment() {
     const q = search.toLowerCase()
     return s.name.toLowerCase().includes(q) || s.admission_no.toLowerCase().includes(q)
   })
+
+  // ── Derived totals ────────────────────────────────────────────────────
+  const selectedFeeTypesList = Array.from(selectedFeeTypes)
+  const totalToAssign = amount * selectedIds.size * selectedFeeTypesList.length
 
   // ── Step indicator ────────────────────────────────────────────────────
   const steps = [
@@ -215,7 +241,7 @@ export default function BulkFeeAssignment() {
         <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-5">
           <div>
             <h2 className="text-sm font-bold text-gray-700">Step 1 — Fee Setup</h2>
-            <p className="text-xs text-gray-400 mt-0.5">Select class, fee type and amount to assign</p>
+            <p className="text-xs text-gray-400 mt-0.5">Select class, fee type(s) and amount to assign</p>
           </div>
 
           {/* Class */}
@@ -262,30 +288,41 @@ export default function BulkFeeAssignment() {
             </div>
           </div>
 
-          {/* Fee Type */}
+          {/* Fee Type — multi-select checklist, one pre-selected by default */}
           <div>
             <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
-              {feeCategory === 'installment' ? 'Installment Term' : 'Vehicle Term'}
+              {feeCategory === 'installment' ? 'Installment Term(s)' : 'Vehicle Term(s)'}
             </label>
             <div className="grid grid-cols-2 gap-1.5">
-              {feeTypeOptions.map(ft => (
-                <button
-                  key={ft}
-                  onClick={() => setSelectedFeeType(ft)}
-                  className={`py-2 px-3 rounded-lg text-xs font-medium border transition-all text-left
-                    ${selectedFeeType === ft
-                      ? 'bg-teal-600 text-white border-teal-600'
-                      : 'bg-gray-50 text-gray-500 border-gray-200 hover:border-teal-300 hover:text-teal-600'}`}>
-                  {ft}
-                </button>
-              ))}
+              {feeTypeOptions.map(ft => {
+                const checked = selectedFeeTypes.has(ft)
+                return (
+                  <button
+                    key={ft}
+                    onClick={() => toggleFeeType(ft)}
+                    className={`py-2 px-3 rounded-lg text-xs font-medium border transition-all text-left
+                      flex items-center gap-2
+                      ${checked
+                        ? 'bg-teal-600 text-white border-teal-600'
+                        : 'bg-gray-50 text-gray-500 border-gray-200 hover:border-teal-300 hover:text-teal-600'}`}>
+                    <span className={`w-4 h-4 rounded flex items-center justify-center shrink-0 border-2
+                      ${checked ? 'bg-white border-white' : 'bg-white border-gray-300'}`}>
+                      {checked && <Check className="w-3 h-3 text-teal-600" strokeWidth={3} />}
+                    </span>
+                    {ft}
+                  </button>
+                )
+              })}
             </div>
+            <p className="text-xs text-gray-400 mt-1">
+              {selectedFeeTypesList.length} term{selectedFeeTypesList.length !== 1 ? 's' : ''} selected
+            </p>
           </div>
 
           {/* Amount */}
           <div>
             <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
-              Amount per Student
+              Amount per Student per Term
             </label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">₹</span>
@@ -300,19 +337,22 @@ export default function BulkFeeAssignment() {
               />
             </div>
             <p className="text-xs text-gray-400 mt-1">
-              This amount will be assigned individually to each selected student
+              This amount will be applied to every selected term, for each selected student
             </p>
           </div>
 
           {/* Summary preview */}
-          {selectedStandard && selectedFeeType && amount > 0 && (
+          {selectedStandard && selectedFeeTypesList.length > 0 && amount > 0 && (
             <div className="bg-teal-50 border border-teal-200 rounded-xl p-3">
               <p className="text-xs font-semibold text-teal-700 mb-1">Assignment Preview</p>
               <p className="text-xs text-teal-600">
                 Class: <span className="font-bold">{selectedStandard}</span>
               </p>
               <p className="text-xs text-teal-600 mt-0.5">
-                Fee: <span className="font-bold">{selectedFeeType}</span> — ₹{amount.toLocaleString()} per student
+                Terms: <span className="font-bold">{selectedFeeTypesList.join(', ')}</span>
+              </p>
+              <p className="text-xs text-teal-600 mt-0.5">
+                ₹{amount.toLocaleString()} per term, per student
               </p>
             </div>
           )}
@@ -341,9 +381,9 @@ export default function BulkFeeAssignment() {
           {/* Summary bar */}
           <div className="bg-teal-50 border border-teal-200 rounded-xl p-3 flex justify-between items-center">
             <div>
-              <p className="text-xs font-semibold text-teal-700">{selectedFeeType}</p>
+              <p className="text-xs font-semibold text-teal-700">{selectedFeeTypesList.join(', ')}</p>
               <p className="text-xs text-teal-600 mt-0.5">
-                {selectedStandard} · ₹{amount.toLocaleString()} per student
+                {selectedStandard} · ₹{amount.toLocaleString()} per term, per student
               </p>
             </div>
             <button
@@ -435,7 +475,7 @@ export default function BulkFeeAssignment() {
                       </div>
                       {isSelected && (
                         <span className="text-xs text-teal-600 font-semibold shrink-0">
-                          ₹{amount.toLocaleString()}
+                          ₹{(amount * selectedFeeTypesList.length).toLocaleString()}
                         </span>
                       )}
                     </button>
@@ -485,21 +525,25 @@ export default function BulkFeeAssignment() {
                 <span className="font-semibold text-gray-700">{selectedStandard}</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-gray-400">Fee Type</span>
-                <span className="font-semibold text-gray-700">{selectedFeeType}</span>
+                <span className="text-gray-400">Fee Terms</span>
+                <span className="font-semibold text-gray-700 text-right">{selectedFeeTypesList.join(', ')}</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-gray-400">Amount per Student</span>
+                <span className="text-gray-400">Amount per Term, per Student</span>
                 <span className="font-semibold text-teal-600">₹{amount.toLocaleString()}</span>
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-gray-400">Students Selected</span>
                 <span className="font-semibold text-gray-700">{selectedIds.size}</span>
               </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-gray-400">Terms Selected</span>
+                <span className="font-semibold text-gray-700">{selectedFeeTypesList.length}</span>
+              </div>
               <div className="border-t border-gray-200 pt-2 flex justify-between text-xs">
                 <span className="text-gray-400">Total to Assign</span>
                 <span className="font-bold text-gray-700 text-sm">
-                  ₹{(amount * selectedIds.size).toLocaleString()}
+                  ₹{totalToAssign.toLocaleString()}
                 </span>
               </div>
             </div>
@@ -521,7 +565,7 @@ export default function BulkFeeAssignment() {
                         <p className="text-xs text-gray-400">{s.admission_no}</p>
                       </div>
                       <span className="text-xs font-semibold text-teal-600">
-                        ₹{amount.toLocaleString()}
+                        ₹{(amount * selectedFeeTypesList.length).toLocaleString()}
                       </span>
                     </div>
                   ))}
@@ -529,7 +573,7 @@ export default function BulkFeeAssignment() {
             </div>
 
             <p className="text-xs text-yellow-700 bg-yellow-50 border border-yellow-200 px-3 py-2 rounded-lg">
-              Students who already have <strong>{selectedFeeType}</strong> assigned will be skipped automatically.
+              Any student who already has a selected term assigned will have <strong>that term</strong> skipped automatically — other selected terms for them will still be assigned.
             </p>
 
             <div className="flex gap-3">
@@ -559,7 +603,7 @@ export default function BulkFeeAssignment() {
           <div>
             <h2 className="text-sm font-bold text-gray-700">Assignment Complete</h2>
             <p className="text-xs text-gray-400 mt-0.5">
-              {selectedFeeType} · {selectedStandard} · ₹{amount.toLocaleString()}
+              {selectedFeeTypesList.join(', ')} · {selectedStandard} · ₹{amount.toLocaleString()} per term
             </p>
           </div>
 
