@@ -2,6 +2,7 @@
 
 import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { PaymentMode } from '@/type/accounts'
 
 export interface PayrollRecord {
   id: string
@@ -86,6 +87,7 @@ export async function markSalaryPaid(params: {
   notes?: string
   billVoucherNo?: string
   customAmount?: number | null
+  paymentMode?: PaymentMode
 }): Promise<PayrollRecord> {
   const supabase = await createClient()
 
@@ -93,8 +95,9 @@ export async function markSalaryPaid(params: {
     month: 'long', year: 'numeric',
   })
 
-  const isCustom = params.customAmount != null && params.customAmount > 0
-  const billNo   = params.billVoucherNo?.trim() || null
+  const isCustom    = params.customAmount != null && params.customAmount > 0
+  const billNo      = params.billVoucherNo?.trim() || null
+  const paymentMode = params.paymentMode || 'Cash'
 
   let salaryEntryId: string | null = null
   let taEntryId:     string | null = null
@@ -109,6 +112,7 @@ export async function markSalaryPaid(params: {
         staff_name:           params.staffName,
         amount:               params.customAmount,
         date:                 params.paymentDate,
+        payment_mode:         paymentMode,
         bill_voucher_no:      billNo,
         notes:                `Partial salary for ${monthLabel}${params.notes ? ' — ' + params.notes : ''}`,
         is_deleted:           false,
@@ -128,6 +132,7 @@ export async function markSalaryPaid(params: {
           staff_name:           params.staffName,
           amount:               params.basicSalary,
           date:                 params.paymentDate,
+          payment_mode:         paymentMode,
           bill_voucher_no:      billNo,
           notes:                `Salary for ${monthLabel}${params.notes ? ' — ' + params.notes : ''}`,
           is_deleted:           false,
@@ -148,6 +153,7 @@ export async function markSalaryPaid(params: {
           staff_name:           params.staffName,
           amount:               params.ta,
           date:                 params.paymentDate,
+          payment_mode:         paymentMode,
           bill_voucher_no:      billNo,
           notes:                `TA for ${monthLabel}${params.notes ? ' — ' + params.notes : ''}`,
           is_deleted:           false,

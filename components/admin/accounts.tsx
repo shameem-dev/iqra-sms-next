@@ -11,11 +11,18 @@ import {
   fetchEntries, createEntry, updateEntry, deleteEntry,
   fetchTotals,
   type AccountEntry, type NewEntry, type EntryType,
-  type IncomeCategory, type ExpenditureCategory,
+  type IncomeCategory, type ExpenditureCategory, type PaymentMode,
 } from '@/utils/actions/Accounts';
 import { useAccountsRealtime } from '@/hooks/useAccountsRealtime';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
+
+export const PAYMENT_MODES: { value: PaymentMode; label: string }[] = [
+  { value: 'UPI',   label: 'UPI' },
+  { value: 'Bank',  label: 'Bank' },
+  { value: 'Cash',  label: 'Cash' },
+  { value: 'Check', label: 'Check' },
+];
 
 export const INCOME_CATEGORIES: { value: IncomeCategory; label: string }[] = [
   { value: 'daily_fees', label: 'Daily Fees Collected' },
@@ -142,6 +149,7 @@ function emptyIncome() {
   return {
     date:            new Date().toISOString().split('T')[0],
     amount:          '' as unknown as number,
+    payment_mode:    'Cash' as PaymentMode,
     bill_voucher_no: '',
     notes:           '',
     income_category: 'daily_fees' as IncomeCategory,
@@ -177,6 +185,7 @@ function IncomeForm({ initial, onSave, onCancel, saving }: IncomeFormProps) {
       type:            'income',
       date:            form.date,
       amount:          Number(form.amount),
+      payment_mode:    form.payment_mode || 'Cash',
       bill_voucher_no: form.bill_voucher_no || null,
       notes:           form.notes || null,
       income_category: form.income_category,
@@ -206,6 +215,11 @@ function IncomeForm({ initial, onSave, onCancel, saving }: IncomeFormProps) {
         </Field>
         <Field label="Amount (₹)" required>
           <input type="number" min="0" step="0.01" value={form.amount} onChange={e => set('amount', e.target.value as unknown as number)} placeholder="0.00" className={inputCls} />
+        </Field>
+        <Field label="Mode of Payment" required>
+          <select value={form.payment_mode || 'Cash'} onChange={e => set('payment_mode', e.target.value as PaymentMode)} className={selectCls}>
+            {PAYMENT_MODES.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+          </select>
         </Field>
         <Field label="Bill / Voucher No.">
           <input type="text" value={form.bill_voucher_no} onChange={e => set('bill_voucher_no', e.target.value)} placeholder="e.g. INV-0042" className={inputCls} />
@@ -243,6 +257,7 @@ function emptyExpenditure() {
   return {
     date:                 new Date().toISOString().split('T')[0],
     amount:               '' as unknown as number,
+    payment_mode:         'Cash' as PaymentMode,
     bill_voucher_no:      '',
     notes:                '',
     expenditure_category: 'medical' as ExpenditureCategory,
@@ -277,6 +292,7 @@ function ExpenditureForm({ initial, onSave, onCancel, saving, staffList }: Expen
       type:                 'expenditure',
       date:                 form.date,
       amount:               Number(form.amount),
+      payment_mode:         form.payment_mode || 'Cash',
       bill_voucher_no:      form.bill_voucher_no || null,
       notes:                form.notes || null,
       expenditure_category: form.expenditure_category,
@@ -330,6 +346,11 @@ function ExpenditureForm({ initial, onSave, onCancel, saving, staffList }: Expen
         </Field>
         <Field label="Amount (₹)" required>
           <input type="number" min="0" step="0.01" value={form.amount} onChange={e => set('amount', e.target.value as unknown as number)} placeholder="0.00" className={inputCls} />
+        </Field>
+        <Field label="Mode of Payment" required>
+          <select value={form.payment_mode || 'Cash'} onChange={e => set('payment_mode', e.target.value as PaymentMode)} className={selectCls}>
+            {PAYMENT_MODES.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+          </select>
         </Field>
         <Field label="Bill / Voucher No.">
           <input type="text" value={form.bill_voucher_no} onChange={e => set('bill_voucher_no', e.target.value)} placeholder="e.g. VCH-0099" className={inputCls} />
@@ -386,6 +407,11 @@ function BSRow({ entry, index, onDelete, onEdit, onView }: {
       <td className="px-3 py-2.5">
         <p className="text-sm text-slate-800 font-medium leading-tight">{categoryLabel}</p>
         {subLabel && <p className="text-xs text-slate-400 mt-0.5 truncate max-w-50">{subLabel}</p>}
+      </td>
+      <td className="px-3 py-2.5 text-xs whitespace-nowrap">
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold text-slate-700 bg-slate-100 border border-slate-200/80">
+          {entry.payment_mode || 'Cash'}
+        </span>
       </td>
       <td className="px-3 py-2.5 text-xs text-slate-400 whitespace-nowrap">
         {entry.bill_voucher_no || entry.receipt_no || <span className="text-slate-200">—</span>}
@@ -450,6 +476,12 @@ function ViewEntryModal({ target, onClose }: { target: AccountEntry; onClose: ()
           <div className="flex justify-between items-center">
             <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Date</span>
             <span className="font-medium text-slate-800 tabular-nums">{dateFormatted}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Mode of Payment</span>
+            <span className="font-semibold text-xs bg-slate-200/70 px-2 py-0.5 rounded text-slate-800">
+              {target.payment_mode || 'Cash'}
+            </span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Ref Voucher / Bill</span>
@@ -780,6 +812,9 @@ function DayBalanceModal({
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-[10px] text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded font-medium border border-slate-200">
+                        {e.payment_mode || 'Cash'}
+                      </span>
                       {e.bill_voucher_no && (
                         <span className="text-[10px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded font-mono">
                           {e.bill_voucher_no}
@@ -885,6 +920,7 @@ export default function AccountsUI({ staffList = [] }: AccountsUIProps) {
       || (e.staff_name      ?? '').toLowerCase().includes(q)
       || (e.vehicle_no      ?? '').toLowerCase().includes(q)
       || (e.bill_voucher_no ?? '').toLowerCase().includes(q)
+      || (e.payment_mode    ?? '').toLowerCase().includes(q)
       || (e.notes           ?? '').toLowerCase().includes(q)
       || (e.receipt_no      ?? '').toLowerCase().includes(q);
     const matchFrom = !effectiveDateFrom || e.date >= effectiveDateFrom;
@@ -1160,6 +1196,7 @@ export default function AccountsUI({ staffList = [] }: AccountsUIProps) {
                     <th className="px-3 py-2.5 text-left text-xs font-medium text-slate-400 w-8">#</th>
                     <th className="px-3 py-2.5 text-left text-xs font-semibold text-slate-500 whitespace-nowrap">Date</th>
                     <th className="px-3 py-2.5 text-left text-xs font-semibold text-slate-500">Particulars</th>
+                    <th className="px-3 py-2.5 text-left text-xs font-semibold text-slate-500 whitespace-nowrap">Mode</th>
                     <th className="px-3 py-2.5 text-left text-xs font-semibold text-slate-500 whitespace-nowrap">Bill / Voucher</th>
                     <th className="px-3 py-2.5 text-right text-xs font-semibold text-teal-700 whitespace-nowrap border-l border-slate-200 bg-teal-50/40">Income (₹)</th>
                     <th className="px-3 py-2.5 text-right text-xs font-semibold text-rose-600 whitespace-nowrap border-l border-slate-200 bg-rose-50/40">Expenditure (₹)</th>
@@ -1169,7 +1206,7 @@ export default function AccountsUI({ staffList = [] }: AccountsUIProps) {
                 <tbody className="divide-y divide-slate-100">
                   {effectiveDateFrom && (
                     <tr className="bg-slate-50/80">
-                      <td colSpan={4} className="px-3 py-2 text-xs font-semibold text-slate-500 italic">
+                      <td colSpan={5} className="px-3 py-2 text-xs font-semibold text-slate-500 italic">
                         Opening Balance
                         <span className="ml-2 font-normal text-slate-400 not-italic">(as of {effectiveDateFrom})</span>
                       </td>
@@ -1196,7 +1233,7 @@ export default function AccountsUI({ staffList = [] }: AccountsUIProps) {
                 </tbody>
                 <tfoot>
                   <tr className="border-t-2 border-slate-300 bg-slate-100">
-                    <td colSpan={4} className="px-3 py-2.5 text-xs font-semibold text-slate-600">
+                    <td colSpan={5} className="px-3 py-2.5 text-xs font-semibold text-slate-600">
                       Total ({filtered.length} {filtered.length === 1 ? 'entry' : 'entries'})
                       {filterMonth && <span className="ml-2 font-normal text-slate-400">— {monthLabel(filterMonth)}</span>}
                     </td>
@@ -1209,7 +1246,7 @@ export default function AccountsUI({ staffList = [] }: AccountsUIProps) {
                     <td className="border-l border-slate-200" />
                   </tr>
                   <tr className={`border-t border-slate-200 ${filteredNet >= 0 ? 'bg-teal-50/60' : 'bg-rose-50/60'}`}>
-                    <td colSpan={4} className="px-3 py-2 text-xs font-semibold text-slate-600">
+                    <td colSpan={5} className="px-3 py-2 text-xs font-semibold text-slate-600">
                       {effectiveDateFrom ? 'Closing Balance' : 'Net Balance'}
                       {effectiveDateTo && <span className="ml-2 font-normal text-slate-400">— as of {effectiveDateTo}</span>}
                     </td>
