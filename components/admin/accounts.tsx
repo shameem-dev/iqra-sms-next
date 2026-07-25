@@ -18,10 +18,10 @@ import { useAccountsRealtime } from '@/hooks/useAccountsRealtime';
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 export const PAYMENT_MODES: { value: PaymentMode; label: string }[] = [
-  { value: 'UPI',   label: 'UPI' },
+  // { value: 'UPI',   label: 'UPI' },
   { value: 'Bank',  label: 'Bank' },
   { value: 'Cash',  label: 'Cash' },
-  { value: 'Check', label: 'Check' },
+  // { value: 'Check', label: 'Check' },
 ];
 
 export const INCOME_CATEGORIES: { value: IncomeCategory; label: string }[] = [
@@ -434,9 +434,9 @@ function BSRow({ entry, index, onDelete, onEdit, onView }: {
           <button onClick={() => onEdit(entry)} className="p-1.5 text-slate-50 hover:text-white bg-blue-700 hover:bg-blue-800 rounded-md transition-colors" title="Edit">
             <FilePen className="w-3.5 h-3.5" />
           </button>
-          <button onClick={() => onDelete(entry)} className="p-1.5 rounded-md text-slate-50 hover:text-white bg-red-700 hover:bg-red-800 transition-colors" title="Delete">
+          {/* <button onClick={() => onDelete(entry)} className="p-1.5 rounded-md text-slate-50 hover:text-white bg-red-700 hover:bg-red-800 transition-colors" title="Delete">
             <Trash2 className="w-3.5 h-3.5" />
-          </button>
+          </button> */}
         </div>
       </td>
     </tr>
