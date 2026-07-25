@@ -3,9 +3,11 @@
 import { useState } from 'react'
 import { FeeRowUI, PaymentDetail } from '@/type/fees'
 
+const PAYMENT_MODES = ['Cash', 'Bank'] as const
+
 interface Props {
   unpaidFees: FeeRowUI[]
-  onSave: (details: PaymentDetail[], receiptNo: string, date: string) => Promise<void>
+  onSave: (details: PaymentDetail[], receiptNo: string, date: string, paymentMode: string) => Promise<void>
   onCancel: () => void
   receiptNo: string
 }
@@ -20,6 +22,7 @@ export default function PaymentForm({ unpaidFees, onSave, onCancel, receiptNo }:
     }
   )
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0])
+  const [paymentMode, setPaymentMode] = useState<string>('Cash')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -50,7 +53,7 @@ export default function PaymentForm({ unpaidFees, onSave, onCancel, receiptNo }:
       label: fee.label,
       amount: payAmounts[fee.fee_type] || 0,
     }))
-    await onSave(details, receiptNo, paymentDate)
+    await onSave(details, receiptNo, paymentDate, paymentMode)
     setSaving(false)
   }
 
@@ -62,11 +65,23 @@ export default function PaymentForm({ unpaidFees, onSave, onCancel, receiptNo }:
           <p className="text-xs text-gray-400 mt-0.5">Receipt No: {receiptNo}</p>
         </div>
       </div>
-      <div className="mb-4">
-        <label className="block text-xs text-gray-500 mb-1">Payment Date</label>
-        <input type="date" value={paymentDate}
-          onChange={e => setPaymentDate(e.target.value)}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-teal-400 text-gray-600" />
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">Payment Date</label>
+          <input type="date" value={paymentDate}
+            onChange={e => setPaymentDate(e.target.value)}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-teal-400 text-gray-600" />
+        </div>
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">Mode of Payment</label>
+          <select value={paymentMode}
+            onChange={e => setPaymentMode(e.target.value)}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-teal-400 text-gray-600 bg-white">
+            {PAYMENT_MODES.map(mode => (
+              <option key={mode} value={mode}>{mode}</option>
+            ))}
+          </select>
+        </div>
       </div>
       <div className="mb-4">
         <p className="text-xs text-gray-500 mb-2">Select fees to pay:</p>

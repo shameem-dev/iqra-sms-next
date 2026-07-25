@@ -23,7 +23,7 @@ export type ExpenditureCategory =
   | 'iame' 
   | 'other';
 
-export type PaymentMode = 'UPI' | 'Bank' | 'Cash' | 'Check';
+export type PaymentMode =  'Bank' | 'Cash' ;
 
 export interface AccountEntry {
   id: string;
