@@ -6,6 +6,8 @@ import {
   History, Calendar, SplitSquareHorizontal, Receipt,
 } from 'lucide-react'
 import { markSalaryPaid, type PayrollRecord } from '@/utils/actions/payroll'
+import { PAYMENT_MODES } from '@/components/admin/accounts'
+import { type PaymentMode } from '@/type/accounts'
 
 interface Staff {
   id: string
@@ -26,6 +28,10 @@ const inputCls =
   'focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent ' +
   'placeholder:text-slate-400 transition-colors'
 
+const selectCls =
+  'w-full px-3 py-2 text-sm text-slate-800 bg-white border border-slate-200 rounded-lg ' +
+  'focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-colors'
+
 function fmt(n: number) {
   return n.toLocaleString('en-IN', { minimumFractionDigits: 2 })
 }
@@ -38,6 +44,7 @@ export default function PaySalaryModal({ staff, paidMonths, onClose, onSuccess }
   const thisMonth = today.slice(0, 7)
 
   const [paymentDate, setPaymentDate]     = useState(today)
+  const [paymentMode, setPaymentMode]     = useState<PaymentMode>('Cash')
   const [month, setMonth]                 = useState(thisMonth)
   const [payTa, setPayTa]                 = useState(staff.ta > 0)
   const [notes, setNotes]                 = useState('')
@@ -117,6 +124,7 @@ export default function PaySalaryModal({ staff, paidMonths, onClose, onSuccess }
         notes,
         billVoucherNo,
         customAmount: finalCustomAmount,
+        paymentMode,
       })
 
       const displayAmount = finalCustomAmount != null ? finalCustomAmount : (finalBasicSalary + (finalPayTa ? finalTa : 0))
@@ -238,7 +246,7 @@ export default function PaySalaryModal({ staff, paidMonths, onClose, onSuccess }
               <input type="month" value={month} onChange={e => setMonth(e.target.value)} className={inputCls} />
             </div>
 
-            {/* Payment Date & Bill/Voucher Row */}
+            {/* Payment Date & Mode of Payment Row */}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-medium text-slate-500 mb-1.5">
@@ -247,17 +255,32 @@ export default function PaySalaryModal({ staff, paidMonths, onClose, onSuccess }
                 <input type="date" value={paymentDate} onChange={e => setPaymentDate(e.target.value)} className={inputCls} />
               </div>
               <div>
-                <label className="flex items-center gap-1 text-xs font-medium text-slate-500 mb-1.5">
-                  <Receipt className="w-3 h-3" /> Bill / Voucher No.
+                <label className="block text-xs font-medium text-slate-500 mb-1.5">
+                  Mode of Payment <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="text"
-                  value={billVoucherNo}
-                  onChange={e => setBillVoucherNo(e.target.value)}
-                  placeholder="e.g. VCH-001"
-                  className={inputCls}
-                />
+                <select
+                  value={paymentMode}
+                  onChange={e => setPaymentMode(e.target.value as PaymentMode)}
+                  className={selectCls}
+                >
+                  {PAYMENT_MODES.map(m => (
+                    <option key={m.value} value={m.value}>{m.label}</option>
+                  ))}
+                </select>
               </div>
+            </div>
+
+            <div>
+              <label className="flex items-center gap-1 text-xs font-medium text-slate-500 mb-1.5">
+                <Receipt className="w-3 h-3" /> Bill / Voucher No.
+              </label>
+              <input
+                type="text"
+                value={billVoucherNo}
+                onChange={e => setBillVoucherNo(e.target.value)}
+                placeholder="e.g. VCH-001"
+                className={inputCls}
+              />
             </div>
 
             {/* Full / Partial segment selector switch */}

@@ -16,6 +16,7 @@ export type {
 export type {
   IncomeCategory,
   ExpenditureCategory,
+  PaymentMode,
 } from '@/type/accounts'
 
 // ── Fetch entries ─────────────────────────────────────────
