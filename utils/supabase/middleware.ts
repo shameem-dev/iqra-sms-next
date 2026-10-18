@@ -23,23 +23,29 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
   const path = request.nextUrl.pathname
-  const role = user?.user_metadata?.role
-
-  // ── DEBUG: remove after fixing
-  console.log('MIDDLEWARE:', { path, hasUser: !!user, role })
 
   // Not logged in → force login
   if (!user) {
-    // Allow /login through, block everything else
     if (!path.startsWith('/login')) {
-      const loginUrl = new URL('/login', request.url)
-      return NextResponse.redirect(loginUrl)
+      return NextResponse.redirect(new URL('/login', request.url))
     }
     return supabaseResponse
   }
 
-  // Logged in + on login or root → go to dashboard
+  // ✅ Read role from profiles table
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  const role = profile?.role
+
+  console.log('MIDDLEWARE:', { path, hasUser: !!user, role })
+
+  // Logged in + on login or root → redirect to role dashboard
   if (path === '/login' || path === '/') {
+    if (role === 'sadmin')  return NextResponse.redirect(new URL('/sadmin', request.url))
     if (role === 'admin')   return NextResponse.redirect(new URL('/admin', request.url))
     if (role === 'teacher') return NextResponse.redirect(new URL('/teacher', request.url))
     if (role === 'parent')  return NextResponse.redirect(new URL('/parent', request.url))
@@ -52,7 +58,7 @@ export async function middleware(request: NextRequest) {
   if (role === 'parent' && (path.startsWith('/admin') || path.startsWith('/teacher'))) {
     return NextResponse.redirect(new URL('/parent', request.url))
   }
-  if (role !== 'admin' && path.startsWith('/admin')) {
+  if (role !== 'admin' && role !== 'sadmin' && path.startsWith('/admin')) {
     return NextResponse.redirect(new URL(`/${role}`, request.url))
   }
 

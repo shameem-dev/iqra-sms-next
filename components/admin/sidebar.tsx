@@ -15,7 +15,6 @@ import { createClient } from "@/utils/supabase/client";
 
 const SIDEBAR_ITEMS = [
   { id: "users", label: "Dashboard", icon: Users, badge: null },
-  { id: "Accounts", label: "Accounts", icon: FileSpreadsheet, badge: null },
   { id: "attendance", label: "Student Attendance", icon: Clock, badge: null },
   { id: "marks", label: "Marks", icon: FileText, badge: "" },
   { id: "fees", label: "Fees", icon: BarChart3, badge: null },

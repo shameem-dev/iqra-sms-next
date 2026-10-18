@@ -49,8 +49,8 @@ export default function AdminLayout() {
             }}
           />
         )
-      case "Accounts":
-        return <AccountsUI />
+      // case "Accounts":
+      //   return <AccountsUI />
       case "staff":
         return <StaffUI />
 case "certificates & reports":

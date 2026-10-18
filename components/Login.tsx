@@ -13,35 +13,49 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
 
   const handleLogin = async () => {
-    setLoading(true)
-    setError('')
+  setLoading(true)
+  setError('')
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  })
 
-    if (error) {
-      setError(error.message)
-      setLoading(false)
-      return
-    }
-
-    const role = data.user?.user_metadata?.role
-
-    if (role === 'admin') {
-      router.push('/admin')
-    } else if (role === 'teacher') {
-      router.push('/teacher')
-    } else if (role === 'parent') {
-      router.push('/parent')
-    } else {
-      setError('Unknown role. Contact administrator.')
-    }
-
+  if (error) {
+    setError(error.message)
     setLoading(false)
+    return
   }
 
+  // ✅ Read role from profiles table, NOT user_metadata
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', data.user.id)
+    .single()
+
+  if (profileError || !profile) {
+    setError('Profile not found. Contact administrator.')
+    setLoading(false)
+    return
+  }
+
+  const role = profile.role
+
+  if (role === 'sadmin') {
+    router.push('/sadmin')
+  } else if (role === 'admin') {
+    router.push('/admin')
+  } else if (role === 'teacher') {
+    router.push('/teacher')
+  } else if (role === 'parent') {
+    router.push('/parent')
+  } else {
+    setError('Unknown role. Contact administrator.')
+  }
+
+  setLoading(false)
+}
   return (
     <div
       className="min-h-screen flex items-center justify-center relative overflow-hidden"
