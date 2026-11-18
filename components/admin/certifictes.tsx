@@ -240,6 +240,11 @@ function buildPRDoc(s: StudentWithMarks, ov: TCOverrides, mode: 'hy' | 'final', 
   const examTitle = isFinal ? `FINAL EXAMINATION – ${year}` : `HALF YEARLY EXAMINATION – ${year}`
   const moralTitle= isFinal ? `MORAL EXAMINATION – ${year} (Final)` : `MORAL EXAMINATION – ${year}`
   const pronoun   = s.gender === 'Female' ? 'Girl' : 'Boy'
+  const signatureRoles = {
+    combined: ['Class Teacher', "Mu'allim", 'Principal', 'Parent'],
+    academic: ['Class Teacher', 'Principal', 'Parent'],
+    moral: ['Class Teacher', "Sadar Mu'allim", 'Parent'],
+  }[sections]
 
   const schoolDays   = s.attendance.schoolDays   || parseInt(ov.school_days)  || 0
   const daysAttended = s.attendance.daysAttended  || parseInt(ov.days_attended) || 0
@@ -345,10 +350,14 @@ ${PRINT_BASE}
 .section-title{font-size:11.5px;font-weight:600;letter-spacing:0.8px;color:#1A2C6B;text-transform:uppercase;margin:10px 0 5px;padding-bottom:3px;border-bottom:0.5px solid #c5cde8}
 table{width:100%;border-collapse:collapse;font-size:11px}
 th{background:#1A2C6B;color:#fff;padding:5px 6px;text-align:left;font-weight:500;font-size:10px;line-height:1.3}
-@media print {
-  thead th{background:#fff;color:#000;font-weight:700;border-bottom:1px solid #000}
-}
 td{border:0.5px solid #ddd;padding:4px 6px}
+@media print {
+  .page{display:flex;flex-direction:column;min-height:296mm;padding-top:25mm;padding-bottom:15mm}
+  .page .sig-row{margin-top:auto;padding-top:12mm;break-inside:avoid}
+  table{font-size:13px}
+  thead th{background:#fff;color:#000;font-weight:700;font-size:12px;border-bottom:1px solid #000}
+  thead th,td{padding:6px 7px}
+}
 tr:nth-child(even) td{background:#f7f8fd}
 .tc{text-align:center}.fw{font-weight:600}
 .gc{font-weight:600;color:#B8862D;text-align:center}
@@ -403,10 +412,7 @@ tr:nth-child(even) td{background:#f7f8fd}
     <span><strong>E</strong> Below 20%</span>
   </div>
   <div class="sig-row">
-    <div class="sig-block"><div class="sig-line">&nbsp;</div>Class Teacher</div>
-    <div class="sig-block"><div class="sig-line">&nbsp;</div>Mu'allim</div>
-    <div class="sig-block"><div class="sig-line">&nbsp;</div>Principal</div>
-    <div class="sig-block"><div class="sig-line">&nbsp;</div>Parent</div>
+    ${signatureRoles.map(role => `<div class="sig-block"><div class="sig-line">&nbsp;</div>${role}</div>`).join('\n    ')}
   </div>
 </div></body></html>`
 }
