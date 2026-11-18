@@ -232,7 +232,9 @@ ${PRINT_BASE}
 // ─────────────────────────────────────────────────────────────────────────────
 // Progress Report (Half-Yearly & Final)
 // ─────────────────────────────────────────────────────────────────────────────
-function buildPRDoc(s: StudentWithMarks, ov: TCOverrides, mode: 'hy' | 'final') {
+type ReportSections = 'combined' | 'academic' | 'moral'
+
+function buildPRDoc(s: StudentWithMarks, ov: TCOverrides, mode: 'hy' | 'final', sections: ReportSections = 'combined') {
   const isFinal   = mode === 'final'
   const year      = new Date().getFullYear()
   const examTitle = isFinal ? `FINAL EXAMINATION – ${year}` : `HALF YEARLY EXAMINATION – ${year}`
@@ -351,7 +353,7 @@ tr:nth-child(even) td{background:#f7f8fd}
 .tc{text-align:center}.fw{font-weight:600}
 .gc{font-weight:600;color:#B8862D;text-align:center}
 .total-row td{font-weight:600;background:#e8ecf8 !important;color:#1A2C6B}
-.two-col{display:grid;grid-template-columns:${isFinal ? '2fr 1fr' : '1fr 1fr'};gap:16px}
+.report-sections{display:grid;grid-template-columns:${sections === 'combined' ? (isFinal ? '2fr 1fr' : '1fr 1fr') : '1fr'};gap:16px}
 .grade-key{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:10px;color:#666;margin-top:8px}
 .grade-key strong{color:#1A2C6B}
 .sig-row{display:flex;justify-content:space-between;margin-top:20px;font-size:10.5px}
@@ -371,8 +373,8 @@ tr:nth-child(even) td{background:#f7f8fd}
     <div class="info-row"><span class="info-label">Admission No</span><span class="info-val">: ${s.admission_no}</span></div>
     <div class="info-row"><span class="info-label">Gender</span><span class="info-val">: ${pronoun}</span></div>
   </div>
-  <div class="two-col">
-    <div>
+  <div class="report-sections">
+    ${sections !== 'moral' ? `<div>
       <div class="section-title">${examTitle}</div>
       <table>
         <thead>${academicThead}</thead>
@@ -383,15 +385,15 @@ tr:nth-child(even) td{background:#f7f8fd}
         Attendance : ${daysAttended} / ${schoolDays}
         ${schoolDays > 0 ? `&nbsp;(${Math.round((daysAttended / schoolDays) * 100)}%)` : ''}
       </div>
-    </div>
-    <div>
+    </div>` : ''}
+    ${sections !== 'academic' ? `<div>
       <div class="section-title">${moralTitle}</div>
       <table>
         <thead><tr><th>Subject</th><th class="tc">Full</th><th class="tc">Obtained</th><th class="tc">Grade</th></tr></thead>
         <tbody>${noMoral || moralRows}${moralTfoot}</tbody>
       </table>
       <div class="att-box">Moral Rank : ${ov.moral_rank || '—'}</div>
-    </div>
+    </div>` : ''}
   </div>
   <div class="grade-key">
     <span><strong>A+</strong> 90–100%</span><span><strong>A</strong> 80–89%</span>
@@ -408,9 +410,6 @@ tr:nth-child(even) td{background:#f7f8fd}
   </div>
 </div></body></html>`
 }
-
-function buildPRHalfYearly(s: StudentWithMarks, ov: TCOverrides) { return buildPRDoc(s, ov, 'hy') }
-function buildPRFinal(s: StudentWithMarks, ov: TCOverrides)      { return buildPRDoc(s, ov, 'final') }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Small reusable field components
@@ -550,6 +549,7 @@ export default function DocumentGenerator() {
   const [error, setError]       = useState<string | null>(null)
   const [selected, setSelected] = useState<StudentWithMarks | null>(null)
   const [docType, setDocType]   = useState<'tc' | 'cc' | 'pr_hy' | 'pr_f'>('tc')
+  const [reportSections, setReportSections] = useState<ReportSections>('combined')
   const [search, setSearch]     = useState('')
   const [classFilter, setClassFilter] = useState('All')
   const [showModal, setShowModal]     = useState(false)
@@ -586,8 +586,8 @@ export default function DocumentGenerator() {
   function buildDoc(s: StudentWithMarks, overrides: TCOverrides) {
     if (docType === 'tc')    return buildTC(s, overrides)
     if (docType === 'cc')    return buildCC(s, overrides)
-    if (docType === 'pr_hy') return buildPRHalfYearly(s, overrides)
-    return buildPRFinal(s, overrides)
+    if (docType === 'pr_hy') return buildPRDoc(s, overrides, 'hy', reportSections)
+    return buildPRDoc(s, overrides, 'final')
   }
 
   function handlePrint() {
@@ -772,6 +772,15 @@ ${bodyParts.map(c => `<div class="page-wrapper">${c}</div>`).join('\n')}
               )
             })}
           </div>
+          {docType === 'pr_hy' && (
+            <select aria-label="Half-yearly report sections" value={reportSections}
+              onChange={e => setReportSections(e.target.value as ReportSections)}
+              style={{ fontSize: 12, padding: '5px 8px', borderRadius: 7, border: `1px solid ${BORDER}`, background: WHITE, color: NAVY, fontFamily: 'inherit' }}>
+              <option value="combined">Combined</option>
+              <option value="academic">Academic Only</option>
+              <option value="moral">Moral Only</option>
+            </select>
+          )}
           <div style={{ flex: 1 }} />
           {selected && docType === 'tc' && (
             <button onClick={() => setShowModal(true)}
