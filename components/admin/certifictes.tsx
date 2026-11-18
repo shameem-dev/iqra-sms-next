@@ -343,6 +343,9 @@ ${PRINT_BASE}
 .section-title{font-size:11.5px;font-weight:600;letter-spacing:0.8px;color:#1A2C6B;text-transform:uppercase;margin:10px 0 5px;padding-bottom:3px;border-bottom:0.5px solid #c5cde8}
 table{width:100%;border-collapse:collapse;font-size:11px}
 th{background:#1A2C6B;color:#fff;padding:5px 6px;text-align:left;font-weight:500;font-size:10px;line-height:1.3}
+@media print {
+  thead th{background:#fff;color:#000;font-weight:700;border-bottom:1px solid #000}
+}
 td{border:0.5px solid #ddd;padding:4px 6px}
 tr:nth-child(even) td{background:#f7f8fd}
 .tc{text-align:center}.fw{font-weight:600}
@@ -704,7 +707,7 @@ ${bodyParts.map(c => `<div class="page-wrapper">${c}</div>`).join('\n')}
   )
 
   return (
-    <div style={{ fontFamily: "'Outfit',sans-serif", display: 'flex', gap: 16, minHeight: 600, background: LIGHT, borderRadius: 12, padding: 16 }}>
+    <div style={{ fontFamily: "'Outfit',sans-serif", display: 'flex', gap: 16, height: '100%', minHeight: 300, background: LIGHT, borderRadius: 12, padding: 16 }}>
 
       {showModal && ov && (
         <EditModal
@@ -737,14 +740,15 @@ ${bodyParts.map(c => `<div class="page-wrapper">${c}</div>`).join('\n')}
             style={{ fontSize: 11.5, padding: '6px 10px', borderRadius: 7, border: `1px solid ${BORDER}`, background: LIGHT, color: NAVY, outline: 'none' }} />
         </div>
         <div style={{ fontSize: 10, fontWeight: 600, color: TEXT_S, marginTop: 8 }}>Results: {filtered.length}</div>
-        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4, marginTop: 4 }}>
+        <div role="region" aria-label="Student results" tabIndex={0}
+          style={{ flex: '0 1 auto', minHeight: 0, overflowY: 'auto', overscrollBehaviorY: 'contain', scrollbarGutter: 'stable', display: 'flex', flexDirection: 'column', gap: 4, marginTop: 4 }}>
           {filtered.length === 0
             ? <div style={{ fontSize: 12, color: TEXT_S, textAlign: 'center', padding: '12px 0' }}>No matches</div>
             : filtered.map(s => {
                 const active = selected?.id === s.id
                 return (
                   <div key={s.id} onClick={() => selectStudent(s)}
-                    style={{ padding: '7px 9px', borderRadius: 7, border: `1px solid ${active ? NAVY : BORDER}`, background: active ? NAVY : WHITE, cursor: 'pointer', transition: 'all 0.15s' }}>
+                    style={{ flexShrink: 0, padding: '7px 9px', borderRadius: 7, border: `1px solid ${active ? NAVY : BORDER}`, background: active ? NAVY : WHITE, cursor: 'pointer', transition: 'all 0.15s' }}>
                     <div style={{ fontSize: 11.5, fontWeight: 500, color: active ? WHITE : NAVY }}>{s.name}</div>
                     <div style={{ fontSize: 10, color: active ? 'rgba(255,255,255,0.6)' : TEXT_S, marginTop: 1 }}>{s.standard} · #{s.admission_no}</div>
                   </div>
@@ -756,7 +760,7 @@ ${bodyParts.map(c => `<div class="page-wrapper">${c}</div>`).join('\n')}
 
       {/* Main panel */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10, minWidth: 0 }}>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', background: WHITE, borderRadius: 10, padding: '9px 14px', border: `1px solid ${BORDER}`, boxShadow: '0 2px 8px rgba(26,44,107,0.06)' }}>
+        <div style={{ display: 'flex', flexShrink: 0, gap: 8, alignItems: 'center', flexWrap: 'wrap', background: WHITE, borderRadius: 10, padding: '9px 14px', border: `1px solid ${BORDER}`, boxShadow: '0 2px 8px rgba(26,44,107,0.06)' }}>
           <div style={{ display: 'flex', gap: 6 }}>
             {(Object.entries(docLabels) as [DocType, string][]).map(([key, label]) => {
               const active = docType === key
@@ -814,7 +818,7 @@ ${bodyParts.map(c => `<div class="page-wrapper">${c}</div>`).join('\n')}
                 </span>
               </div>
               <iframe ref={iframeRef} srcDoc={buildDoc(selected, ov)}
-                style={{ flex: 1, width: '100%', minHeight: 520, border: 'none', display: 'block' }}
+                style={{ flex: 1, width: '100%', minHeight: 0, border: 'none', display: 'block' }}
                 title="Document Preview" />
             </div>
           ) : (

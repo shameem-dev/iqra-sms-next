@@ -149,21 +149,32 @@ export async function getAllExamMarks(
   academicYear: string
 ): Promise<Record<number, Record<number, Mark>>> {
   const supabase = await createClient()
-  const { data, error } = await supabase
-    .from('marks')
-    .select('*')
-    .eq('academic_year', academicYear)
-  if (error) {
-    console.warn('[certicate] marks:', error.message)
-    return {}
-  }
   const map: Record<number, Record<number, Mark>> = {}
-  for (const row of data ?? []) {
-    const m = row as Mark
-    if (!map[m.student_id]) map[m.student_id] = {}
-    map[m.student_id][m.subject_id] = m
+  let lastId: number | undefined
+
+  // The API caps each response, so fetch the year's marks in ID order.
+  while (true) {
+    const query = supabase
+      .from('marks')
+      .select('*')
+      .eq('academic_year', academicYear)
+      .order('id', { ascending: true })
+      .limit(1000)
+    if (lastId !== undefined) query.gt('id', lastId)
+
+    const { data, error } = await query
+    if (error) {
+      console.warn('[certicate] marks:', error.message)
+      throw new Error('Unable to load exam marks for reports.')
+    }
+    if (!data.length) return map
+
+    for (const mark of data as Mark[]) {
+      if (!map[mark.student_id]) map[mark.student_id] = {}
+      map[mark.student_id][mark.subject_id] = mark
+    }
+    lastId = data[data.length - 1].id
   }
-  return map
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
